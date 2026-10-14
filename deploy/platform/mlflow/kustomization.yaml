@@ -1,0 +1,10 @@
+# ODH's MLflow, PLAN.md phase 1 step 5: tried first, because it supports
+# workspaces and EvalHub injects MLFLOW_WORKSPACE into every job pod. Needs
+# deploy/platform/dsc with mlflowoperator Managed.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - mlflow.yaml
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: agent-flywheel

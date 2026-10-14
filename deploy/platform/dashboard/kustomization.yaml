@@ -1,0 +1,11 @@
+# The dashboard's feature flags, PLAN.md phase 1 step 4. The dashboard creates
+# odh-dashboard-config itself, once, and owns every other field, so this is a
+# partial object: apply it after deploy/platform/dsc is Ready, and only with
+#
+#   oc apply --server-side --field-manager=agent-flywheel -k deploy/platform/dashboard
+#
+# A client-side apply would store this partial object as the whole config.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - odhdashboardconfig.yaml

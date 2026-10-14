@@ -11,9 +11,11 @@ read in code or docs but never run.
 **What this is.** Agent Flywheel evaluates, benchmarks and trains AI agents:
 CLI agent harnesses (OpenCode, Claude Code, Codex) with a "brain" (an
 `AGENTS.md` and up to 3 skills, plain text, no weights), talking to any model
-through a gateway. Training means a loop: score the agent on tickets, let a
-second agent rewrite the brain from the judges' reasons, score again, keep or
-revert. The first version, `openshift-eval`, built all of it alone. This
+through a gateway. Training means a loop: score the agent on the tasks of
+a use case, let a second agent rewrite the brain from the judges' reasons,
+score again, keep or revert. Any use case, not only the support tickets of
+the first version (decision 10). The first version, `openshift-eval`, built all of it
+alone. This
 repo builds the integrated version: every gap goes into Red Hat's own
 open-source projects (agent-eval-harness, EvalHub, the TrustyAI operator,
 the OpenShift AI dashboard) as small PRs from Lukas's forks, the cluster
@@ -25,6 +27,7 @@ runs the real Open Data Hub stack, and this repo holds only the glue.
 |:--|:--|
 | This plan and the glue | `~/Projects/Github/lukaskellerstein/agent-flywheel-os` (this repo) |
 | The first version, the inspiration | `~/Projects/Github/lukaskellerstein/openshift-eval`, branch `main`. Its `PLAN.md` (every decision and measured fact), `CLUSTER.md` (cluster runbook), `flywheel/README.md` (the loop's contract) |
+| The first version's generalization | `openshift-eval` branch `generalization`, worktree `.worktrees/generalization`: the spec `docs/my-specs/03-generalization.md` (a "task pack" per use case, decided there 2026-10-13; its "task" is our use case, its "case" our task), its phase 1 built and checked on the laptop (`tasks/support/`, `flywheel/task.py`). Not committed on 2026-10-14: the whole change, the moved support folders included, exists only in that worktree. Input for decision 10 |
 | The evidence behind this plan | [`docs/research.md`](docs/research.md): every fact read in upstream code and docs, with file and line |
 | The first spec, archived | [`docs/archive/03-upstream-first.md`](docs/archive/03-upstream-first.md), word for word from the discarded `openshift-eval` branch `redesign-redhat-upstream`; this plan wins where they differ |
 | The Slack post to colleagues | [`docs/outreach.md`](docs/outreach.md): the drafts, the fact-check, the blog fixes |
@@ -34,26 +37,60 @@ runs the real Open Data Hub stack, and this repo holds only the glue.
 
 **Done on 2026-10-13:** the analysis, the five forks on GitHub, three
 opening comments drafted (section 13, not posted), and the decisions of
-section 2. The forks are not cloned yet (section 5).
+section 2. The five forks are cloned into `forks/` (checked 17:36: each
+`origin` is the fork, each `upstream` the original, all on `main`, partial
+clones with `--filter=blob:none`). `scripts/clone-forks.sh` is written and
+tested offline. Phase 0 is done (20:55): the agent's own identity is
+cluster-admin on the new cluster `cluster-nm8mw` (its status in section 6).
 
-**Not done:** everything in section 6. The cluster `cluster-vj7vb` did not
-answer on 2026-10-13 (API timeouts); it may be stopped or gone.
+**Not done:** everything else in section 6; phase 0 has its status there.
+The cluster `cluster-vj7vb` (RHDP service
+`published.ocp4-cluster.prod-tz4hq`) was auto-stopped Tue 2026-10-13 03:58
+GMT+2, which is why its API timed out (17:48), and at 20:40 it was no
+longer in RHDP "My Services". Its replacement is `cluster-nm8mw`, RHDP
+service `bzdsg`, ordered from the same item at about 20:23 GMT+2. Its
+auto-destroy is Thu 2026-11-12 18:00 GMT+1, the latest day the picker
+offers (30 days), set by the agent at 21:10 at Lukas's word. Its auto-stop
+is Thu 2026-10-15 02:23 GMT+2, moved by Lukas (read 21:17); that dialog
+warns that a later stop costs his cost center more, so the agent's
+classifier refused to move it. The auto-stop needs moving again before it
+comes, or the cluster stops and its API times out. Larger sizes could not be
+created; only the small one could (Lukas, 20:40). So it is again one node
+with one 100 GB disk (phase 0 status).
 
-**The next step:** phase 0 (section 6): the cluster, the remotes, this
-repo's agent setup.
+**The next step:** phase 2 (section 6), the harness contributions C1 to C9,
+run from this repo's session: the agent here orchestrates subagents in the
+`agent-eval-harness` fork clone (section 5). C1 to C4 are done and merged
+into `flywheel-integration` (2026-10-14); their PRs wait for Lukas's go
+([`docs/pr-drafts.md`](docs/pr-drafts.md)). Next: C6 to C9; C5 waits for
+astefanutti on PR #90. Phases 0 and 1 are done; their status is in
+section 6. EnMaaS is onboarded and measured (decision 9,
+`scripts/enmaas/probe.py`); the switch of the gateway to its OpenAI models
+waits for Lukas's yes. Decisions 10 to 13 are taken (any use case; our
+registry in S3, import first; the words; the task format and fixed
+versions). Not planned yet: which other gaps of a general flywheel go to
+which project, the registry's API and its screens.
 
 **Rules for every agent working on this plan.**
 
-- Never commit unless Lukas asks for that commit. Pushes: only branches to
-  his forks (section 5), never to `upstream`, never to `main`, never
-  `--force` (Lukas, 2026-10-13). A PR, a fork, an issue or a public comment
-  needs his explicit go each time.
-- One Claude session per repo, started in that repo's folder. A session
-  started in another repo's worktree cannot run git here: its worktree guard
-  refuses git in any other folder, `!` commands included (seen 2026-10-13).
-- Every change on a cluster (`apply`, `create`, `delete`, `patch`, operator
-  installs) is asked for first, naming the cluster and the namespace.
-  Cluster-admin work is Lukas's or runs under his login.
+- Never commit unless Lukas asks for that commit. One standing exception
+  (Lukas, 2026-10-14): commits on the contribution branches and on
+  `flywheel-integration` in the fork clones, never on `main`. Pushes: only
+  branches to his forks (section 5), never to `upstream`, never to `main`,
+  never `--force` (Lukas, 2026-10-13). A PR, a fork, an issue or a public
+  comment needs his explicit go each time.
+- The fork clones are worked on from this repo's session (Lukas,
+  2026-10-14): `.claude/settings.json` opens
+  `~/Projects/Github/lukaskellerstein/forks/` to the sandbox, and the agent
+  here orchestrates subagents there, one git worktree per branch (section
+  5). `openshift-eval` and the reference checkouts stay read-only. A session
+  started in a `claude -w` worktree still cannot run git in another folder,
+  `!` commands included (seen 2026-10-13).
+- The agent runs the cluster on its own (Lukas, 2026-10-13): its own
+  identity is cluster-admin (phase 0 step 4), and a change on the cluster
+  (`apply`, `create`, `delete`, `patch`, operator installs) needs no
+  question. Each change is named in the report. Only that one cluster:
+  `oc whoami --show-server` first, and never Lukas's `~/.kube/config`.
 - A paid model run beyond one smoke call is asked for first, with its cost
   (section 10 has the measured costs).
 - No key in any file. Model keys live in Secrets that Lukas creates; a
@@ -67,14 +104,18 @@ repo's agent setup.
 
 Agent Flywheel inside OpenShift AI, built from its own pieces:
 
-1. **Evaluate** a CLI agent with its brain on a ticket set, with code
-   judges and an LLM judge, a reason per ticket, traces in MLflow.
+1. **Evaluate** a CLI agent with its brain on the tasks of a use case, with
+   code judges and an LLM judge, a reason per task, traces in MLflow.
 2. **Benchmark** agents × models × brains, with exact reuse of runs already
    measured.
 3. **Train** the brain in a loop: score, adjust, keep or revert on the train
    score, a validation set that never decides, versioned brains.
 4. **A UI inside the OpenShift AI dashboard**, as a dashboard module, on a
    cluster with the real Open Data Hub stack.
+5. **Any use case** (decision 10). A team brings its own use case, with its
+   dataset of tasks, its judges and what its agent may read, and the
+   flywheel evaluates, benchmarks and trains an agent on it. The support
+   agent is the first use case, not the only one.
 
 What makes it worth doing (Lukas's pitch): this training touches no
 weights, so it runs on plain CPU pods; every cluster has CPU, not every
@@ -90,7 +131,11 @@ support agent from 0.649 to 0.910 on 10 held-out tickets
 
 1. **Play along.** "I am totally okay to contribute to these projects instead
    of trying to replace them." Each gap goes upstream into the project that
-   owns the topic.
+   owns the topic. The rule for what is ours (Lukas, 2026-10-14): "In the
+   first place if it's possible, we should update the upstream repos
+   (whatever repo needs to be updated) and add the functionality there. If
+   it's not possible to add it there or if it needs orchestration between
+   two of these, then it belongs to our repo and to our code."
 2. **Build and prove first, PRs last.** Every change is built on a fork
    branch and proven with the flywheel running on all of them together
    before any PR. One branch per contribution, from upstream `main`; one
@@ -116,12 +161,91 @@ support agent from 0.649 to 0.910 on 10 held-out tickets
    single-proposal step, and pulls torch and CUDA (173 packages for
    `training-hub[gepa]==0.11.0`); the flywheel keeps calling `gepa` 0.1.4
    directly.
+9. **Everything through EnMaaS, OpenAI models first** (2026-10-14). "Any
+   given agent that we are going to run in the OpenShift will use these
+   [EnMaaS] models." Later the same day: "let's use the OpenAI models
+   everywhere possible … Let's not use Cerebras anymore", so that
+   "everything can be run through the EnMaaS". Every model call the
+   flywheel makes on the cluster, from the agents, the adjuster and the
+   judge, goes to EnMaaS through the gateway, on an OpenAI model wherever
+   the caller's API dialect allows it (`docs/research.md`, "EnMaaS,
+   measured"). Cerebras is no longer a route. GLM 5.3 (`enmaas-glm-5-3`),
+   EnMaaS's only model with no usage cost, stays as the free route for
+   tests. The OpenAI models count against Lukas's Red Hat AI budget, so
+   the money rule of section 10 holds. The key is Lukas's, in the Secret
+   `enmaas`. The roles (Lukas, 2026-10-14): the agents on `gpt-5-mini`
+   (`enmaas-gpt-5-mini`), the adjuster on `gpt-6-luna`
+   (`enmaas-gpt-6-luna`); the judge on `gpt-6-sol` (`enmaas-gpt-6-sol`),
+   the agent's pick, since Lukas named only the other two and the judge
+   must not be the agent's own model.
+10. **Any use case, not only support** (2026-10-14). "It does not matter
+    whether the agent should be trained or evaluated for a supporting use
+    case, a lawyer use case, a kernel development use case, or any other
+    given use case. We want to provide the platform for it so we have to be
+    general." The support agent stays the first use case. The proof (phase
+    6) includes a use case of another kind, after support runs end to end:
+    the coding use case `pyfix` of `openshift-eval`'s generalization spec
+    (section 0, "Where things are"), 12 small Python repositories with one
+    bug each and hidden tests. If time runs short before the cluster's end
+    (2026-11-12), that spec's text-only use case `copywriter` is the proof
+    instead (Lukas, `ok`, 2026-10-14). Where use cases live and how they
+    come in: decisions 11 and 13.
+11. **Our own registry, the files in S3, import first** (2026-10-14). The
+    flywheel API keeps the registry of use cases: "I would have our own
+    API: the task register." Not a Kubernetes resource per use case ("there
+    can be a lot of tasks") and no database of its own: the files sit in an
+    S3 bucket ("I like the S3 bucket. It's fine with me."). The registry is
+    the source; EvalHub collections are made from it ("Based on our tasks it
+    would get propagated as Eval Hub collections"), and MLflow datasets when
+    they are needed. Use cases and their tasks come in by import first: YAML
+    files that people make elsewhere ("It's easier for users to generate
+    the YAML files with some other agent somewhere else"), by upload and
+    from git first, from Hugging Face datasets second (Lukas, `yes`,
+    2026-10-14). The UI can create them too, but that is not the main way:
+    "We should not force anyone to click so many times and do so much work
+    to create all the tasks or items in the dataset." In these quotes, which
+    came before decision 12, "task" means a use case, except in the last
+    one.
+12. **The words** (2026-10-14, Lukas's pick A). A **use case** is the
+    whole: support, a lawyer's contract review, kernel development. Its
+    **dataset** is its tasks, versioned with it (decision 13). A **task** is
+    one item of the dataset: one support ticket, one contract clause, one
+    bug to fix. The harness calls a task a "case" and keeps its own names
+    (`cases/`, `per_case`, `annotations.yaml`). In this plan "ticket" stays
+    for the tasks of the support use case. `openshift-eval`'s
+    generalization spec says "task" for our use case and "case" for our
+    task.
+13. **One format for a task, and fixed versions** (2026-10-14, Lukas,
+    `yes` and `A`). A use case is defined once: its judges, what its agent
+    can read, its gate. Its tasks come in bulk: one YAML file per task, or
+    the same fields as one JSONL line, one Hugging Face row or one file in a
+    git folder.
+
+    ```yaml
+    id: sno-registry-removed      # unique; default: the file name
+    split: train                  # optional; else the import picks one, balanced by tags
+    tags: [plain-fix]             # optional
+    input:                        # what the agent gets; any keys
+      ticket: "Hi, I installed OpenShift 4.20.3 …"
+    expected:                     # what only the judges see; any keys
+      must_mention: [managementState, "oc patch"]
+    files: [screenshot.png]       # optional: files for the agent
+    ```
+
+    Under decision 1 the harness gets a reader for this format (C19), so
+    the import only checks, versions and stores. Every import makes a new,
+    fixed version of the whole use case: its tasks, judges, resources and
+    gate, because a judge change moves the scores as much as a new task
+    does. An import with no change makes no new version. A run records the
+    version's number and hash, nothing is overwritten, and old versions
+    stay: "we will have some old runs and we need to still reference and
+    show what the previous kind of dataset was."
 
 ## 3. The lineup on 2026-10-13
 
 | Project | Status | Latest | Notes |
 |:--|:--|:--|:--|
-| Open Data Hub operator | ODH 3.6.0-ea.2 (2026-09-22) is the only release declared for OpenShift 4.22; 3.5.0 GA covers 4.19 to 4.21 | 3.6.0-ea.2, channel `fast-3` (**verify**) | Modules on its `main`: aigateway, aihub, aipipelines, dashboard, data, databaseservice, kserve, mcplifecycleoperator, mlflowoperator, monitoring, ogx, ray, sparkoperator, trainer, trustyai, workbenches (`internal/controller/modules/`) |
+| Open Data Hub operator | ODH 3.6.0-ea.2 (2026-09-22) is the only release declared for OpenShift 4.22; 3.5.0 GA covers 4.19 to 4.21 | 3.6.0-ea.2, channel `fast-3` (installed 2026-10-13) | Modules on its `main`: aigateway, aihub, aipipelines, dashboard, data, databaseservice, kserve, mcplifecycleoperator, mlflowoperator, monitoring, ogx, ray, sparkoperator, trainer, trustyai, workbenches (`internal/controller/modules/`) |
 | EvalHub | GA in Red Hat AI 3.5 (press release, 3.5 release notes); managed by the TrustyAI module | server 1.0.2 (2026-09-18), SDK `eval-hub-sdk` 1.0.6 (2026-10-13) | A job evaluates a `ModelRef` or `pre_recorded_data`; 16 built-in providers; no provider runs a CLI agent |
 | agent-eval-harness | Upstream only (`opendatahub-io`), a Claude Code plugin; no product page names it | v1.56.1 (2026-10-12) | Runners `claude-code`, `codex`, `cursor`, `cli`, `responses-api`; maintainer astefanutti merges most PRs |
 | TrustyAI operator | Upstream release v1.38.0 (2025-06) has no EvalHub; ODH and the RHOAI branches `rhoai-3.4` and later have it | `main` | `openshift-eval` pinned `main` at `359bc8e` |
@@ -170,7 +294,8 @@ flowchart LR
 
 **Clones and remotes.** Every fork is cloned into
 `~/Projects/Github/lukaskellerstein/forks/`, with `origin` = Lukas's fork and
-`upstream` = the original, by `scripts/clone-forks.sh`. Lukas runs it in his
+`upstream` = the original, by `scripts/clone-forks.sh` (the clones of
+2026-10-13 were made before it existed, phase 0 status). Lukas runs it in his
 own terminal: a Claude session's worktree guard refuses git in another
 folder. The script is safe to run again (an existing clone is only fetched)
 and stops when a clone's `origin` is not the fork. A sixth fork ("A sixth
@@ -186,7 +311,10 @@ Hub) belongs under `~/Projects/Github/redhat/`, if one is ever needed.
 **Branches.** Per contribution one branch from `upstream/main`, named after
 it (`fix/stop-on-sigterm`). Per repo one `flywheel-integration` branch that
 merges every contribution branch of that repo; it is only for us and never a
-PR. A reviewer's change goes into the contribution branch, is merged into
+PR. Each branch is checked out in its own git worktree,
+`~/Projects/Github/lukaskellerstein/forks/.worktrees/<repo>/<branch>`, so
+subagents that run in parallel never share a checkout; the clone itself
+stays on `main` (Lukas, 2026-10-14). A reviewer's change goes into the contribution branch, is merged into
 `flywheel-integration` again, and the proof (phase 6) runs again. Before a
 PR, the contribution branch is rebased on the newest `upstream/main`.
 
@@ -223,40 +351,110 @@ this file's status before the next phase starts.
    disk pressure at about 80% used, each image build adds about 5 GB, and
    this plan adds 4 or more images (dashboard, modules, operator, EvalHub,
    adapter). The RHDP item used so far: "OpenShift Container Platform
-   Cluster (Multi-Cloud)", single node, OpenShift 4.22, no GPU.
+   Cluster (Multi-Cloud)" (`published.ocp4-cluster.prod`). `cluster-vj7vb`
+   was ordered from it on 2026-10-09 as `cluster_size: sno`,
+   `ocp_cloud_provider: cnv` (a VM on RHDP's OpenShift Virtualization
+   cluster `ocpv02`), `host_ocp4_installer_version: '4.21'`, no GPU (its
+   service YAML, read 2026-10-13); so it runs OpenShift 4.21, not 4.22 as
+   this plan said before. The order carries no disk parameter, and the
+   item's definition (`rhpds-agnosticv`, `published/ocp4-cluster/prod.yaml`)
+   is not readable for us (`gh api`: 404). Its catalog description on
+   2026-10-13: single node 32 CPU and 128 GB memory, or multinode (3
+   control-plane/worker nodes and 2 to 10 workers); cloud CNV (the default,
+   cheapest) or AWS; OpenShift 4.20 or 4.21; cost charged to the cost
+   center. That description is stale: the order form itself (Lukas's
+   screenshot, 18:18) offers OpenShift 4.22 as its default, and has no disk
+   field either. Auto-stop defaults to 6 h and goes up to 180 d; auto-destroy
+   goes up to 30 d ahead and 180 d in all (the service YAML's `lifespan` and
+   `runtime_maximum`). ODH 3.6.0-ea.2 is declared for OpenShift 4.19 to
+   4.22 (`docs/research.md`, "Versions and the clash"), so every version
+   the form offers fits decision 5; 4.22 is the one this plan was written
+   for.
 2. **Fork clones**: Lukas runs `scripts/clone-forks.sh` (section 5).
 3. **This repo's agent setup.** Lukas sets up `CLAUDE.md` and `.claude/` the
    way his other repos have them (his mac-setup templates). On 2026-10-13
    the shared part arrived, not committed: `.claude/hooks/` (the worktree
    guard, the Playwright hooks) and the shared rules in `.claude/rules/`
    (`03-plan`, `08-report`, `09-code-quality`, `11-communication`,
-   `12-security`, `lsp`, `machine-tools`, `memory`, `worktree`). Still
-   missing: `CLAUDE.md` and the project rules (`01-project-config`,
-   `02-understand`, `05-implement`, `06-testing`, `10-tech-stack`). Until
-   they exist, section 0's rules apply. Do not invent a rules framework.
+   `12-security`, `lsp`, `machine-tools`, `memory`, `worktree`); at 17:26
+   to 17:31 the project rules `01-project-config`, `02-understand` and
+   `05-implement`; at 17:39 to 17:47 `.claude/CLAUDE.md`, `06-testing`,
+   `10-tech-stack`, `.mcp.json`, `.gitignore` and `.claude/settings.json`,
+   which runs the worktree guard and the Playwright hooks. None of it is
+   committed yet. Do not invent a rules framework.
 4. **The agent's own cluster identity.** Port `scripts/agent-kubeconfig.sh`
    and `deploy/agent-access/` from `openshift-eval` (a ServiceAccount
-   `claude-agent`, admin in `agent-flywheel` only, a 24 h token in a
-   kubeconfig outside the repo). Lukas approves the RBAC. Every `oc` call of
-   an agent uses that identity, never Lukas's `~/.kube/config`.
+   `claude-agent`, a 24 h token in a kubeconfig outside the repo). Lukas
+   approves the RBAC: cluster-admin, so that the agent runs the cluster on
+   its own (Lukas, 2026-10-13; `openshift-eval` grants admin in one
+   namespace only). Every `oc` call of an agent uses that identity, never
+   Lukas's `~/.kube/config`.
 
 DoD: `oc whoami --show-server` answers with the agent's identity; every
 clone shows the fork as `origin`; the repo has its agent instructions.
 
+Status (2026-10-13, 21:00): **done**, all three DoD checks pass. `oc
+whoami --show-server` with the agent's kubeconfig answers
+`https://api.cluster-nm8mw.dyn.redhatworkshops.io:6443` as
+`system:serviceaccount:agent-flywheel:claude-agent`, and `oc auth can-i '*'
+'*' --all-namespaces` answers `yes` (20:55).
+
+- Step 1, done, without the bigger disk: `cluster-nm8mw` (section 0),
+  OpenShift 4.22.16, read with the agent's identity at 20:55. One node,
+  `control-plane-cluster-nm8mw-1` (control-plane, master, worker; RHCOS
+  9.8, x86_64): 32 CPU, 126 GiB memory, one disk of 106.8 GB, of which
+  39.7 GB (37%) is used on day one, 67.1 GB free; images share that disk.
+  No GPU. Storage: ODF in external mode, `ocs-external-storagecluster-ceph-rbd`
+  (the default, `WaitForFirstConsumer`), its `-immediate` twin,
+  `ocs-external-storagecluster-cephfs` and `openshift-storage.noobaa.io`;
+  volumes live on Ceph, not on the node's disk. No `trustyai-operator`,
+  `opendatahub` or `redhat-ods-operator` namespace. The larger sizes could
+  not be ordered (section 0), so the disk pressure risk of this step stays:
+  builds and images fill the node's own disk. Its auto-stop and
+  auto-destroy: section 0.
+- Step 2, done: every clone shows the fork as `origin`, checked with
+  `git remote -v`. `scripts/clone-forks.sh` written after the fact and
+  tested offline against a fake GitHub (`url.<base>.insteadOf`): a fresh
+  run clones all five with the same remotes as the real clones, a second
+  run only fetches, a wrong `origin` stops it with exit 1. Not run against
+  the real clones.
+- Step 3, done: the files are there (see the step), not committed.
+- Step 4, done: `deploy/agent-access/` is the ServiceAccount and one
+  ClusterRoleBinding `claude-agent-cluster-admin` to `cluster-admin`
+  (Lukas, 2026-10-13: "full autonomicity on the cluster"); the namespace
+  `admin` RoleBinding and the namespace ClusterRole from `openshift-eval`
+  are dropped, since `cluster-admin` holds both. Lukas approved these
+  edits and the script's at 21:10. The agent ran
+  `scripts/agent-kubeconfig.sh` at 20:55 under Lukas's login, outside the
+  sandbox, at his word: it created the namespace `agent-flywheel`, the
+  ServiceAccount and the binding, and a token. At 20:57 the agent renewed
+  that token with its own identity, inside the sandbox (`ADMIN_KUBECONFIG`,
+  see the script); it expires 2026-10-14 20:57 CEST. The script refuses a
+  server that is not RHDP and stops when `oc whoami` fails, both with exit
+  1 and no file written (the second was a bug in `openshift-eval`'s
+  version, fixed here). It takes `ADMIN_CONTEXT`,
+  because the current context of Lukas's kubeconfig was `kind-agentic`
+  right after his `oc login` (20:50). A lapsed token needs Lukas's login
+  again. A SessionStart hook (`.claude/hooks/agent-kubeconfig.sh`, 20:54)
+  points every new session's `KUBECONFIG` at the agent's file.
+
 ### Phase 1: the platform
 
-All cluster-admin; Lukas runs it or approves each step.
+All cluster-admin; the agent runs it with its own identity (Lukas,
+2026-10-13).
 
 1. If the cluster has `openshift-eval`'s TrustyAI operator
    (`deploy/evalhub/operator`, namespace `trustyai-operator`), remove it and
    its `EvalHub` resource first: ODH's TrustyAI module manages the same
    CRDs.
-2. Install the ODH operator 3.6.0-ea.2 from the community catalog
-   (**verify** the package name `opendatahub-operator` and the channel).
+2. Install the ODH operator 3.6.0-ea.2 from the community catalog: package
+   `opendatahub-operator`, channel `fast-3` (its default), checked on the
+   cluster's PackageManifest on 2026-10-13.
 3. A `DataScienceCluster` (`datasciencecluster.opendatahub.io/v2`) with
    `dashboard` and `trustyai` `Managed` and every other module `Removed`;
-   `mlflowoperator` `Managed` if step 5 picks ODH's MLflow. Check whether a
-   `DSCInitialization` is created for us (**verify**).
+   `mlflowoperator` `Managed` if step 5 picks ODH's MLflow. ODH does not
+   create the `DSCInitialization` for us (its log: "default DSCI
+   auto-creation is disabled", 2026-10-13), so we create it.
 4. Check: the dashboard opens through ODH's Gateway login; the `eval-hub`
    module's page shows after `disableLMEval: false` in
    `OdhDashboardConfig` `spec.dashboardConfig`; an `EvalHub` resource can be
@@ -275,6 +473,96 @@ DoD: the dashboard works for Lukas; an EvalHub job of a built-in provider
 runs and logs to MLflow; the gateway answers one smoke call (about 0.001
 USD).
 
+Status (2026-10-14, 09:20): **done**, all three DoD checks pass, built by
+the agent with its own identity. Each part is a folder of
+`deploy/platform/` or `deploy/gateway/`, applied after a server dry run.
+
+- DoD 1, the dashboard works for Lukas: he logged in and saw the
+  Evaluations page (Tech Preview) for project `agent-flywheel`, "No
+  evaluation runs" (his screenshot, 2026-10-14 09:07).
+- DoD 2, an EvalHub job of a built-in provider runs and logs to MLflow:
+  job `c57dd30f-3c23-4219-820b-22503a45b5c3`, provider
+  `lm_evaluation_harness`, benchmark `ifeval` on 5 prompts, model
+  `gpt-oss-120b` through the gateway; `completed` in 12.5 s, score 1.0.
+  MLflow, read on its own side: experiment `phase1-dod` (id 1) in workspace
+  `agent-flywheel`, run `c5902a210983464286ecb1754d032f3c` `FINISHED` with
+  7 metrics and 5 params, 0 artifacts. Cost at most about 0.005 USD (5
+  answers of at most 1,280 tokens at 0.75 USD per million).
+- DoD 3, the gateway's smoke call: `gpt-oss-120b`, 200, "ready", 0.00004
+  USD (2026-10-14 09:08), after Lukas created both key Secrets (07:04 and
+  07:05 UTC) and the agent restarted the gateway.
+
+- Step 1: nothing to remove; the new cluster had no `trustyai-operator`
+  namespace and no `trustyai` or `opendatahub` CRD.
+- Step 2: Subscription in `openshift-operators` (its global OperatorGroup;
+  the CSV supports `AllNamespaces` only), `installPlanApproval: Manual` and
+  `startingCSV`, so the early-access channel cannot move the version by
+  itself. The agent approved InstallPlan `install-mc9qm` after it showed
+  exactly `opendatahub-operator.v3.6.0-ea.2`; the CSV `Succeeded`, 3
+  operator pods.
+- Step 3: `default-dsci` (`applicationsNamespace: opendatahub`, monitoring
+  `Removed`) and `default-dsc`; Ready in about a minute with
+  `DashboardReady`, `TrustyAIReady` and `MLflowOperatorReady` True. TrustyAI
+  `eval.lmeval` is required: `permitOnline: allow`, `permitCodeExecution:
+  deny`. The dashboard brings one Deployment per module, among them
+  `eval-hub-ui`, `mlflow-ui`, `gen-ai-ui`, `agent-ops-ui`.
+- Step 4, the agent's part: the dashboard is
+  `https://rh-ai.apps.cluster-nm8mw.dyn.redhatworkshops.io` (Gateway
+  `data-science-gateway` in `openshift-ingress`); without a login it
+  answers 302 to the OpenShift OAuth login. The Gateway accepts the agent's
+  Bearer token: `/api/config`, `/api/status`, `/api/components` answered
+  200. `disableLMEval: false` is set by a server-side apply of a partial
+  `OdhDashboardConfig` (field manager `agent-flywheel`); the dashboard's
+  other settings stayed. The `EvalHub` `evalhub` in `agent-flywheel`
+  (single tenancy, SQLite, the CRD's default providers) is Ready; through
+  its Route `/api/v1/health` answers `healthy` and
+  `/api/v1/evaluations/providers` lists `lm_evaluation_harness`, `garak`,
+  `garak-kfp`. Lukas's part: DoD 1.
+- Step 5, ODH's MLflow fits so far: one cluster-scoped `MLflow` (the CRD
+  allows only the name `mlflow`), run in `opendatahub` with
+  `--app-name=kubernetes-auth`, `--enable-workspaces`, the Kubernetes
+  workspace store and `--static-prefix=/mlflow`; SQLite and artifacts on a
+  20 GiB Ceph volume. Every namespace is a workspace (`agent-flywheel`
+  among them). A call without `X-MLFLOW-WORKSPACE` is refused ("Workspace
+  context is required"); with `agent-flywheel` and the agent's token it
+  answers 200. The `EvalHub` gets `MLFLOW_TRACKING_URI`
+  `https://mlflow.opendatahub.svc:8443/mlflow` through `spec.env`: the CRD's
+  `spec.mlflow` holds only a CA setting, and the operator adds the CA bundle
+  and an MLflow token itself (`controllers/evalhub/deployment.go`). A job's
+  results arrive (DoD 2): the job's `experiment` field names the MLflow
+  experiment, and the pod's sidecar forwards MLflow on `localhost:8080`.
+- Step 6: `agent-flywheel` exists (phase 0); the gateway runs (LiteLLM
+  1.99.1, `deploy/gateway/`, `config/` copied word for word) with both key
+  Secrets. Both are optional in the Deployment, so it starts without them.
+  On 2026-10-14 the EnMaaS route joined (decision 9): the alias
+  `enmaas-glm-5-3`, and `ENMAAS_KEY` from the optional Secret `enmaas`.
+  The gateway lists 9 aliases. Lukas created the Secret at 14:53 UTC; after
+  `oc rollout restart deploy/gateway` the alias answered "ok" (200, 2.1 s).
+  `scripts/enmaas/probe.py` measured what else EnMaaS serves
+  (`docs/research.md`, "EnMaaS, measured"). At 16:04 UTC the gateway
+  switched to EnMaaS alone (decision 9): the Cerebras and OpenRouter
+  aliases and their keys left the Deployment, the aliases
+  `enmaas-gpt-5-mini`, `enmaas-gpt-6-luna` and `enmaas-gpt-6-sol` joined,
+  and the hook acts only on GLM and the local engine. It lists 7 aliases.
+  Checked through the gateway: every GPT alias and GLM answer on Chat
+  Completions, Responses and Messages, with a tool and streamed, and
+  `scripts/enmaas/agent_shapes.py` sent each agent's second turn and the
+  judge's forced tool call: all answered right (`docs/research.md`, "The
+  gateway on EnMaaS"). The Secrets `cerebras` and `openrouter` stay on the
+  cluster, unread; they are Lukas's to delete.
+- How the lm-eval provider calls a model (`opendatahub-io/lm-evaluation-harness`,
+  branch `release/odh-3.6-ea2`, `main.py` `build_lmeval_config`): the
+  `local-completions` backend on `<model.url>/completions`, not chat, with
+  no chat template; the HuggingFace tokenizer from the benchmark's
+  `parameters.tokenizer`, else the model name; `parameters.num_examples`
+  limits the set. So a gateway alias needs no HF name: the job passes
+  `tokenizer: openai/gpt-oss-120b`. LiteLLM serves `/v1/completions` for the
+  Cerebras alias; with a 16-token limit the text came back empty (the
+  reasoning took 13), which `ifeval`'s 1,280 did not hit.
+- The node after phase 1: disk 58.0 GB used (54%), 48.8 GB free (45.8 GB
+  before the job: the lm-eval job image is about 12 GB); memory 20%, CPU
+  2% before the job.
+
 ### Phase 2: harness contributions
 
 In the `agent-eval-harness` fork, one branch each, in this order (section 7
@@ -282,11 +570,86 @@ has the details): C1 stop on SIGTERM, C2 price override, C3 gateway recipes
 and a workspace without `input.yaml`, C4 SDK pin, C5 OpenCode runner (only
 after astefanutti answers on PR #90), C6 trace adapters, C7 EvalHub adapter
 fixes, C8 `runner` as an ANOVA factor with reuse, C9 an `/eval-optimize`
-no-verify mode. Each: reproduce the gap first with a fake agent, then fix,
-add tests, `make test`.
+no-verify mode, C19 a reader for the task format of decision 13. Each:
+reproduce the gap first with a fake agent, then fix, add tests, `make test`.
 
 DoD: every branch green on `make test`; `flywheel-integration` merges them
 all and stays green.
+
+Status (2026-10-14, 14:10): **C1 to C4 done**, C5 to C9 not started. Run
+from this repo's session (Lukas, 2026-10-14): one subagent per branch, each
+in its own worktree in
+`~/Projects/Github/lukaskellerstein/forks/.worktrees/agent-eval-harness/`,
+all from `upstream/main` `175eed5` (2026-10-13); the agent reviewed every
+diff and ran every suite itself. C3 is split into two branches, so each PR
+stays small. Nothing is pushed; the PR drafts are in
+[`docs/pr-drafts.md`](docs/pr-drafts.md).
+
+| Branch | Head | Commits | Suite (agent's run) |
+|:--|:--|:--|:--|
+| C1 `fix/stop-on-sigterm` | `ec71b53` | 4, +546/−77 | 2303 passed; its 14 stop tests 3 of 3 runs |
+| C2 `feat/runner-price-override` | `df9e57c` | 4, +744/−24 | 2322 passed |
+| C3 `docs/gateway-recipes` | `0ca0f69` | 4, +749/−9 | 2302 passed |
+| C3 `feat/isolated-case-workspace` | `658d3f4` | 6, +692/−73 | 2306 passed |
+| C4 `chore/eval-hub-sdk-1.x` | `1bceb38` | 3, +134/−4 | 2291 passed, SDK 1.0.6 |
+| `flywheel-integration` | `62cf926` | all five merged | 2368 passed, twice; `mkdocs build --strict` clean |
+
+All with 4 skipped and 2 deselected. What each one found beyond the plan:
+
+- C1: the claude-code runner started no session of its own, so its timeout
+  killed the CLI but not its tools; a parallel run under Ctrl-C ran every
+  queued case first. The fix adds `agent_eval/agent/process_group.py`, a
+  SIGTERM/SIGHUP handler in `execute.py`, and a lifeline-pipe watchdog for
+  SIGKILL (EvalHub's local runtime cancels with `Kill(-pid, SIGKILL)`).
+- C2: spec 014's cost substrate prices OpenRouter only, so C2 adds
+  `runner.pricing` (USD per million tokens per model) and writes spec 014's
+  reserved label `harness:estimate`.
+- C3 recipes: the tests found a real bug, fixed in its own commit: Claude
+  Code labelled a gateway run `runner:reported` when the gateway URL came
+  through the `--settings` env block. Two upstream docs were wrong: an
+  `ANTHROPIC_BASE_URL` ending in `/v1`, and Codex reading `OPENAI_BASE_URL`
+  (codex-cli 0.154.0 ignores it; a provider in `runner.settings` routes it).
+- C3 workspace: `runner.workspace_mode: sealed`, opt-in, local execution
+  only; the EvalHub adapter warns. Locally only `input.yaml`,
+  `answers.yaml` and `workspace.files` sit next to the agent, not the
+  annotations; the adapter runs in the case folder itself. The agent's
+  review added one fix: the cleanup removed a temp root with `rmtree` on a
+  path read from `case_order.yaml`; it now moves nothing unless the root
+  holds only `workspace`, and removes it with `rmdir`.
+- C4: no adapter code changed for SDK 1.x; but `tests/evalhub/__init__.py`
+  shadowed the SDK under pytest, so the EvalHub tests had never run against
+  any real SDK. Removed, plus a test with the real SDK types.
+- Merging: C1 kills the agent's group by `pid`, so the codex fakes of C2
+  and C3 needed a `pid` and a stubbed `os.killpg` — one integration commit,
+  `e4413f5`. Two doc tables conflicted (C2 with C3, C2 with C3 workspace);
+  both kept both texts.
+- Found, not yet in section 7: `--runner evalhub` cannot submit a job (it
+  calls the async client without `await`, and sends an empty model URL; a
+  C7 item); case-mode costs are rounded to 2 decimals; the Claude Code
+  allowlist drops `ANTHROPIC_DEFAULT_FABLE_MODEL`; a gateway alias that
+  matches a LiteLLM model name gets that model's list price; agent judges
+  and the in-process EvalHub adapter install no stop handler.
+- The load average on the Mac reached about 106 while five suites ran; one
+  merged run failed once with an error that did not come back. Run a merge
+  twice before trusting it.
+
+- Test setup, as upstream's CI (`.github/workflows/tests.yml`): Python 3.12,
+  `uv pip install -e ".[all,test]"` into a `.venv` per worktree, then
+  `python -m pytest tests/` (what `make test` runs). Baseline on
+  `upstream/main`: 2289 passed, 4 skipped, 2 deselected (the e2e tests), in
+  99 s. The sandbox lets no model host through, so no test can spend money.
+- Upstream moved since section 7 was written: spec 014 (OpenRouter) added a
+  cost substrate (PR #228, merged 2026-09-24, `agent_eval/providers/`), so
+  C2 starts from it. The SDK pin of C4 is still `<1.0` on `175eed5`.
+- C5 waits for astefanutti on PR #90.
+- C6 to C9 started on 2026-10-14 at 16:16 UTC (Lukas's "ok"), one subagent
+  each. `upstream/main` had moved to `9bc9a8d` (v1.56.2: a judge
+  `tool_choice` fix, nothing in their files), so C6, C8 and C9 start
+  there: `feat/trace-adapters`, `feat/anova-runner-factor` (and
+  `feat/anova-cell-reuse` if reuse stands alone), `feat/optimize-no-verify`.
+  C7 is two branches stacked on C4 (`1bceb38`), because its tests need the
+  real SDK: `fix/evalhub-runner-submit` (the `--runner evalhub` bug above)
+  and `feat/evalhub-adapter-results`.
 
 ### Phase 3: EvalHub, contrib, operator
 
@@ -323,7 +686,10 @@ Port from `openshift-eval`, slimmed to use the enhanced pieces:
   from `openshift-eval` `ui/server/` (API only, no static app).
 - `deploy/`: kustomize for the namespace's parts and the BuildConfigs.
 
-This layout is a proposal; agree it with Lukas before phase 4 starts.
+This layout is a proposal; agree it with Lukas before phase 4 starts. Since
+decision 10 support is the first use case, not the only one, so the layout
+must hold any use case: in the registry of decision 11, in the format of
+decision 13, not in an image.
 
 DoD: a free smoke loop (local Gemma or the cheapest route) runs end to end
 on the cluster through EvalHub, and its MLflow records have the same shape
@@ -334,17 +700,35 @@ adjuster trace).
 
 1. **Design first.** Every new screen goes on the Design canvas for Lukas's
    review before it is built (his standing rule). The screens to carry over
-   are `openshift-eval`'s console: Evaluate (list, new, detail with the
-   release gate, one ticket, online), Benchmark (list, new with reuse and an
-   estimate, the grid), Train (list, new, run, Score and Adjust steps,
-   Brains). The Claude Design connector failed to connect on 2026-10-13
-   (403); Lukas runs `/design-login`.
-2. **Where it sits.** `agent-ops` is the dashboard's agent module: its
-   "agent" is an OpenShell `Sandbox` (`agents.x-k8s.io/v1beta1`) on the
-   AI hub › Agents page, behind the `agentOps` flag (default off). Our agents
-   are a harness plus a brain run as Jobs, so we do not join that package;
-   our pages are our own tabs on the same Agents page through the
-   `app.tab-route/tab` extension (**verify**).
+   are `openshift-eval`'s console: Dataset (tickets, knowledge base,
+   policies), Evaluate (list, new, detail with the release gate, one ticket,
+   online), Benchmark (list, new with reuse and an estimate, the grid),
+   Train (list, new, run, Score and Adjust steps, Brains). The canvas is the
+   claude.ai Design artifact
+   `https://claude.ai/artifact/UbFN6LNQjyVzq7vJBxjqTj` (private to Lukas):
+   on 2026-10-14 it holds 20 screens, those of `openshift-eval` plus five of
+   AI hub (step 2), with the dashboard's chrome copied from the live
+   `cluster-nm8mw`. Dataset and One ticket keep the layout of
+   `openshift-eval`'s Flywheel Console (Lukas, canvas comments, 2026-10-14).
+   Since decision 10 every screen shows any use case, not only tickets, a
+   knowledge base and policies: the Dataset and One ticket boards go back
+   on the canvas for that before they are built, with the words of
+   decision 12 and the versions of decision 13.
+   Each screen says which numbers are measured and which are illustrative.
+   The Claude Design connector still failed on 2026-10-14 (403); the canvas
+   does not need it.
+2. **Where it sits** (Lukas, canvas comments, 2026-10-14). Agent flywheel is
+   a subsection of Develop & train: an `app.navigation/section` with
+   `section: 'develop-and-train'` and one `app.navigation/href` per page,
+   Dataset first, then Evaluations, Benchmarks, Training and Brains, each
+   with its own title; no tab row. The dashboard nests sections (`docs/research.md`
+   section 7). Our tabs on AI hub › Agents are dropped. AI hub holds what
+   the flywheel uses instead: the agents in Agents › Catalog (C16, C17) and
+   the API models in Models › Deployments › External models, which is MaaS
+   (C18). `agent-ops`'s agent is an OpenShell `Sandbox`, a deployed runtime;
+   ours is a harness plus a brain run as Jobs, so we still do not join that
+   package. Develop & train then has two Evaluations items, EvalHub's and
+   ours one level deeper; the breadcrumb tells them apart.
 3. **The package.** `packages/agent-flywheel` in the fork, a federated
    remote shaped like `packages/eval-hub`: a frontend and a Go BFF in one
    image (`packages/<m>/Dockerfile.workspace`, built from the repo root,
@@ -365,10 +749,13 @@ adjuster trace).
    (standalone, a mocked BFF, no cluster). Then federated:
    `pnpm run dev:backend`, `pnpm run dev:frontend` and
    `make dev-start-federated` in the package, opened on `localhost:4010`;
-   this needs a cluster-admin login, so Lukas runs it. Then the cluster:
+   this needs a cluster-admin login. The agent's own identity is one
+   (phase 0 step 4); whether the dev server accepts a ServiceAccount token
+   is not checked. Then the cluster:
    `oc start-build` and a rollout.
 
-DoD: on the cluster, the dashboard shows the Agent Flywheel tabs; Lukas
+DoD: on the cluster, the dashboard shows Develop & train › Agent flywheel
+and its pages; Lukas
 starts an evaluation and a smoke training run from them; the pages show the
 same numbers as MLflow.
 
@@ -381,10 +768,16 @@ On the `flywheel-integration` branches of every fork, in this order:
    what they checked): the same MLflow runs, params, metrics and traces as
    before the switch, with fakes for the agents and the gateway.
 2. One free loop on the local Gemma with the local judge (laptop).
-3. One paid smoke run on Qwen through Cerebras, about 0.2 USD (asked first).
+3. One paid smoke run on the OpenAI model of decision 9, through EnMaaS
+   (asked first, with the cost section 10 measured).
 4. The same smoke run on the cluster, started from the dashboard module.
+5. The second use case of decision 10, after steps 1 to 4 pass for
+   support: a smoke training run of the coding use case `pyfix` on the
+   cluster, started from the dashboard module; the text-only use case
+   `copywriter` instead if time runs short. A paid run is asked for first,
+   with its cost.
 
-DoD: all four green, with the run ids written here.
+DoD: all five green, with the run ids written here.
 
 ### Phase 7: the PRs
 
@@ -403,8 +796,11 @@ ours, here or as a Red Hat AI quickstart (`github.com/rh-ai-quickstart`).
 
 ## 7. Contribution catalogue
 
-Read in upstream code on 2026-10-13. "Replaces" names what it lets us drop
-from the `openshift-eval` design.
+Read in upstream code on 2026-10-13; C16 to C18 on 2026-10-14, at
+odh-dashboard `upstream/main` `7140a4f` (`docs/research.md` section 7);
+C19 on 2026-10-14, at agent-eval-harness `upstream/main` `175eed5`
+(decision 13). "Replaces" names what it lets us drop from the
+`openshift-eval` design.
 
 | Id | Repo | Gap today (source) | Change | Replaces |
 |:--|:--|:--|:--|:--|
@@ -423,6 +819,10 @@ from the `openshift-eval` design.
 | C13 | eval-hub | The server injects `MLFLOW_WORKSPACE` into every job pod (`job_config.go:149-157`); an MLflow without workspaces refuses the header | Inject only when the probe says workspaces are on | `export_run_folder` in `score_evalhub.py` (with SDK 1.0.6 `MlflowFileArtifact`) |
 | C14 | trustyai-service-operator | The failure watcher ignores an adapter's non-zero exit (reconciler, lines 113-114) | Post `failed` when the benchmark is not terminal | A job that stays running |
 | C15 | odh-dashboard (+ maybe opendatahub-operator) | No UI for agents under test, benchmarks of harnesses, or brain training | The `agent-flywheel` module (phase 5) | `openshift-eval` `ui/` |
+| C16 | odh-dashboard (`packages/model-registry`) | The agent catalog cannot be filled from the dashboard: its empty state says "Use the OpenShift console to add agent templates to the catalog." (`AgentsCatalog.tsx:89`) | An Add agent form that writes a catalog source entry | Agents added by hand in YAML |
+| C17 | odh-dashboard (`packages/model-registry`) | A catalog `Agent` has a framework, an image (`artifacts`), env and `customProperties`, but nothing says how a harness runs it (`agentsCatalogTypes.ts:18-34`) | Agreed `customProperties` keys: runner, command, instructions file, skills folder, models; shown on the agent's page and in the Add agent form | The fixed agent list of `openshift-eval` (its runner scripts and the console's pickers) |
+| C18 | odh-dashboard (`packages/maas`) + the owner of the `ExternalModel` CRD (not checked) | A MaaS external model has no price: the form asks for project, name, provider reference and the GenAI studio checkbox only (`CreateExternalModelForm.tsx:289-402`) | A price per 1M input and output tokens on the model | The prices in `deploy/gateway/config/litellm.yaml`, if MaaS replaces the gateway; whether it can is open (Claude Code speaks Anthropic Messages, Cerebras OpenAI Chat, and LiteLLM translates today) |
+| C19 | harness | A dataset is a folder of case folders only: no reader for one file per task, JSONL or Hugging Face (`docs/research.md` section 4, "What the harness models for any use case") | A reader for the task format of decision 13: one YAML file per task or one JSONL line per task, with `id`, `split`, `tags`, `input`, `expected`, `files`; the case folders keep working | Our own import writing case folders |
 
 Not contributions: keep or revert stays ours (comment on PR #73 instead);
 `adjust_gepa.py` keeps the direct `gepa` call (decision 8); Harbor trial
@@ -457,6 +857,7 @@ here: help on the ADR, starting with the comment of section 13.
 | `ui/server/` | The console's FastAPI API | `services/flywheel-api/` |
 | `ui/web/` | The React console | The screens are the model for phase 5; the code is not reused (the dashboard uses PatternFly) |
 | `PLAN.md` sections 0, 2, 7, 8 | Every decision, measured fact and the dataset design | Read before porting a part |
+| Branch `generalization`: `docs/my-specs/03-generalization.md`, `tasks/support/`, `flywheel/task.py` | The design of one flywheel for any use case, and the support agent as its first use case | Read before porting the loop's parts of decisions 10 to 13; not committed (section 0) |
 
 ## 10. Costs and numbers
 
@@ -470,6 +871,23 @@ All measured in `openshift-eval` on Cerebras, without the judge unless said:
   the agents (`bench-4j9l7`).
 - The free route: Gemma 4 26B on Unsloth on the laptop as agent, adjuster
   and judge (`EVAL_JUDGE=local`), 0 USD.
+- The free route on the cluster: GLM 5.3 on EnMaaS (decision 9), 0 USD.
+- The OpenAI route on the cluster (decision 9), list prices in USD per
+  million tokens in and out: the agents' `gpt-5-mini` 0.25 and 2, against
+  0.99 and 1.49 for Qwen on Cerebras (`docs/research.md`, "EnMaaS,
+  measured"). So the agents cost about a quarter of the input and 1.3
+  times the output of the numbers above. The adjuster's `gpt-6-luna` and
+  the judge's `gpt-6-sol` have no list price yet; the gateway logs them at
+  `gpt-5.5`'s 5 and 30, a ceiling. Not measured yet; the first paid smoke
+  run measures it.
+- Speed on EnMaaS, tokens per second of a streamed answer
+  ([`scripts/enmaas/models.md`](scripts/enmaas/models.md)): `gpt-5.4-mini`
+  138, `gpt-5.6` 58, `claude-sonnet-5-5` 107, GLM 5.3 76 but after about
+  1,700 reasoning tokens. GPT-6 answers only under code names, with no
+  list price yet: `gpt-6-luna` 113, `gpt-6-sol` 58, `gpt-6.1-sol` 34. The
+  agents' `gpt-5-mini` 171. `openshift-eval` chose Cerebras for 500 to 800
+  tokens per second and an eval iteration of about a minute, so an
+  iteration on EnMaaS takes longer.
 
 ## 11. Risks
 
@@ -486,20 +904,36 @@ All measured in `openshift-eval` on Cerebras, without the judge unless said:
 5. **A newer harness moves the scores.** v1.56.1 fences the LLM judge's
    prompt; every run made with an older harness stops counting for benchmark
    reuse. Take a fresh v0 baseline after the switch.
+6. **Decision 10 adds work before the cluster's end.** A coding use case
+   changes what the agent may do (edit files, run a shell) and how it is
+   judged (hidden tests after the agent, a diff), which no part of this
+   plan does yet; the cluster is deleted on 2026-11-12. `copywriter` is the
+   smaller fallback (decision 10).
 
 ## 12. Verify first
 
 Read but never run on 2026-10-13; check each before relying on it:
 
-- The ODH package name, the channel and the install of 3.6.0-ea.2 on
-  OpenShift 4.22; whether a `DSCInitialization` is created for us.
 - `RELATED_IMAGE_*` overrides through the Subscription's `spec.config.env`.
 - How a new module's image reaches the dashboard-operator (section 5, the
   sixth fork).
-- The `app.tab-route/tab` extension on the Agents page.
-- ODH's MLflow with the EvalHub SDK 1.0.6 artifacts and workspaces.
-- Whether the gateway's Cerebras hook still covers every model the forks'
-  runners send.
+- A nested `app.navigation/section` contributed by a federated module. The
+  host's `NavSection.spec.tsx` tests nesting; no module does it yet.
+- ODH's MLflow with the EvalHub SDK 1.0.6 artifacts. Workspaces work
+  (phase 1 DoD 2), but that job logged no artifact.
+- Whether the real agents run clean through the gateway on EnMaaS. Each
+  agent's request shape is checked (phase 1 status, step 6), a full run of
+  Claude Code, Codex and OpenCode is not. Known limit: JSON mode
+  (`response_format: json_object`) on a GPT-6 alias needs the word "json"
+  in a user message, because the gateway sends GPT-6 through the Responses
+  API, which moves the system prompt to `instructions`; the harness's judge
+  forces a tool call instead and is not affected.
+- For decision 11: whether EvalHub's S3 init container fetches a folder
+  prefix or one object (`test_data_ref.s3` has `bucket` and `key`); if one
+  object, a use case version is also kept as one archive. And whether an
+  `ObjectBucketClaim` works on `cluster-nm8mw`: the storage class
+  `openshift-storage.noobaa.io` exists, nothing has used it yet. The bucket
+  brings an access key Secret, so ask Lukas before creating it.
 
 ## 13. Opening comments (drafts, not posted)
 

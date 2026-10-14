@@ -1,0 +1,15 @@
+# Claude Code — machine-local overrides, never committed
+.claude/settings.local.json
+
+# claude -w <name> sessions live here, one worktree each
+.worktrees/
+
+# secrets stay out of the repo — .claude/rules/12-security.md
+.env
+.envrc
+*.key
+
+# The hooks import pw.py, which leaves a bytecode cache in .claude/hooks/.
+__pycache__/
+# Snapshots and console logs of the Playwright MCP browser.
+.playwright-mcp/

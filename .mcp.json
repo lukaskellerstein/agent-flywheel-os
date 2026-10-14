@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "playwright-agent-flywheel-os": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest",
+        "--isolated",
+        "--browser",
+        "chromium"
+      ]
+    }
+  }
+}

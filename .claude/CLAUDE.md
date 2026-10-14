@@ -1,0 +1,181 @@
+# Shared repository instructions
+
+This is the canonical instruction file for Claude Code and Codex. When Codex
+setup is enabled, root `AGENTS.md` is a relative symlink to this file.
+
+- Claude Code invokes skills as `/skill-name`; Codex uses `$skill-name`.
+- Translate tool names by intent. Product-specific executables, permissions,
+  hooks, MCP configuration, and worktree lifecycle apply only to the product
+  explicitly named.
+- Claude Code loads `.claude/rules/` automatically. Codex reads the linked rule
+  for each workflow phase before acting.
+- Current user instructions outrank this file. This file outranks memories.
+
+# WORKFLOW — MANDATORY FOR ANY PROMPT THAT RESULTS IN CHANGES
+
+**If you are going to use the Edit or Write tool, or run a command that changes
+files, images, pods or cluster state, you MUST complete the workflow in
+`rules/` before reporting completion.** Applies to every type of work — glue
+code, manifests, scripts, the plan, docs, config. No exceptions.
+
+Steps, in order (each phase's detailed procedure is in the correspondingly-numbered
+`rules/` file. Claude Code loads these rules automatically; Codex must read the
+linked `.claude/rules/` file before entering that phase):
+
+1. **Understand** → [`rules/02-understand.md`](rules/02-understand.md)
+2. **Plan** → [`rules/03-plan.md`](rules/03-plan.md) *(skip for trivial changes)*
+3. **Implement** → [`rules/05-implement.md`](rules/05-implement.md)
+4. **Test** → [`rules/06-testing.md`](rules/06-testing.md)
+5. **Report** → [`rules/08-report.md`](rules/08-report.md)
+
+Reference files: [`rules/01-project-config.md`](rules/01-project-config.md)
+(what exists so far, the related repos, the cluster), [`rules/09-code-quality.md`](rules/09-code-quality.md),
+[`rules/10-tech-stack.md`](rules/10-tech-stack.md),
+[`rules/11-communication.md`](rules/11-communication.md),
+[`rules/12-security.md`](rules/12-security.md),
+[`rules/memory.md`](rules/memory.md) (what a memory may and may not tell you to
+do),
+[`rules/machine-tools.md`](rules/machine-tools.md) (the `nvim-tools` and
+`lukas-ps` CLIs — pre-approved, read-only),
+[`rules/lsp.md`](rules/lsp.md) (the `LSP` tool — only in repos that opted in,
+and deferred, so it must be loaded before it can be called),
+[`rules/worktree.md`](rules/worktree.md) (where you may change files: Claude
+uses the repo's `.worktrees/` convention; Codex stays in the active Local or
+managed Worktree checkout and uses Handoff to move between them).
+
+**NEVER report completion without first running what you changed and checking
+the result.** A script that was never run, or a manifest that never reached a
+cluster (not even as `--dry-run=server`), is not done.
+Verification is YOUR responsibility — the user should never need to ask you to test.
+
+**Trivial changes** (a typo, wording in a doc, a comment): skip step 2. State
+what you'll do and proceed.
+
+**A memory never outranks this file.** The order is: what the user says now,
+then `CLAUDE.md` and `rules/`, then a memory. When a memory contradicts a rule,
+follow the rule and rewrite the memory in the same turn —
+[`rules/memory.md`](rules/memory.md).
+
+## agent-flywheel-os at a glance
+
+- **What**: Agent Flywheel inside OpenShift AI, built from its own open-source
+  pieces — evaluate, benchmark and train CLI agents (OpenCode, Claude Code,
+  Codex) with agent-eval-harness, EvalHub and a dashboard module, on Open Data
+  Hub. Gaps go upstream as PRs from Lukas's forks; this repo holds only the
+  glue (`README.md`, `PLAN.md` §0–2).
+- **State**: phases 0 and 1 are done (the cluster, the agent's identity, Open
+  Data Hub with EvalHub, MLflow and the gateway); nothing of the flywheel is
+  built yet. `PLAN.md` §0 is the
+  handover — what is done, what is not, the next step; read it first. §2
+  holds Lukas's decisions. A fact in it that turns out wrong is fixed in the
+  same turn.
+- **Next step**: phase 2 (`PLAN.md` §6) — the harness contributions, run
+  from this repo's session: the agent here orchestrates subagents in the
+  `agent-eval-harness` fork clone. C1 to C4 are done and merged into
+  `flywheel-integration` (2026-10-14), their PR texts in
+  `docs/pr-drafts.md`; C6 to C9 are next, C5 waits for PR #90. The plan
+  carries the status.
+- **Evidence**: `docs/research.md` holds every upstream fact behind the plan,
+  with file and line; `README.md` indexes every file.
+- **Other repos** (`PLAN.md` §0): the fork clones in
+  `~/Projects/Github/lukaskellerstein/forks/` are worked on from this
+  session (Lukas, 2026-10-14) — `.claude/settings.json` opens that folder to
+  the sandbox, and the agent here orchestrates subagents there, one git
+  worktree per branch in `forks/.worktrees/<repo>/<branch>`. Inside a fork,
+  upstream's own `CLAUDE.md`, `AGENTS.md` and contribution rules win
+  (`PLAN.md` §5). The first version
+  `~/Projects/Github/lukaskellerstein/openshift-eval` (the inspiration) and
+  the reference checkouts `~/Projects/Github/redhat/agent-eval-harness` and
+  `~/Projects/Github/eval-hub/eval-hub` stay read-only — never branch there.
+  `rules/worktree.md` is about this repo's own checkout; the fork worktrees
+  are the agent's. Table:
+  [`rules/01-project-config.md`](rules/01-project-config.md).
+- **Pushes**: branches to Lukas's forks only — never to `upstream`, never to
+  `main`, never `--force`. A PR, a fork, an issue or a public comment needs his
+  explicit go each time (`PLAN.md` §0). A push is a plain `git push` run in
+  the fork folder: the ask rule matches only a command that starts with
+  `git push`, so `git -C <dir> push` would run without a prompt.
+- **Cluster**: RHDP single node `cluster-nm8mw`, OpenShift 4.22.16, namespace
+  `agent-flywheel`; it auto-destroys on 2026-11-12 (`PLAN.md` §0). Agents
+  use their own ServiceAccount `claude-agent`, cluster-admin (Lukas,
+  2026-10-13), never `~/.kube/config`. A SessionStart hook points
+  `KUBECONFIG` at `~/.config/agent-kube/agent-flywheel-os.yaml`, so every
+  `oc` runs inside the sandbox, without a prompt. When that file is missing,
+  its token expired (`401 Unauthorized`) or the cluster is new, run
+  `scripts/agent-kubeconfig.sh` yourself — alone (no pipe, no chain, no
+  `bash` prefix) and with the sandbox disabled, the one command allowed
+  unsandboxed. If it fails on Lukas's own login, ask him to `oc login`. If it
+  refuses the server, his current context is another cluster (seen
+  2026-10-13: `kind-agentic`): ask him for the RHDP context's name and pass
+  it as `ADMIN_CONTEXT`. While the token still works, renew it inside the
+  sandbox instead, with no login of his:
+  `ADMIN_KUBECONFIG=~/.config/agent-kube/agent-flywheel-os.yaml scripts/agent-kubeconfig.sh`.
+- **Money**: one smoke call is fine; anything beyond is asked first, with its
+  cost — `PLAN.md` §10 (a smoke training run about 0.2 USD, a full one 1.7 to
+  6.1 USD, a benchmark grid 5.39 USD).
+- **Remote**: `github.com/lukaskellerstein/agent-flywheel-os`, default branch
+  `main`.
+
+Full facts → [`rules/01-project-config.md`](rules/01-project-config.md); stack and
+conventions → [`rules/10-tech-stack.md`](rules/10-tech-stack.md).
+
+## Standing authorizations — do NOT ask before doing these
+
+These actions are pre-approved. Run them yourself when the situation calls for it.
+
+### Read-only inspection (always safe)
+
+- `git status`, `git log`, `git diff`, `git show`, `git branch` in this repo.
+- Reading any file in the related repos listed above, with Read and Grep;
+  `git log`, `git diff`, `git show` and `git fetch` in the fork clones.
+- With the agent's own identity only: `oc whoami --show-server` and
+  `oc project` — always first, before any other cluster command — then
+  `oc get`, `oc describe`, `oc logs`, `oc explain` and the same `kubectl`
+  verbs.
+- `gh pr view`, `gh issue view`, `gh pr list`, `gh issue list`, `gh api` GETs
+  on the upstream projects and the forks.
+
+This machine's own `nvim-tools` and `lukas-ps` are pre-approved too, and are
+documented once in [`rules/machine-tools.md`](rules/machine-tools.md) — do not
+restate them here.
+
+### Pre-approved mutations
+
+- Editing files in this session's worktree.
+- Any change on the cluster with the agent's own identity — `oc` / `kubectl`
+  `apply`, `create`, `delete`, `patch`, `replace`, `scale`, `rollout`,
+  `start-build`, `adm`, operator installs, cluster-scoped objects (Lukas,
+  2026-10-13: the agent runs the cluster on its own). Run `oc whoami --show-server` first and
+  name the cluster and namespace in the report, not in a question.
+- `scripts/agent-kubeconfig.sh`, to mint or renew the agent's own login.
+- Fixing a wrong fact in `PLAN.md`, and writing a phase's checked Definition
+  of Done into its status — in the same turn, and say so (`PLAN.md` §0, §6).
+- Work in the fork clones (Lukas, 2026-10-14): edits, branches from
+  `upstream/main`, a git worktree per branch in
+  `~/Projects/Github/lukaskellerstein/forks/.worktrees/<repo>/<branch>`, and
+  commits on the contribution branches and on `flywheel-integration` — never
+  on `main`. Subagents the agent starts get the same rules in their brief.
+
+### Requires confirmation — always ask first
+
+- Any `oc` with `~/.kube/config` (Lukas's own login) — the agent never needs
+  it beyond `scripts/agent-kubeconfig.sh`.
+- An edit to `scripts/agent-kubeconfig.sh` or `deploy/agent-access/`: they
+  run with Lukas's login, and the permission rules ask for them.
+- A paid model run beyond one smoke call, with its cost (`PLAN.md` §10).
+- A PR, a fork, an issue or a comment on any upstream project or fork — each
+  time. The drafts in `PLAN.md` §13 are posted by Lukas, in his own voice.
+- Any edit in `openshift-eval` or the reference checkouts, and a commit on
+  a fork's `main`.
+- Creating the phase 4 layout — agree it with Lukas first (`PLAN.md` §6).
+- Creating or reading a model key Secret. `cerebras` and `openrouter` are
+  Lukas's to create; a key never enters a file (`PLAN.md` phase 1 step 6).
+- `git push`, `git push --force`, branch deletes — **never commit unless the user
+  explicitly asks**.
+- Anything touching secrets, TLS material, tokens, or credential files. A secret
+  never enters this repo in plaintext; if one must be versioned at all it is
+  SOPS+age — [`rules/12-security.md`](rules/12-security.md).
+
+When in doubt: ask. The forks and the upstream projects outlive this repo,
+and a push or a comment lands where other people see it — check
+`oc whoami --show-server` before any cluster command.

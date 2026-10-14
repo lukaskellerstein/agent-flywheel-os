@@ -1,0 +1,18 @@
+# `fast-3` is the community catalog's default channel; its head was
+# 3.6.0-ea.2 on 2026-10-13 (the cluster's PackageManifest). Manual approval
+# and startingCSV hold the plan's version: an early-access channel moves, and
+# an automatic upgrade under a running stack is a surprise. The operator
+# supports AllNamespaces only, so it goes into openshift-operators, which
+# already has the global OperatorGroup.
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: opendatahub-operator
+  namespace: openshift-operators
+spec:
+  name: opendatahub-operator
+  channel: fast-3
+  source: community-operators
+  sourceNamespace: openshift-marketplace
+  installPlanApproval: Manual
+  startingCSV: opendatahub-operator.v3.6.0-ea.2

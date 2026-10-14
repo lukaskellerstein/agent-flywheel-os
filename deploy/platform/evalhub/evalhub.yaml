@@ -1,0 +1,20 @@
+# One server for agent-flywheel only (single tenancy, as in openshift-eval):
+# its job pods run here. The dashboard's eval-hub page finds it as the EvalHub
+# of the selected project.
+apiVersion: trustyai.opendatahub.io/v1
+kind: EvalHub
+metadata:
+  name: evalhub
+spec:
+  tenancy: single
+  # In memory: a restart forgets jobs and API-made providers.
+  database:
+    type: sqlite
+  # No providers list: the CRD's default mounts garak, garak-kfp and
+  # lm-evaluation-harness, the built-in ones phase 1's DoD runs.
+  env:
+    # ODH's MLflow (deploy/platform/mlflow), which serves under /mlflow. The
+    # operator adds its CA and a token; the job pods send this namespace as
+    # their MLflow workspace.
+    - name: MLFLOW_TRACKING_URI
+      value: https://mlflow.opendatahub.svc:8443/mlflow

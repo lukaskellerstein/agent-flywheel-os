@@ -1,0 +1,233 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Agent",
+      "Artifact",
+      "AskUserQuestion",
+      "Bash",
+      "BashOutput",
+      "Edit",
+      "EnterPlanMode",
+      "ExitPlanMode",
+      "Glob",
+      "Grep",
+      "KillShell",
+      "LSP",
+      "ListMcpResourcesTool",
+      "Monitor",
+      "NotebookEdit",
+      "Read",
+      "ReadMcpResourceTool",
+      "ReportFindings",
+      "ScheduleWakeup",
+      "SendMessage",
+      "Skill",
+      "TaskCreate",
+      "TaskGet",
+      "TaskList",
+      "TaskOutput",
+      "TaskStop",
+      "TaskUpdate",
+      "TodoWrite",
+      "ToolSearch",
+      "WebFetch",
+      "WebSearch",
+      "Workflow",
+      "Write",
+      "mcp__playwright-agent-flywheel-os",
+      "Bash(scripts/agent-kubeconfig.sh:*)",
+      "Bash(./scripts/agent-kubeconfig.sh:*)"
+    ],
+    "ask": [
+      "EnterWorktree",
+      "ExitWorktree",
+      "Edit(./scripts/agent-kubeconfig.sh)",
+      "Edit(./deploy/agent-access/**)",
+      "Read(./**/.env)",
+      "Read(./**/.env.local)",
+      "Read(./**/.env.production)",
+      "Read(./**/.env.staging)",
+      "Read(./secrets/**)",
+      "Read(./.secrets/**)",
+      "Read(./**/*credentials*.json)",
+      "Read(./**/serviceAccountKey.json)",
+      "Read(./**/*.pem)",
+      "Read(./**/*.key)",
+      "Read(./**/*.p12)",
+      "Read(./**/*.pfx)",
+      "Read(./**/*.jks)",
+      "Read(./**/*.keystore)",
+      "Read(./**/*.agekey)",
+      "Read(./**/keys.txt)",
+      "Read(./**/*.tfstate)",
+      "Read(./**/*.tfstate.backup)",
+      "Bash(terraform apply:*)",
+      "Bash(terraform destroy:*)",
+      "Bash(helm uninstall:*)",
+      "Bash(docker system prune:*)",
+      "Bash(git push:*)",
+      "Bash(gh pr create:*)",
+      "Bash(gh pr comment:*)",
+      "Bash(gh pr review:*)",
+      "Bash(gh pr edit:*)",
+      "Bash(gh issue create:*)",
+      "Bash(gh issue comment:*)",
+      "Bash(gh repo fork:*)"
+    ],
+    "deny": [
+      "Edit(./.git/**)"
+    ]
+  },
+  "enabledPlugins": {
+    "dev-tools-plugin@claude-my-marketplace": true
+  },
+  "hooks": {
+    "WorktreeCreate": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/worktree-create.sh\"",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "WorktreeRemove": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/worktree-remove.sh\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/worktree-guard.py\"",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/playwright-session-start.py\"",
+            "timeout": 15
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/agent-kubeconfig.sh\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/worktree-guard.py\"",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__playwright-agent-flywheel-os__browser_.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/playwright-pre.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "mcp__playwright-agent-flywheel-os__browser_.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/playwright-post.py\"",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/playwright-post.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/playwright-cleanup.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  },
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true,
+    "additionalDirectories": ["~/Projects/Github/lukaskellerstein/forks"],
+    "filesystem": {
+      "denyRead": [
+        "./**/.env",
+        "./**/*.pem",
+        "./**/*.key",
+        "./**/*.agekey",
+        "./**/keys.txt",
+        "./**/*.tfstate",
+        "./**/*credentials*.json",
+        "./**/serviceAccountKey.json"
+      ],
+      "denyWrite": [
+        "./scripts/agent-kubeconfig.sh",
+        "./deploy/agent-access"
+      ],
+      "allowWrite": [
+        "~/.config/agent-kube",
+        "~/Projects/Github/lukaskellerstein/forks",
+        "~/Library/Caches/go-build",
+        "~/Library/pnpm"
+      ]
+    },
+    "excludedCommands": [],
+    "network": {
+     "allowedDomains": [
+       "github.com", "api.github.com", "codeload.github.com",
+       "objects.githubusercontent.com", "raw.githubusercontent.com",
+       "pypi.org", "files.pythonhosted.org",
+       "proxy.golang.org", "sum.golang.org",
+       "registry.npmjs.org",
+       "api.cluster-nm8mw.dyn.redhatworkshops.io",
+       "*.apps.cluster-nm8mw.dyn.redhatworkshops.io"
+     ]
+   }
+  }
+}

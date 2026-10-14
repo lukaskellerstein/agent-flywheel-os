@@ -1,0 +1,17 @@
+# One per cluster: the CRD is cluster-scoped and allows only the name
+# `mlflow`; the operator runs it in opendatahub. Metadata in SQLite and the
+# artifacts served by the server, both on one volume. The volume is Ceph (the
+# default StorageClass), not the node's own 100 GB disk.
+apiVersion: mlflow.opendatahub.io/v1
+kind: MLflow
+metadata:
+  name: mlflow
+spec:
+  backendStoreUri: sqlite:////mlflow/mlflow.db
+  serveArtifacts: true
+  artifactsDestination: file:///mlflow/artifacts
+  storage:
+    accessModes: ["ReadWriteOnce"]
+    resources:
+      requests:
+        storage: 20Gi

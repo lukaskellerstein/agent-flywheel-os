@@ -1,0 +1,177 @@
+# The model gateway of the project: LiteLLM in front of every model route
+# (PLAN.md section 2, "Model gateway"). One file serves the cluster
+# (deploy/gateway, ConfigMap gateway-config) and the laptop (infra/compose.yaml,
+# service gateway, http://127.0.0.1:24200).
+#
+# Why a gateway: Claude Code calls /v1/messages, Codex /v1/responses and
+# OpenCode /v1/chat/completions, and EnMaaS serves each model on some of
+# them only (GPT not on Messages, Claude only on Messages); LiteLLM turns one
+# into another. Lukas's decision of 2026-10-05: every model route goes
+# through this gateway, so the agents, the judge and the adjuster name one
+# alias and the key lives in one place, never in an agent's pod. Since
+# 2026-10-14 every route is EnMaaS (PLAN.md section 2, decision 9); the
+# Cerebras and OpenRouter aliases are gone.
+#
+# No master key: the Service is a ClusterIP with no Route, like MLflow, so
+# only pods on the cluster reach it (no NetworkPolicy narrows that to the
+# namespace yet), and the compose port binds to 127.0.0.1. That holds for the
+# pinned LiteLLM 1.99.1; later builds refuse to start without a master key. Every key and every local
+# engine URL comes from the environment (Secret `enmaas` on the cluster, the
+# shell on the laptop); none has a value in this file. An alias whose key or
+# engine is missing fails when it is called, not at start.
+#
+# Prices are USD per token, so the spend LiteLLM logs matches the runners'
+# price table. OpenAI: the list prices in LiteLLM 1.99.1's own table, read
+# 2026-10-14 (docs/research.md, "EnMaaS, measured"); EnMaaS shows none. GPT-6
+# has no list price yet: a ceiling. Local models: a shadow price, so a budget
+# ceiling still trips.
+model_list:
+  # ── EnMaaS, every route (PLAN.md section 2, decision 9) ─────────────
+  # Red Hat Engineering's AI gateway, one key for every model (Lukas's key,
+  # Secret `enmaas`). EnMaaS hands an OpenAI id to OpenAI's own API, under
+  # Red Hat's organization, and its catalog lists none of them. Every model
+  # but GLM 5.3 counts against Lukas's Red Hat AI budget. The roles, Lukas's
+  # pick of 2026-10-14: the agents on gpt-5-mini, the adjuster on
+  # gpt-6-luna, the judge on gpt-6-sol, GLM for free tests.
+  #
+  # gpt-5-mini: LiteLLM knows it, so it maps max_tokens and drops what a
+  # reasoning model refuses; tools work on every route at every reasoning
+  # level (measured).
+  - model_name: enmaas-gpt-5-mini
+    litellm_params:
+      model: openai/gpt-5-mini
+      api_base: https://api.enmaas.devshift.net/v1
+      api_key: os.environ/ENMAAS_KEY
+      input_cost_per_token: 0.00000025
+      output_cost_per_token: 0.000002
+      cache_read_input_token_cost: 0.000000025
+      timeout: 600
+    model_info:
+      max_input_tokens: 272000
+      max_output_tokens: 128000
+  # GPT-6 answers only under a code name. LiteLLM 1.99.1 takes a model for a
+  # reasoning model only when "gpt-5" is in its name, so for these it sends
+  # max_tokens and temperature, which they refuse, and drops reasoning_effort
+  # (all three measured 2026-10-14). The responses/ prefix sends every route
+  # through OpenAI's Responses API, where max_tokens becomes
+  # max_output_tokens and tools work at every reasoning level; on Chat
+  # Completions GPT-6 takes tools only with reasoning_effort none. The price
+  # is a ceiling until OpenAI lists one: gpt-5.5's, the dearest GPT on
+  # EnMaaS that is not a -pro.
+  - model_name: enmaas-gpt-6-luna
+    litellm_params:
+      model: openai/responses/gpt-6-luna
+      api_base: https://api.enmaas.devshift.net/v1
+      api_key: os.environ/ENMAAS_KEY
+      input_cost_per_token: 0.000005
+      output_cost_per_token: 0.00003
+      timeout: 600
+      allowed_openai_params: ["reasoning_effort"]
+      additional_drop_params: ["temperature", "top_p"]
+  - model_name: enmaas-gpt-6-sol
+    litellm_params:
+      model: openai/responses/gpt-6-sol
+      api_base: https://api.enmaas.devshift.net/v1
+      api_key: os.environ/ENMAAS_KEY
+      input_cost_per_token: 0.000005
+      output_cost_per_token: 0.00003
+      timeout: 600
+      allowed_openai_params: ["reasoning_effort"]
+      additional_drop_params: ["temperature", "top_p"]
+  # GLM 5.3, the only model with no usage cost.
+  # Facts from the EnMaaS guide, read 2026-10-13: OpenAI chat completions at
+  # this base URL; GLM is a reasoning model, text only, with a 1M context
+  # and 65,536 output tokens; it takes no `developer` role, which the hook
+  # already folds into the system message; both penalties at 0, or it
+  # drifts into Chinese; GET /v1/models can leave it out, so the id is
+  # pinned. The cluster reaches the URL without a VPN (401 with no key,
+  # 2026-10-14). Not on the laptop's compose: this repo has none.
+  - model_name: enmaas-glm-5-3
+    litellm_params:
+      model: openai/rits/zai-org/glm-5-3
+      api_base: https://api.enmaas.devshift.net/v1
+      api_key: os.environ/ENMAAS_KEY
+      input_cost_per_token: 0
+      output_cost_per_token: 0
+      presence_penalty: 0
+      frequency_penalty: 0
+      max_tokens: 16384
+      timeout: 600
+    model_info:
+      max_input_tokens: 983040
+      max_output_tokens: 65536
+
+  # ── The local engine, the laptop only ───────────────────────────────
+  # Unsloth Studio on the host, port 8888, reached from a container as
+  # host.containers.internal (infra/compose.yaml); the cluster cannot reach
+  # it, so these aliases fail there when called. Three fast MoE models of one
+  # size, each with thinking off on both fields the engine obeys (Lukas's
+  # decision of 2026-10-06, PLAN.md section 2, "Local model"). The thinking
+  # twin and the E4B were too slow or too weak; LM Studio is not used.
+  # Unsloth needs a key and holds one model at a time: a call for another
+  # model loads it in place of the current one only when "Switch model by
+  # request" is on in its settings, else it is a 404 model_not_found.
+  #
+  # Gemma 4 26B (about 4B active): the alias is the one Lukas's own gateway
+  # uses, so the runs before this file keep their model name.
+  - model_name: unsloth-gemma4-26b-fast
+    litellm_params:
+      model: openai/unsloth/gemma-4-26B-A4B-it-qat-GGUF
+      api_base: os.environ/UNSLOTH_API_BASE
+      api_key: os.environ/UNSLOTH_API_KEY
+      input_cost_per_token: 0.00000012
+      output_cost_per_token: 0.00000035
+      max_tokens: 8192
+      timeout: 3600
+      extra_body:
+        enable_thinking: false
+        chat_template_kwargs:
+          enable_thinking: false
+    model_info:
+      max_input_tokens: 253952
+      max_output_tokens: 8192
+  # Qwen 3.6 35B-A3B (about 3B active), April 2026: the Qwen of Gemma's size.
+  # Qwen 3.8 has no MoE this small; its Flash-Next is 125B (90 GB at 3 bits).
+  # The bare repo id makes Unsloth pick UD-Q4_K_XL, 22.4 GB.
+  - model_name: unsloth-qwen36-35b-a3b-fast
+    litellm_params:
+      model: openai/unsloth/Qwen3.6-35B-A3B-GGUF
+      api_base: os.environ/UNSLOTH_API_BASE
+      api_key: os.environ/UNSLOTH_API_KEY
+      input_cost_per_token: 0.00000012
+      output_cost_per_token: 0.00000035
+      max_tokens: 8192
+      timeout: 3600
+      extra_body:
+        enable_thinking: false
+        chat_template_kwargs:
+          enable_thinking: false
+    model_info:
+      max_input_tokens: 253952
+      max_output_tokens: 8192
+  # NVIDIA Nemotron 3.5 Lightning 30B-A3B (about 3B active, Mamba-2 and MoE
+  # layers), August 2026, made for fast agent calls. UD-Q4_K_XL, 25.5 GB.
+  - model_name: unsloth-nemotron35-30b-a3b-fast
+    litellm_params:
+      model: openai/unsloth/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-GGUF
+      api_base: os.environ/UNSLOTH_API_BASE
+      api_key: os.environ/UNSLOTH_API_KEY
+      input_cost_per_token: 0.00000012
+      output_cost_per_token: 0.00000035
+      max_tokens: 8192
+      timeout: 3600
+      extra_body:
+        enable_thinking: false
+        chat_template_kwargs:
+          enable_thinking: false
+    model_info:
+      max_input_tokens: 253952
+      max_output_tokens: 8192
+
+litellm_settings:
+  drop_params: true
+  # cerebras_hook.py next to this file; PYTHONPATH points at the folder. It
+  # acts only on the aliases of engines that speak chat completions alone
+  # (GLM and the local engine): the fields it removes are Anthropic's and the
+  # Responses API's, which GPT and Claude need and get untouched.
+  callbacks: cerebras_hook.proxy_handler_instance

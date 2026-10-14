@@ -1,0 +1,18 @@
+# The coding agent's own identity on the cluster: ServiceAccount `claude-agent`,
+# cluster-admin (PLAN.md phase 0 step 4). Applied by scripts/agent-kubeconfig.sh,
+# which also mints the agent's short-lived token.
+#
+# Why its own identity: the sandbox denies ~/.kube/config (Lukas's login). With
+# an identity of its own, an agent's `oc` runs inside the sandbox, and its
+# token can be revoked without touching Lukas's. openshift-eval's version of
+# this folder grants admin in one namespace only; this one grants more, on
+# Lukas's word (2026-10-13).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: agent-flywheel
+resources:
+  - serviceaccount.yaml
+  - clusterrolebinding.yaml
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: agent-flywheel

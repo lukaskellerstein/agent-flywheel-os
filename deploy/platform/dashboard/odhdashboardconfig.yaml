@@ -1,0 +1,10 @@
+# The eval-hub module's page shows only with disableLMEval false; its default
+# is true (docs/research.md, "eval-hub at runtime").
+apiVersion: opendatahub.io/v1alpha
+kind: OdhDashboardConfig
+metadata:
+  name: odh-dashboard-config
+  namespace: opendatahub
+spec:
+  dashboardConfig:
+    disableLMEval: false

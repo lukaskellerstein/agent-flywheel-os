@@ -1,0 +1,90 @@
+# LiteLLM with config/litellm.yaml and the chat-only hook from ConfigMap
+# gateway-config. No database: no virtual keys, no spend log, one process.
+# The ConfigMap's name carries a hash, so a config change rolls the pod.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway
+  labels:
+    app: gateway
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: gateway
+  template:
+    metadata:
+      labels:
+        app: gateway
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: litellm
+          # LiteLLM 1.99.1 (main-stable of 2026-09-02), pinned by the digest of
+          # its multi-arch index, as in openshift-eval: the build the hook was
+          # measured against. Later builds refuse to start without a master key.
+          image: ghcr.io/berriai/litellm@sha256:a53a7d3ffebede1925bd3ee8a21e4a7b9b63e2e68ec883af136edcccb6eeb82c
+          imagePullPolicy: IfNotPresent
+          args:
+            - --config
+            - /app/config/litellm.yaml
+            - --port
+            - "4000"
+            - --num_workers
+            - "1"
+          env:
+            - name: HOME
+              value: /tmp
+            # cerebras_hook.py is imported as a module from the config folder.
+            - name: PYTHONPATH
+              value: /app/config
+            # The key is optional: the gateway starts without it, and an alias
+            # whose key is missing fails when it is called (config/litellm.yaml).
+            # A key read at start: a new or changed Secret needs a rollout restart.
+            # Only EnMaaS since 2026-10-14 (PLAN.md section 2, decision 9).
+            - name: ENMAAS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: enmaas
+                  key: ENMAAS_KEY
+                  optional: true
+          ports:
+            - name: http
+              containerPort: 4000
+          readinessProbe:
+            httpGet:
+              path: /health/liveliness
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health/liveliness
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          # Measured on the laptop without a database: about 0.5 to 1 GB resident.
+          resources:
+            requests:
+              cpu: 250m
+              memory: 768Mi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: config
+              mountPath: /app/config
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: gateway-config

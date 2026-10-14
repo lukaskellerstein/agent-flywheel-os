@@ -1,0 +1,15 @@
+# 3.6.0-ea.2 does not create this itself: its log says "default DSCI
+# auto-creation is disabled" (2026-10-13). Taken from the CSV's alm-examples,
+# with monitoring Removed: it needs extra operators, and the single node has
+# disk and memory for our own work first.
+apiVersion: dscinitialization.opendatahub.io/v2
+kind: DSCInitialization
+metadata:
+  name: default-dsci
+spec:
+  applicationsNamespace: opendatahub
+  monitoring:
+    managementState: Removed
+  trustedCABundle:
+    managementState: Managed
+    customCABundle: ""
