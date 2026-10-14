@@ -48,11 +48,11 @@ only if the repo carries that tool's own config file. If `:w` changes nothing an
 the gutter stays empty, the marker file is missing — not the editor broken.
 
 This repo carries no code and no marker file yet, so nothing formats or lints
-here. When phase 4 (`PLAN.md` §6) lands the first code, run
+here. When spec 02 phase 3 lands the first code, run
 `/lint-format-lsp ~/Projects/Github/lukaskellerstein/agent-flywheel-os` from a
 mac-setup session, and replace this paragraph with the resulting tool list.
 Inside the fork clones, upstream's own linters and `make` targets win
-(`PLAN.md` §5).
+(spec 01 §5).
 
 The contract, and the skill that applies it, are in mac-setup:
 `projects/tooling.md` and `/lint-format-lsp`.

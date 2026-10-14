@@ -46,7 +46,7 @@ spec:
             # The key is optional: the gateway starts without it, and an alias
             # whose key is missing fails when it is called (config/litellm.yaml).
             # A key read at start: a new or changed Secret needs a rollout restart.
-            # Only EnMaaS since 2026-10-14 (PLAN.md section 2, decision 9).
+            # Only EnMaaS since 2026-10-14 (spec 01 section 2, decision 9).
             - name: ENMAAS_KEY
               valueFrom:
                 secretKeyRef:

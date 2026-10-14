@@ -1,4 +1,4 @@
-# The EvalHub server, PLAN.md phase 1 step 4, run by ODH's TrustyAI module.
+# The EvalHub server, spec 01 phase 1 step 4, run by ODH's TrustyAI module.
 # Needs deploy/platform/dsc (trustyai Managed) and deploy/platform/mlflow.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization

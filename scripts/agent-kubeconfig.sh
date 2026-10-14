@@ -1,5 +1,5 @@
 #!/bin/bash
-# Mint the coding agent's own OpenShift credentials (PLAN.md phase 0 step 4).
+# Mint the coding agent's own OpenShift credentials (spec 01 phase 0 step 4).
 #
 # The first run needs Lukas's `oc login` (cluster-admin) in ~/.kube/config,
 # which the agent's sandbox cannot read, so it runs outside the sandbox:

@@ -8,16 +8,18 @@ description: "Reference: Technology stack — planned: Python glue, kustomize + 
      never guessed. Pin the versions that actually constrain choices; omit the
      ones that do not. Delete sections that do not apply. -->
 
-Nothing here is built yet: every line below is the plan (`PLAN.md`), not a
-manifest. When phase 4 adds `pyproject.toml` and the first code, pin the real
-versions here and drop the word "planned".
+Nothing here is built yet: every line below is the plan (the specs in
+`docs/my-specs/`), not a manifest. Section, phase and decision numbers are
+spec 01's unless spec 02 is named. When spec 02 phase 3 adds
+`pyproject.toml` and the first code, pin the real versions here and drop
+the word "planned".
 
 ## Backend (planned)
 
 - **Language**: Python — the loop, the Adjust backends and the flywheel API,
-  ported from `openshift-eval` (`PLAN.md` §4, phase 4, §9)
+  ported from `openshift-eval` (spec 01 §4, §9; spec 02 phase 3)
 - **Framework**: the flywheel API is `openshift-eval`'s `ui/server/` (FastAPI),
-  API only, no static app (phase 4)
+  API only, no static app (spec 02 phase 3)
 - **Eval**: agent-eval-harness from the fork's `flywheel-integration` branch,
   pip-installed inside the runner image (§4); one Score backend, EvalHub with
   the contrib adapter (C11). EvalHub server 1.0.2, SDK `eval-hub-sdk` 1.0.6 (§3)

@@ -3,7 +3,7 @@
 It acts only on the aliases in CHAT_ONLY (GLM 5.3 on EnMaaS and the laptop's
 local engine); every other alias, GPT and Claude on EnMaaS, passes untouched,
 because they need the Responses and Messages fields this hook removes. It was
-written for Cerebras, which the gateway no longer routes (PLAN.md section 2,
+written for Cerebras, which the gateway no longer routes (spec 01 section 2,
 decision 9); the name stays.
 
 Cerebras speaks chat completions only and validates strictly. Measured on

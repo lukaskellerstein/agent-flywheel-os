@@ -6,7 +6,7 @@ Gathered on 2026-10-13 by a Claude session in
 here), with nine research agents reading upstream code through `gh` and the
 local clones, and direct checks. **V** = verified in code, an API or a doc;
 **I** = inferred, not run. Line numbers are of upstream `main` on that day
-unless a version is named. `PLAN.md` is the plan; this file is the evidence.
+unless a version is named. The specs in `docs/my-specs/` are the plan; this file is the evidence.
 
 ## 1. Positioning: contribute, do not compete
 
@@ -90,7 +90,7 @@ product.
 Paths are in `openshift-eval`. "Why" is that repo's reason (its `PLAN.md`
 and `docs/my-specs/01-new-design.md`).
 
-| Our piece | Why we built it | Upstream today | Contribution (`PLAN.md` section 7) |
+| Our piece | Why we built it | Upstream today | Contribution (spec 01 section 7) |
 |:--|:--|:--|:--|
 | `stop_with_parent` in `eval/support/scripts/lib.sh:53` | A stop left the agents in flight running | `cli` and Codex runners kill their group only on a timeout; no SIGTERM handler; Claude Code kills the CLI only | C1 |
 | `prices.sh` and the runners' cost code | Gateway aliases have no price | Claude Code prices as Claude; Codex gets `None` for an alias | C2 |
@@ -224,7 +224,7 @@ Constitution principle II names OpenCode as an intended runner.
   per-format adapters in front of `build_trace`.
 
 **Read again on `upstream/main` `175eed5` (V, 2026-10-14, phase 2).** Each
-fact was reproduced with a failing test on that commit; `PLAN.md` phase 2
+fact was reproduced with a failing test on that commit; spec 01 phase 2
 status names the branches.
 
 - Stop: as above, plus `cursor_agent.py:588,986` has the codex shape;
@@ -280,6 +280,161 @@ status names the branches.
   which the OpenRouter plan sets (`providers/env.py:30-33`). The codex
   estimate prices an alias that matches a LiteLLM model name at that model's
   list price (`codex.py:590-592`).
+
+**Read again on `upstream/main` `9bc9a8d` (V unless marked, 2026-10-14,
+phase 2, C6 to C9).** v1.56.2; its two new commits touch the judge's
+`tool_choice` (`ed062fe`) and the release. Each fact was reproduced with a
+failing test on that commit (C7: on C4, `1bceb38`) or read in the code
+named; spec 01 phase 2 status names the branches.
+
+- Traces: `log_results.py:514-540` builds every trace with `build_trace`
+  (`trace_builder.py:180-212`, Claude Code stream-json). A Codex log gives
+  the root span only; an OpenCode log raises `TypeError` at
+  `trace_builder.py:591` (millisecond integers reach the ISO parser), which
+  stops `log_results.py:530` after the MLflow run is made. The flush at
+  `log_results.py:592-593` imports `AsyncExportQueue`, a name no MLflow
+  the package allows has (3.5.0 already calls it `AsyncTraceExportQueue`),
+  so the flush never ran and links and feedback race the trace writer: on
+  sqlite with MLflow 3.17.1 it failed 3 of 3 times, where 3.5.0 still
+  linked (C30). A
+  case-mode trace has no model on its spans (`execute.py:1432`,
+  `log_results.py:527`). Harbor traces lose a tool's output when the
+  stream-json result has no timestamp (`trace_builder.py:285`). The OpenCode
+  cookbook wrapper writes `input + cache_read` and `cache_write`
+  (`eval/opencode-smoke/scripts/run-opencode.sh:85,88`), where the harness
+  reads `input` as uncached and `cache_create`. `{config_dir}`
+  (`cli_runner.py:34`) is missing from the placeholder tables.
+- EvalHub pod: `deploy/evalhub/entrypoint.py:35` built
+  `DefaultCallbacks(job_id, benchmark_id)` without `sidecar_url` or
+  `provider_id`, so no event reached the server. The server keeps the
+  first terminal event: a later status gets 409 `job_can_not_be_updated`
+  (eval-hub `540676f`, `internal/eval_hub/storage/sql/evaluations_status.go:27`,
+  `messages/messages.go:61-65`), and `adapter.py:428` sent a metric-less
+  `COMPLETED` before `report_results`. The SDK's `report_results` posts the
+  `completed` event with the metrics itself. **I:** no pod watcher in
+  eval-hub `runtimes/k8s` or `runtimes/local`, so a crashed pod leaves its
+  job `running`. `adapter.py:116` calls `score_cases` without `run_id`, so
+  the pod's judges never see stdout, exit code or metrics (Harbor passes
+  one, `agent_eval/harbor/reward.py:222-226`). `results_mapper.py:108` puts
+  `pass_rate` in `EvaluationResult.metadata`, which the SDK never sends.
+  `runner.py:125,277`: `--timeout` defaults to `None`, so the client polls
+  forever. The SDK logs an error body at debug level only
+  (`evalhub/client/base.py:42`). **I:** `url: "vertex-ai"` fails the
+  server's `omitempty,url` rule (`pkg/api/evaluations.go:98`).
+- ANOVA: a cell missing a `thresholds:` entry exits 1 in `score.py:4188-4189`
+  after `summary.yaml` is written, and `orchestrate.py:155-160` treats it as
+  failed (reproduced in a scratch project). Input overrides are merged in
+  `_execute_per_case` only (`execute.py:1815-1822`), so batch mode ignores
+  every non-model factor, and only `input.yaml` gets them, not `input.yml`
+  or `input.json` (`workspace.py:567-573`). `_safe_id_segment`
+  (`matrix.py:179-182`) maps `a/b` and `a_b` to one run id.
+  `analyze.py:478-497` pools runs of older recipes as replications.
+- Optimize: the open optimize PR is #73 (astefanutti, based on 1.10.0),
+  not one by sanjayb-rh, who has no PR in this repo; it rewrites most of
+  `skills/eval-optimize/SKILL.md`. The skill lists judge types without
+  `agent` (`SKILL.md:82`), though `score.py:2658` emits it.
+- CI lint: `.github/workflows/lint.yml:21-24` runs the skillsaw action
+  pinned at `d252498`, which installs skillsaw 0.10.0, with `strict: 'true'`
+  (warnings fail). It warns when `AGENTS.md` (a link to `CLAUDE.md`)
+  passes 6,000 estimated tokens; `9bc9a8d` has 22,977 bytes, so about
+  1,160 bytes are left for every PR together. `.skillsaw.yaml:15` names a
+  rule that skillsaw 0.21.0 removed, so a local `uvx skillsaw` warns where
+  CI does not.
+
+**Found while C30 to C34 were built (V unless marked, 2026-10-14, not
+fixed).** Each read in the code named by the subagent of that branch, on
+`9bc9a8d` unless marked; spec 01 phase 2 status has the branches.
+
+- MLflow (C30):
+  - `trace_builder.py:56,648` set span status `STATUS_CODE_OK`, which
+    MLflow 3.5.0 rejects, so on 3.5.0 no built trace logs: the package's
+    `mlflow[genai]>=3.5` floor is too low for traces.
+  - `log_results.py:513-525, 540-541` reuse any unlinked trace whose
+    `eval_run_id` is a case id. Case ids repeat across runs, so a trace
+    the race left unlinked gets the next run's link and feedback.
+  - `log_results.py:513` reads at most 500 traces, without paging, and
+    `:515`'s `experiment_ids=` is a FutureWarning on MLflow 3.17.
+  - Multi-step cases: `execute.py:1692-1694` keeps only the last step's
+    stdout and `:1711` sums `per_model_usage` over every step, so all the
+    cost lands on the last step's spans; the case result has no `model`.
+  - `agent_eval/ci_context.py:217-226` warns `download_artifacts failed`
+    on every log-results run: the run finds itself before its snapshot is
+    uploaded.
+- EvalHub pod (C31):
+  - `score.py:224-226` reads annotations only from the dataset beside
+    `eval.yaml`. With S3 or ConfigMap delivery the pod's cases are under
+    `<tmp>/cases`, so its judges see none: a judge on `annotations['tag']`
+    scored 0.0 (reproduced).
+  - `adapter.py:375-376` uses `execution.timeout or 600` and
+    `max_budget_usd or 5.0`. The docs say 3600 s and 100 USD, and that 0
+    is honoured (`website/concepts/execution-model.md:137,139`). C7 moves
+    the lines unchanged.
+  - Pod case folders are not git repositories, so `_modified` and
+    `modified_files` (`score.py:293-313`) never exist in the pod.
+  - Harbor has the same gap as C31's first bug: its verifier writes
+    `stdout.log` but no `run_result.json` (`harbor/reward.py:225-226`,
+    `templates/test.sh.tmpl:11-16`), so judges on the exit code or metrics
+    get their defaults.
+  - C7 already fixes two more: the async client (`runner.py:131,164`) and
+    the `score.py` path built from an unresolved `__file__` (`adapter.py:98`).
+- Cost (C32):
+  - `execute.py:1101` rounds a multi-step case's cost to 4 decimals and
+    counts a step without a cost as 0; `:2016` rounds the plan run's
+    estimate to 4 decimals.
+  - Only reconcile writes `cost_usd_estimate`, under a plan: the per-case
+    result (`execute.py:1241-1258, 1432-1450`) and batch mode
+    (`:2130-2152`) drop it. So the estimate C2 keeps beside a configured
+    price is lost from `run_result.json` without a plan.
+  - Spec 014 (`spec.md:422`) names codex's price-table estimate
+    `harness:estimate`; `codex.py:245,281` writes no label. With C2 and
+    C32 merged, only a codex run on OpenAI's own API without
+    `runner.pricing` is still unlabelled, and `/eval-compare` reads it as
+    `runner:reported`.
+  - `agent_eval/prompt_backends.py:23` knows `opus`, `sonnet` and `haiku`
+    as Claude aliases, not `fable`: a judge model `fable` goes to the
+    OpenAI SDK.
+  - The cli runner contract (`docs/opaque-cli-runner-contract.md:54,72`,
+    `website/concepts/runners.md:354`) never says `input` is uncached or
+    names `cache_read` and `cache_create`, which is how the wrapper bug
+    happened.
+  - Under a plan `ANTHROPIC_DEFAULT_FABLE_MODEL` already reached the CLI,
+    through the settings overlay (`claude_code.py:715`): C32's fix is for
+    runs without a plan.
+  - **I:** the OpenCode wrapper ignores `tokens.reasoning`
+    (`run-opencode.sh:73-81`); Harbor's own Codex agent prices with
+    litellm the same way.
+- Stopping (C33, on C1 `ec71b53`):
+  - `agent_eval/hooks.py:133-145` starts hooks with
+    `start_new_session=True` and kills them only on timeout, so a stopped
+    run leaves a hook's process group running.
+  - `skills/eval-dataset/scripts/generate_synthetic.py:329,537` starts an
+    agent and installs no stop handler; nor does the Harbor verifier
+    (`harbor/reward.py:226,493`).
+  - **I:** on Kubernetes the provider is the container's PID 1 (eval-hub
+    `job_builders.go:189`), which gets no signal it has no handler for
+    (pid_namespaces(7)), so before C33 a pod's SIGTERM was dropped. Not
+    checked on a cluster.
+- ANOVA (C34, on `fix/anova-cells` `7931dca`):
+  - Case mode reads placeholders from `input.yaml` only
+    (`execute.py:1161, 1308, 1486`, `CASE_INPUT` at `:1344, 1525`,
+    `cli_runner.py:117`): an `input.yml` or `input.json` case passes
+    `{name}` and `{{ input.name }}` through as written. The override does
+    land in its file.
+  - `orchestrate.py:89-97` counts only cases with `input.yaml`, so
+    `/eval-anova` leaves out `.yml` and `.json` cases unless `--cases`
+    names them.
+  - Run ids still collide across factors: `-` is the separator and allowed
+    in a level, so `{x: a-y-b, y: c}` and `{x: a, y: b-y-c}` share one
+    (`orchestrate.py:111-123`), and so do the levels `1` and `"1"`.
+  - `workspace.py:89-96` deletes `<tmp>/agent-eval/<run-id>` when it
+    exists, and a run id carries no eval name: two evals with the same
+    levels on the same day overwrite each other's workspace.
+  - Case mode drops an override in silence when the input file is missing,
+    a symlink or not a mapping (`execute.py:1795-1813`); a test pins the
+    missing case (`tests/test_anova_orchestrator.py:212-214`).
+  - C8's reuse recipe holds `agent_eval.__version__`, not the code. On
+    `flywheel-integration`, still 1.56.2, a cell that ran before C34 with
+    an ignored factor counts as done: re-run such a matrix with `--force`.
 
 **Roadmap (V for the items).** Open: #73 optimize controls, #90 OpenCode
 runner, #109 an `agent-eval run` CLI, #200 measurement validity, #4
@@ -350,6 +505,29 @@ hand; the rest read by a subagent.
 - The examples in the repo are coding and docs tasks only
   (`eval/anova-example/`, `eval/opencode-smoke/`,
   `tests/fixtures/evalhub-smoke/`).
+- Where the dataset is read, for C19 (V, the fork's `flywheel-integration`
+  `e0e21d0`, 2026-10-14 evening): no shared loader, and no single place
+  where `dataset.path` is resolved. Thirteen non-test files name it:
+  `agent_eval/config.py`, `agent_eval/evalhub/adapter.py`, `export.py`,
+  `agent_eval/harbor/run.py`, `tasks.py`, `agent_eval/reorganize.py`,
+  `skills/eval-analyze/scripts/validate_eval.py`,
+  `skills/eval-anova/scripts/orchestrate.py`,
+  `skills/eval-mlflow/scripts/sync_dataset.py`, and in
+  `skills/eval-run/scripts/` `execute.py`, `report.py`, `score.py` and
+  `workspace.py`. Most call `config.resolve_path(config.dataset.path)`
+  (`workspace.py:62`); `execute.py:1342, 1526` read it raw, and
+  `adapter.py:644` joins it to the config's folder. They run as separate
+  processes. `workspace.py` deletes `<tmp>/agent-eval/<run-id>` when it
+  exists, then makes it again. `collect.py` and `log_results.py` walk the
+  run's `cases/`, not the dataset. Other case files reach the agent only
+  through `dataset.workspace.files`. `agent_eval/harbor/tasks.py` is the
+  one converter there: it writes case folders out as Harbor task packages.
+  The harness's `CLAUDE.md` names its first design principle
+  "Schema-driven — dataset and output structures described in natural
+  language in eval.yaml; agents and judges interpret them, scripts just
+  move files" (`:281`), with "no hardcoded field names" (`:234`). Features
+  arrive spec-driven, as `specs/NNN-<name>/` (the newest is
+  `specs/014-openrouter-provider`).
 
 ## 5. EvalHub, eval-hub-contrib, the TrustyAI operator
 
@@ -357,7 +535,14 @@ hand; the rest read by a subagent.
 `~/Projects/Github/eval-hub/eval-hub` was `540676f` (2026-10-13 07:49 UTC),
 `v1.0.2-83`, `VERSION` 1.0.3 not released, equal to upstream `main`.
 Release v1.0.2 (2026-09-18). PyPI: `eval-hub-server` 1.0.2,
-`eval-hub-sdk` 1.0.6 (2026-10-13). The upstream TrustyAI operator has no
+`eval-hub-sdk` 1.0.6 (2026-10-13). Read again 2026-10-14 evening: still no
+newer release (`v1.0.2` is `db34dc1`); upstream `main` `3f7b173` is 93
+commits after it. The cluster's server, from ODH 3.6.0-ea.2, is
+`quay.io/opendatahub/odh-eval-hub@sha256:ac217d00…`, built 2026-09-19 from
+`opendatahub-io/eval-hub` `stable` `99ff1ff` and labelled 1.0.3 (`oc image
+info` labels): its merge base with upstream `main` is `f440792`, `v1.0.2`
+plus 4 commits, 89 behind `main`. This repo pins no server version;
+`deploy/platform/evalhub/` takes ODH's. The upstream TrustyAI operator has no
 release since v1.38.0 (2025-06) and has EvalHub only on `main`; the RHOAI
 fork `red-hat-data-services/trustyai-service-operator` has `api/evalhub` on
 branches `rhoai-3.4`, `3.5`, `3.6`, not `rhoai-3.3`.
@@ -441,15 +626,71 @@ always sends `X-MLFLOW-WORKSPACE` (`mlflow.py:254-257`), which MLflow
 (`workspace_support.go:147-165`). ODH's MLflow with workspaces may remove
 the problem (I).
 
-**Small EvalHub defects (V).** `K8sRuntime` (`providers.go:115-127`) has no
-json tags, so the API drops the four resource fields the OpenAPI schema
-names (`cpu_request` and others). The local runtime ignores a provider that
+**Small EvalHub defects (V).** `K8sRuntime` (`providers.go:118-133` at
+`540676f`) has no json tags on seven fields, so the API drops the four
+resource fields the OpenAPI schema names (`cpu_request` and others). Go's
+decoder matches `image`, `entrypoint` and `env` without a tag, but the
+API then returns them as `Image`, `Entrypoint` and `Env`, while
+`docs/openapi.json` names them in lower case (I, from `encoding/json`'s
+rules, not run); `gpu` and `image_pull_policy` have tags. The local runtime ignores a provider that
 exits without a report (`local_runtime.go:414`, `_ = cmd.Wait()`). The
 operator's failure watcher deliberately ignores an adapter's non-zero exit
-(reconciler, lines 113-114). Operator #985 (`639411f`) adds the NetworkPolicy
+(`controllers/evalhub/evaluation_job_failure_reconciler.go:113-114`,
+`terminatedAdapterNeedsOperatorReport` at `:950`). Operator #985 (`639411f`) adds the NetworkPolicy
 RBAC, but its policy forbids `delete`, while `openshift-eval` saw OpenShift
 needing `delete` for the ownerReference update that `main` still makes
 (`k8s_runtime.go:396-403`; its runs `eval-4zllw`, `eval-jqhra`).
+
+**The TrustyAI operator restarts without KServe (V, `cluster-nm8mw`,
+2026-10-14 17:22 UTC; trustyai-service-operator `upstream/main`
+`4fa5c74`).** On the cluster, `trustyai-service-operator-controller-manager`
+in `opendatahub` had restarted 180 times since it started on 2026-10-13
+19:26 UTC. Each run ends with "failed to wait for trustyaiservice caches to
+sync kind source: *v1beta1.InferenceService": `serving.kserve.io/v1beta1`
+is not served, because `default-dsc` has KServe `Removed`. The
+TrustyAIService controller watches `InferenceService` with no check
+(`controllers/tas/trustyaiservice_controller.go:317`), and the manager
+exits with it, so the EvalHub controller in the same manager runs only
+between restarts. The EvalHub controller checks Kueue through discovery
+first (`controllers/evalhub/kueue_workloads_discovery.go:26`). So `default-dsc`
+flips between Ready and `Not Ready` ("Some modules are not ready:
+trustyai"); the `evalhub` pod itself stayed Running.
+
+**What C29 can reuse, and how ODH runs our images (V, 2026-10-14, 21:55
+CEST).** The operator had restarted 204 times by then. Upstream PR #899
+(merged 2026-09-03, `10710d0`, "self-heal on missing KServe CRD") added
+`isInferenceServiceCRDPresent` (`controllers/tas/inference_services.go:32`,
+used at `:239` and `:402`), but left the watch at
+`trustyaiservice_controller.go:317` without a check. The image chain on the
+cluster:
+
+1. `opendatahub-operator-controller-manager` in `openshift-operators`, from
+   the ODH CSV, carries `RELATED_IMAGE_ODH_TRUSTYAI_SERVICE_OPERATOR_IMAGE`
+   and `RELATED_IMAGE_ODH_EVAL_HUB_IMAGE` in its env.
+2. The `Platform` `default` (`config.opendatahub.io/v1alpha1`) owns
+   `trustyai-operator-module-controller-manager` in `opendatahub`; its env
+   has the same keys: the operator at
+   `quay.io/opendatahub/trustyai-service-operator@sha256:b74d2d6e…`,
+   EvalHub at `quay.io/opendatahub/odh-eval-hub@sha256:ac217d00…`.
+3. That module controller runs `trustyai-service-operator-controller-manager`,
+   which runs the `evalhub` server.
+
+So a patch on a lower level is overwritten by its owner, and an override
+belongs on the ODH operator: through the Subscription's `spec.config.env`
+(I, spec 01 section 12; not tried).
+
+**Issue rules (V, `upstream/main`, read 2026-10-14 evening).** eval-hub:
+"Before starting work, create an issue to discuss" bug reports, feature
+requests, architectural changes and questions (`CONTRIBUTING.md:112-121`).
+An architectural change (a new executor or framework, an API endpoint
+added or changed, a new dependency) needs the labels `kind/architecture`
+and `status/accepted` before implementation, and its PR is accepted only
+with them (`:123-140`). trustyai-service-operator: "All `fix` and `feat`
+commits require an associated issue. Please add link to your Github
+issue." (`CONTRIBUTING.md:102`). Its `make test` runs
+`manifests generate fmt vet envtest` (`Makefile:136`), and envtest
+downloads its binaries first (`:270-278`). Spec 02 decision 15 times these
+issues.
 
 **Use cases, data and gates in EvalHub (V, `upstream/main` `540676f`,
 2026-10-14, for decision 10).** `TestDataRef`, the collection entry, the
@@ -647,7 +888,17 @@ is `opendatahub-io/lm-evaluation-harness` (`Dockerfile.lmes-job`; the
 `local-completions` backend on `<model.url>/completions` with
 `tokenized_requests: False` and no chat template, takes the tokenizer from
 the benchmark's `parameters.tokenizer` (else the model name), and limits the
-set with `parameters.num_examples`. A job's `experiment.name` is the MLflow
+set with `parameters.num_examples`. The backend is hard-coded, with no
+parameter to choose another: `return ("local-completions", …)` at
+`main.py:621-636` on `release/odh-3.6-ea2`, and the same on `incubation`
+(the development branch, `main.py:823`, last change `ebe6a20`
+2026-10-13); `main` has no `main.py`. So the provider needs a model
+endpoint with `/completions`, which EnMaaS has not ("The gateway on
+EnMaaS"). Lukas, 2026-10-14: leave it, the flywheel does not use it. A
+change to lm-eval's `local-chat-completions` would run only its
+generation tasks (`ifeval`, `gsm8k`); **I** (lm-eval's docs, not checked
+here): loglikelihood tasks (`mmlu`, `arc`, `hellaswag`) need the logprobs
+of `/completions`. A job's `experiment.name` is the MLflow
 experiment it logs to; on 2026-10-14 job `c57dd30f…` (`ifeval`, 5 prompts)
 logged run `c5902a21…` with 7 metrics and 0 artifacts. The image adds about
 12 GB to the node's disk.
@@ -942,6 +1193,15 @@ on `cluster-nm8mw`; applied 16:04 UTC).**
   `x-ratelimit-limit-requests` 30000 and `x-ratelimit-limit-tokens`
   180000000 per minute, against 15000 and 40000000 for `gpt-5.6` and
   `gpt-6-sol`.
+- **No legacy `/v1/completions` on EnMaaS** (about 18:20 UTC, free GLM
+  calls through the gateway). `enmaas-glm-5-3` answered
+  `/v1/chat/completions` in 3.0 s ("Ok"), and `/v1/completions` with 503
+  and the OpenShift router's page "Application is not available": no
+  backend serves that path. EvalHub's lm-eval provider calls only
+  `<model.url>/completions` (its `local-completions` backend, see "How the
+  lm-eval provider calls a model" in spec 01 phase 1 status), so it has no
+  model on the cluster since the switch; spec 01's phase 1 DoD 2 ran on a
+  Cerebras alias.
 
 **Dev loop (V).** A package alone with a mocked BFF, no cluster: `cd
 packages/<pkg> && make dev-start` (eval-hub uses ports 9106 and 4002).
@@ -1021,7 +1281,7 @@ behind upstream on 2026-10-13.
   `a601ae1`, not committed on 2026-10-14) holds
   `docs/my-specs/03-generalization.md`: one flywheel for any use case
   through a "task pack" `tasks/<name>/` (its "task" is our use case, its
-  "case" our task, `PLAN.md` decision 12; `task.yaml` beside the harness's `eval.yaml`,
+  "case" our task, spec 02 decision 12; `task.yaml` beside the harness's `eval.yaml`,
   `cases/`, `splits.yaml`, `agent/` with the v0 brain and `resources/`,
   `hidden/` for what only the judges see), decided by Lukas there on
   2026-10-13 (its section 18). Its phase 1, the support agent as the first

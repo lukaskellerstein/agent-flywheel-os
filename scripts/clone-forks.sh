@@ -1,6 +1,6 @@
 #!/bin/bash
 # Clone Lukas's forks into ~/Projects/Github/lukaskellerstein/forks/, with
-# `origin` = the fork and `upstream` = the original (PLAN.md section 5).
+# `origin` = the fork and `upstream` = the original (spec 01 section 5).
 #
 #   scripts/clone-forks.sh
 #

@@ -1,4 +1,4 @@
-# Open Data Hub's platform objects, PLAN.md phase 1 step 3. Needs the CRDs of
+# Open Data Hub's platform objects, spec 01 phase 1 step 3. Needs the CRDs of
 # deploy/platform/operator, so it is applied after that one is Succeeded.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization

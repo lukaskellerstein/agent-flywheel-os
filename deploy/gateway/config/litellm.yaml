@@ -9,7 +9,7 @@
 # into another. Lukas's decision of 2026-10-05: every model route goes
 # through this gateway, so the agents, the judge and the adjuster name one
 # alias and the key lives in one place, never in an agent's pod. Since
-# 2026-10-14 every route is EnMaaS (PLAN.md section 2, decision 9); the
+# 2026-10-14 every route is EnMaaS (spec 01 section 2, decision 9); the
 # Cerebras and OpenRouter aliases are gone.
 #
 # No master key: the Service is a ClusterIP with no Route, like MLflow, so
@@ -26,7 +26,7 @@
 # has no list price yet: a ceiling. Local models: a shadow price, so a budget
 # ceiling still trips.
 model_list:
-  # ── EnMaaS, every route (PLAN.md section 2, decision 9) ─────────────
+  # ── EnMaaS, every route (spec 01 section 2, decision 9) ─────────────
   # Red Hat Engineering's AI gateway, one key for every model (Lukas's key,
   # Secret `enmaas`). EnMaaS hands an OpenAI id to OpenAI's own API, under
   # Red Hat's organization, and its catalog lists none of them. Every model

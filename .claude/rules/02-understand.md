@@ -22,4 +22,4 @@ description: "Step 1: Understand — read code, ask questions, identify gaps bef
 - **For bug reports**: reproduce the issue first (run the failing script or
   command; for a pod, `oc describe` and `oc logs` after `oc whoami --show-server`
   confirms the agent's own identity; for an upstream gap, a fake agent, as
-  `PLAN.md` phase 2 does) to confirm the problem before attempting a fix
+  spec 01 phase 2 did) to confirm the problem before attempting a fix

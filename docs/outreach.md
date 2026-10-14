@@ -56,7 +56,7 @@ More detail, for those who want it 🧵
 ```
 
 After 2026-10-13 the plan went further than this text: the UI is now a
-module of the OpenShift AI dashboard on Open Data Hub (`PLAN.md`). If the
+module of the OpenShift AI dashboard on Open Data Hub (`docs/my-specs/`). If the
 post goes out later, say that in the last paragraph.
 
 ## 3. Direct message

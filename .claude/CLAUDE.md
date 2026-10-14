@@ -62,41 +62,55 @@ follow the rule and rewrite the memory in the same turn —
   pieces — evaluate, benchmark and train CLI agents (OpenCode, Claude Code,
   Codex) with agent-eval-harness, EvalHub and a dashboard module, on Open Data
   Hub. Gaps go upstream as PRs from Lukas's forks; this repo holds only the
-  glue (`README.md`, `PLAN.md` §0–2).
-- **State**: phases 0 and 1 are done (the cluster, the agent's identity, Open
-  Data Hub with EvalHub, MLflow and the gateway); nothing of the flywheel is
-  built yet. `PLAN.md` §0 is the
-  handover — what is done, what is not, the next step; read it first. §2
-  holds Lukas's decisions. A fact in it that turns out wrong is fixed in the
-  same turn.
-- **Next step**: phase 2 (`PLAN.md` §6) — the harness contributions, run
-  from this repo's session: the agent here orchestrates subagents in the
-  `agent-eval-harness` fork clone. C1 to C4 are done and merged into
+  glue (`README.md`, spec 01 §0–2).
+- **Plan**: the specs in `docs/my-specs/` (decision 14). The active one is
+  `docs/my-specs/02-generalization.md`, one flywheel for any use case, with
+  every open step; its §0 is the handover — what is done, what is not, the
+  next step; read it first. `docs/my-specs/01-initial-implementation.md`
+  was `PLAN.md` until 2026-10-14; it is closed, with what is done marked,
+  and its §0 rules, its §2 decisions 1 to 9 and its reference sections hold
+  where spec 02 does not change them. Decisions 10 on are in spec 02 §2. A
+  fact in a spec that turns out wrong is fixed in the same turn.
+- **State**: spec 01's phases 0 and 1 are done (the cluster, the agent's
+  identity, Open Data Hub with EvalHub, MLflow and the gateway on EnMaaS),
+  and its C1 to C4, C6 to C9 and C30 to C34 are merged into `agent-eval-harness`'s
   `flywheel-integration` (2026-10-14), their PR texts in
-  `docs/pr-drafts.md`; C6 to C9 are next, C5 waits for PR #90. The plan
-  carries the status.
-- **Evidence**: `docs/research.md` holds every upstream fact behind the plan,
+  `docs/pr-drafts.md`. Nothing of the flywheel loop is built yet.
+- **Next step**: spec 02 §0, "How to start" and "The next step" — after
+  Lukas's ok to its plan, one subagent per fork clone, side by side: C29
+  then C14 (the operator), C10 then C12 (eval-hub), C19 (the harness), by
+  spec 02 §6's procedure. C13 is skipped; C5 waits for Lukas to post the
+  PR #90 comment (spec 01 §13); C11 and C20 to C28 wait for his answers to
+  spec 02 §9, which the agent asks in its first message. Status per
+  contribution: spec 02 §5.1.
+- **Evidence**: `docs/research.md` holds every upstream fact behind the specs,
   with file and line; `README.md` indexes every file.
-- **Other repos** (`PLAN.md` §0): the fork clones in
+- **Other repos** (spec 01 §0): the fork clones in
   `~/Projects/Github/lukaskellerstein/forks/` are worked on from this
   session (Lukas, 2026-10-14) — `.claude/settings.json` opens that folder to
-  the sandbox, and the agent here orchestrates subagents there, one git
-  worktree per branch in `forks/.worktrees/<repo>/<branch>`. Inside a fork,
+  the sandbox, and the agent here orchestrates subagents there. No git
+  worktrees: one checkout per repo, the branch switched in the clone
+  itself, never two subagents in one clone, and nothing created at the
+  `forks/` level (Lukas, 2026-10-14). That work needs a session started
+  with `claude --no-worktree` in this repo's main checkout: a `claude -w`
+  session cannot run git in another folder (spec 01 §0). Inside a fork,
   upstream's own `CLAUDE.md`, `AGENTS.md` and contribution rules win
-  (`PLAN.md` §5). The first version
+  (spec 01 §5). The first version
   `~/Projects/Github/lukaskellerstein/openshift-eval` (the inspiration) and
   the reference checkouts `~/Projects/Github/redhat/agent-eval-harness` and
   `~/Projects/Github/eval-hub/eval-hub` stay read-only — never branch there.
-  `rules/worktree.md` is about this repo's own checkout; the fork worktrees
-  are the agent's. Table:
+  `rules/worktree.md` is about this repo's own checkout, not the fork
+  clones. Table:
   [`rules/01-project-config.md`](rules/01-project-config.md).
 - **Pushes**: branches to Lukas's forks only — never to `upstream`, never to
   `main`, never `--force`. A PR, a fork, an issue or a public comment needs his
-  explicit go each time (`PLAN.md` §0). A push is a plain `git push` run in
+  explicit go each time (spec 01 §0). A push is a plain `git push` run in
   the fork folder: the ask rule matches only a command that starts with
   `git push`, so `git -C <dir> push` would run without a prompt.
 - **Cluster**: RHDP single node `cluster-nm8mw`, OpenShift 4.22.16, namespace
-  `agent-flywheel`; it auto-destroys on 2026-11-12 (`PLAN.md` §0). Agents
+  `agent-flywheel`; it auto-destroys on 2026-11-12, and RHDP auto-stops
+  it at a time only Lukas can move (spec 01 §0): an API that times out is
+  that first, so ask him before debugging. Agents
   use their own ServiceAccount `claude-agent`, cluster-admin (Lukas,
   2026-10-13), never `~/.kube/config`. A SessionStart hook points
   `KUBECONFIG` at `~/.config/agent-kube/agent-flywheel-os.yaml`, so every
@@ -111,7 +125,7 @@ follow the rule and rewrite the memory in the same turn —
   sandbox instead, with no login of his:
   `ADMIN_KUBECONFIG=~/.config/agent-kube/agent-flywheel-os.yaml scripts/agent-kubeconfig.sh`.
 - **Money**: one smoke call is fine; anything beyond is asked first, with its
-  cost — `PLAN.md` §10 (a smoke training run about 0.2 USD, a full one 1.7 to
+  cost — spec 01 §10 (a smoke training run about 0.2 USD, a full one 1.7 to
   6.1 USD, a benchmark grid 5.39 USD).
 - **Remote**: `github.com/lukaskellerstein/agent-flywheel-os`, default branch
   `main`.
@@ -148,13 +162,15 @@ restate them here.
   2026-10-13: the agent runs the cluster on its own). Run `oc whoami --show-server` first and
   name the cluster and namespace in the report, not in a question.
 - `scripts/agent-kubeconfig.sh`, to mint or renew the agent's own login.
-- Fixing a wrong fact in `PLAN.md`, and writing a phase's checked Definition
-  of Done into its status — in the same turn, and say so (`PLAN.md` §0, §6).
+- Fixing a wrong fact in a spec in `docs/my-specs/`, and writing a phase's
+  checked Definition of Done into its status — in the same turn, and say so
+  (spec 01 §0, §6).
 - Work in the fork clones (Lukas, 2026-10-14): edits, branches from
-  `upstream/main`, a git worktree per branch in
-  `~/Projects/Github/lukaskellerstein/forks/.worktrees/<repo>/<branch>`, and
-  commits on the contribution branches and on `flywheel-integration` — never
-  on `main`. Subagents the agent starts get the same rules in their brief.
+  `upstream/main`, switching the branch in the clone
+  `~/Projects/Github/lukaskellerstein/forks/<repo>` itself (no worktrees,
+  spec 01 §5), and commits on the contribution branches and on
+  `flywheel-integration` — never on `main`. Subagents the agent starts get
+  the same rules in their brief.
 
 ### Requires confirmation — always ask first
 
@@ -162,16 +178,20 @@ restate them here.
   it beyond `scripts/agent-kubeconfig.sh`.
 - An edit to `scripts/agent-kubeconfig.sh` or `deploy/agent-access/`: they
   run with Lukas's login, and the permission rules ask for them.
-- A paid model run beyond one smoke call, with its cost (`PLAN.md` §10).
+- A paid model run beyond one smoke call, with its cost (spec 01 §10).
 - A PR, a fork, an issue or a comment on any upstream project or fork — each
-  time. The drafts in `PLAN.md` §13 are posted by Lukas, in his own voice.
+  time. The drafts in spec 01 §13 are posted by Lukas, in his own voice.
+  Issues come with the PRs in spec 02 phase 7, not before the work
+  (spec 02 decision 15).
 - Any edit in `openshift-eval` or the reference checkouts, and a commit on
   a fork's `main`.
-- Creating the phase 4 layout — agree it with Lukas first (`PLAN.md` §6).
-- Creating or reading a model key Secret. `cerebras` and `openrouter` are
-  Lukas's to create; a key never enters a file (`PLAN.md` phase 1 step 6).
-- `git push`, `git push --force`, branch deletes — **never commit unless the user
-  explicitly asks**.
+- Creating the layout of spec 02 phase 3 — agree it with Lukas first (spec 02
+  §9, question 6).
+- Creating or reading a model key Secret. `enmaas` is Lukas's (spec 01
+  decision 9); `cerebras` and `openrouter` stay unread until he deletes
+  them. A key never enters a file (spec 01 phase 1 step 6).
+- `git push`, `git push --force`, branch deletes — **never commit in this repo
+  unless the user explicitly asks** (fork commits: § Pre-approved mutations).
 - Anything touching secrets, TLS material, tokens, or credential files. A secret
   never enters this repo in plaintext; if one must be versioned at all it is
   SOPS+age — [`rules/12-security.md`](rules/12-security.md).

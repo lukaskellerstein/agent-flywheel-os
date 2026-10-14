@@ -1,4 +1,4 @@
-# The Open Data Hub operator, PLAN.md phase 1 step 2 (decision 5). Applied
+# The Open Data Hub operator, spec 01 phase 1 step 2 (decision 5). Applied
 # first: deploy/platform/dsc needs the CRDs this one installs.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization

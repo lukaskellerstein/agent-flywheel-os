@@ -1,7 +1,7 @@
-# The model gateway, PLAN.md phase 1 step 6: LiteLLM in front of every model
+# The model gateway, spec 01 phase 1 step 6: LiteLLM in front of every model
 # route, at http://gateway:4000 in agent-flywheel. Ported from openshift-eval
 # deploy/gateway on 2026-10-13. On 2026-10-14 every route became EnMaaS
-# (PLAN.md section 2, decision 9): the Cerebras and OpenRouter aliases went,
+# (spec 01 section 2, decision 9): the Cerebras and OpenRouter aliases went,
 # and the hook acts only on chat-only engines. The local engine's aliases
 # and the hook's facts are openshift-eval's, with its paths and sections.
 #

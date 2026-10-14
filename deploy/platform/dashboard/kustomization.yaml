@@ -1,4 +1,4 @@
-# The dashboard's feature flags, PLAN.md phase 1 step 4. The dashboard creates
+# The dashboard's feature flags, spec 01 phase 1 step 4. The dashboard creates
 # odh-dashboard-config itself, once, and owns every other field, so this is a
 # partial object: apply it after deploy/platform/dsc is Ready, and only with
 #

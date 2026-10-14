@@ -21,25 +21,25 @@ can see what you intend to verify. Example:
 ## 4b. Test
 
 **Glue, manifests and scripts** — this repo has no code and no test suite yet
-(`PLAN.md` §0). Until phase 4 lands one:
+(spec 02 §0). Until spec 02 phase 3 lands one:
 
-- The current phase's Definition of Done in `PLAN.md` §6 is the test. Check
-  every item, and write the result into the plan's status.
+- The current phase's Definition of Done in the active spec (spec 02 §6) is
+  the test. Check every item, and write the result into that phase's status.
 - A script is run, not read.
 - A manifest reaches the cluster at least as
   `oc apply --dry-run=server -k <dir>`, after `oc whoami --show-server` shows
   the agent's own identity. The agent then applies it for real itself
   (cluster-admin, `CLAUDE.md` § Pre-approved mutations).
 
-When phase 4 lands a test command, it goes here.
+When spec 02 phase 3 lands a test command, it goes here.
 
 **UI changes** — drive the dashboard with Playwright: the federated dev server
-on `http://localhost:4010` (`PLAN.md` phase 5 step 6), or the dashboard's route
+on `http://localhost:4010` (spec 01 phase 5 step 6), or the dashboard's route
 on the cluster once phase 1 has installed it.
 
 **The dashboard sits behind a login — read this before you open the browser.**
-On the cluster it opens through ODH's Gateway login (`PLAN.md` phase 1 step 4).
-You have your own identity — the `claude-agent` ServiceAccount of `PLAN.md`
+On the cluster it opens through ODH's Gateway login (spec 01 phase 1 step 4).
+You have your own identity — the `claude-agent` ServiceAccount of spec 01
 phase 0 step 4 — and nothing else. **Never fill in the sign-in form, never ask
 the user for a password, and never read one out of SOPS.** A login page on your
 screen means you took the human's path; back out. The Gateway is a reverse
@@ -66,7 +66,7 @@ only once the app's auth probe has been served.
 
 1. Confirm the dashboard is up (`curl -sI <url>` answers). If it is not, do not
    start it from here: the dev servers run in the `odh-dashboard` clone, and
-   the federated one needs a cluster-admin login, so Lukas runs it (`PLAN.md`
+   the federated one needs a cluster-admin login, so Lukas runs it (spec 01
    phase 5 step 6). Ask him.
 2. Open a browser with the configured Playwright MCP `browser_navigate` tool, go to the
    relevant page, and verify the change is visible **and** functional — take a

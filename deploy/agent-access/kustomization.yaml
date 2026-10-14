@@ -1,5 +1,5 @@
 # The coding agent's own identity on the cluster: ServiceAccount `claude-agent`,
-# cluster-admin (PLAN.md phase 0 step 4). Applied by scripts/agent-kubeconfig.sh,
+# cluster-admin (spec 01 phase 0 step 4). Applied by scripts/agent-kubeconfig.sh,
 # which also mints the agent's short-lived token.
 #
 # Why its own identity: the sandbox denies ~/.kube/config (Lukas's login). With

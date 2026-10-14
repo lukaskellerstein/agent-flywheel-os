@@ -6,12 +6,15 @@ agent-eval-harness, EvalHub and a module of the OpenShift AI dashboard, on
 Open Data Hub. The changes to those projects are built on Lukas's forks and
 sent upstream as PRs; this repo holds the glue.
 
-Start with [`PLAN.md`](PLAN.md), section 0. The first version, which this one
+Start with the active spec,
+[`docs/my-specs/02-generalization.md`](docs/my-specs/02-generalization.md),
+section 0. The first version, which this one
 is built from, is `~/Projects/Github/lukaskellerstein/openshift-eval`.
 
 | File | What it holds |
 |:--|:--|
-| [`PLAN.md`](PLAN.md) | The plan: decisions, architecture, phases with their Definition of Done, contributions, risks |
+| [`docs/my-specs/01-initial-implementation.md`](docs/my-specs/01-initial-implementation.md) | Spec 01, closed 2026-10-14 (it was `PLAN.md`): decisions 1 to 9, architecture, phases with their Definition of Done and what is done, contributions C1 to C19 and C30 to C34, risks |
+| [`docs/my-specs/02-generalization.md`](docs/my-specs/02-generalization.md) | Spec 02, the active plan: one flywheel for any use case, decisions 10 on, the registry of use cases, contributions C19 to C29, every open step of spec 01 |
 | [`docs/research.md`](docs/research.md) | The evidence: what each upstream project does today, with file and line |
 | [`docs/outreach.md`](docs/outreach.md) | The Slack post to Red Hat colleagues, its fact-check, the blog fixes |
 | [`docs/pr-drafts.md`](docs/pr-drafts.md) | The PR texts for the fork branches, not posted, and the order they must land in |
