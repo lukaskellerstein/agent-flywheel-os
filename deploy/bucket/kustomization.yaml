@@ -4,6 +4,13 @@
 # Secret (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY), both named like the
 # claim. The flywheel API reads both as env; the key is never printed and
 # never enters a file. The bucket dies with the cluster (spec 02 risk 3).
+#
+# EvalHub's init container reads a job's test data with that Secret and
+# needs two more keys in it, both non-empty (decision 18). NooBaa owns the
+# Secret, so they are added after the claim is Bound, not here:
+#
+#   oc patch secret flywheel-usecases -n agent-flywheel --type merge -p \
+#     '{"stringData":{"AWS_DEFAULT_REGION":"us-east-1","AWS_S3_ENDPOINT":"http://s3.openshift-storage.svc:80"}}'
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: agent-flywheel

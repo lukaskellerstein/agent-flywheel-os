@@ -26,6 +26,10 @@ spec:
       labels:
         app.kubernetes.io/name: flywheel-api
     spec:
+      # The Service flywheel-api would put FLYWHEEL_API_PORT=tcp://… into
+      # the pod, the name of the API's own port setting (it crashed on
+      # 2026-10-16). Nothing here uses service links.
+      enableServiceLinks: false
       securityContext:
         runAsNonRoot: true
         seccompProfile:
