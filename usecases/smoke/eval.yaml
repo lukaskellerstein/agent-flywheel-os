@@ -1,0 +1,77 @@
+# The smoke evaluation (spec 02 decision 19): Codex answers each question
+# from the knowledge base, and one deterministic judge is the reward, so no
+# judge calls a model. The job's model name (enmaas-glm-5-3) reaches Codex
+# as --model, through the cluster's LiteLLM gateway. GLM 5.3, not
+# gpt-5-mini: EnMaaS stopped serving GPT on 2026-10-16 (decision 19).
+name: smoke
+description: A product support agent answering questions over resources/kb
+
+execution:
+  mode: case
+  prompt: |
+    You answer product questions for a {product} user. Use only the
+    knowledge base in resources/kb/ and the files beside this prompt.
+    Question: {question}
+    Write your answer, in at most three sentences, to output/answer.md.
+  # GLM 5.3 takes about 26 s to its first token and reasons at length.
+  timeout: 900
+
+models:
+  skill: enmaas-glm-5-3
+
+runner:
+  type: codex
+  # The pod is the boundary: Codex's own workspace-write sandbox needs
+  # kernel features a restricted OpenShift pod does not always give.
+  permission_mode: bypassPermissions
+  settings:
+    model_provider: gateway
+    model_providers:
+      gateway:
+        name: gateway
+        base_url: http://gateway.agent-flywheel.svc:4000/v1
+        env_key: OPENAI_API_KEY
+        wire_api: responses
+    # Codex has no metadata for a gateway alias.
+    model_context_window: 128000
+  env:
+    # The gateway takes no key inside the cluster; Codex still wants the
+    # variable its provider names to be set.
+    OPENAI_API_KEY: gateway-takes-no-key
+
+dataset:
+  path: tasks
+  schema: |
+    One task per file in tasks/: input.question (the user's question) and
+    input.product; expected.must_mention lists the facts the answer names.
+    A task's own files (a screen capture) sit beside the prompt.
+  workspace:
+    # A string here is a path in each task's own folder; a file every task
+    # shares is a {dest, source} pair.
+    files:
+      - dest: resources/kb
+        source: resources/kb
+
+outputs:
+  - path: output
+    schema: output/answer.md holds the answer, in markdown
+
+judges:
+  - name: must_mention
+    description: The answer mentions every expected fact
+    check: |
+      text = (outputs.get("output_content") or "").strip()
+      if not text:
+          return False, "no answer in output/answer.md"
+      answer = text.lower().replace(",", "")
+      expected = outputs.get("annotations", {}).get("must_mention", [])
+      missing = [fact for fact in expected
+                 if fact.lower().replace(",", "") not in answer]
+      if missing:
+          return False, "missing: " + ", ".join(missing)
+      return True, "mentions every expected fact"
+
+reward:
+  weights:
+    must_mention: 1
+  gate: false

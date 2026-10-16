@@ -1,0 +1,9 @@
+id: export-data
+split: validation
+tags: [data, attachment]
+input:
+  question: The export button in the attached screen does nothing. Why?
+  product: Reports
+expected:
+  must_mention: [CSV, 10000 rows]
+files: [screen.txt]

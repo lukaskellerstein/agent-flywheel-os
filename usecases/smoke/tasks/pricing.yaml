@@ -1,0 +1,6 @@
+tags: [billing]
+input:
+  question: Is the Console free for small teams?
+  product: Console
+expected:
+  must_mention: [five seats]

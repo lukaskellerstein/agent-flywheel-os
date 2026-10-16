@@ -1,0 +1,11 @@
+# The smoke use case (spec 02 decision 19): three product questions over a
+# two-article knowledge base, scored by one deterministic judge, so the
+# first EvalHub job costs only the agent's model calls. Its tasks and files
+# are the flywheel API's test fixture.
+title: "Smoke: product questions"
+description: Answers short product questions over a knowledge base; the smoke test of an evaluation.
+
+task:
+  label: question
+  prompt: question
+  show: [product]
