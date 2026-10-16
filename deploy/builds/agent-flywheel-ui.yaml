@@ -1,0 +1,34 @@
+# Our dashboard module `agent-flywheel` (spec 02 phase 5), from the
+# odh-dashboard fork's `feat/agent-flywheel-module`, which starts at
+# upstream `37dc648`: the commit ODH 3.6.0-ea.2's dashboard host runs, so
+# the module loads React, PatternFly and ui-core from that host. The
+# frontend and the Go BFF in one image, built from the repo root with
+# `packages/agent-flywheel/Dockerfile.workspace`; every build arg keeps its
+# default. Our dashboard-operator deploys it from the tag `:latest`
+# (`manifests/modules/agent-flywheel/params.env` on that branch), so a new
+# build reaches the pod only when the pod is deleted.
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: agent-flywheel-ui
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: agent-flywheel-ui
+spec:
+  source:
+    type: Binary
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: packages/agent-flywheel/Dockerfile.workspace
+  # The root `npm ci` peaks at about 2 GiB (measured by the module's
+  # subagent, 2026-10-16).
+  resources:
+    limits:
+      memory: 4Gi
+  output:
+    to:
+      kind: ImageStreamTag
+      name: agent-flywheel-ui:latest

@@ -1,0 +1,31 @@
+# The dashboard-operator from the odh-dashboard fork's
+# `feat/agent-flywheel-module` (upstream `37dc648`, the commit ODH
+# 3.6.0-ea.2 runs, plus the `agentFlywheel` module in `modules.go`, its
+# manifests and its feature flag). ODH runs it through the Subscription's
+# `RELATED_IMAGE_ODH_DASHBOARD_OPERATOR_IMAGE` (deploy/platform/operator).
+# Its own `dashboard-operator/Dockerfile`, from the repo root.
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: dashboard-operator
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: dashboard-operator
+spec:
+  source:
+    type: Binary
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: dashboard-operator/Dockerfile
+  # 2Gi was killed for memory on 2026-10-16: `go build -a` runs one compile
+  # per CPU, and the node has 32.
+  resources:
+    limits:
+      memory: 8Gi
+  output:
+    to:
+      kind: ImageStreamTag
+      name: dashboard-operator:agent-flywheel

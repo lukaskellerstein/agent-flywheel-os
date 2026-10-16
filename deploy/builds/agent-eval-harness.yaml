@@ -1,0 +1,26 @@
+# The harness's own base image, from the fork's `flywheel-integration`, with
+# its `deploy/Containerfile`: UBI 9 Python 3.12, Node, git, the Claude Code
+# and Codex CLIs, and the harness's `agent_eval/` and `skills/` on
+# PYTHONPATH. No OpenCode: our runner image adds it (spec 02 phase 3 step
+# 4). The EvalHub adapter (C11, agent-eval-harness-adapter.yaml) builds on
+# top of this tag.
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: agent-eval-harness
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: agent-eval-harness
+spec:
+  source:
+    type: Binary
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: deploy/Containerfile
+  output:
+    to:
+      kind: ImageStreamTag
+      name: agent-eval-harness:flywheel-integration

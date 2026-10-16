@@ -1,0 +1,35 @@
+# The right our EvalHub server build needs that ODH 3.6.0-ea.2's TrustyAI
+# module does not grant. Our build (eval-hub `flywheel-integration`
+# `4315523`) creates a NetworkPolicy beside each job
+# (`internal/eval_hub/runtimes/k8s/k8s_helper.go:279-307`), and ODH renders
+# the ClusterRole `trustyai-service-operator-evalhub-jobs-writer` from its
+# own older manifests, with `batch/jobs` only; the first job failed on it
+# on 2026-10-16 19:35 CEST. The rule is the operator's own, in
+# `config/components/evalhub/rbac/evalhub_jobs_writer_role.yaml` at our
+# operator build `e4ddb1a` and at upstream `main`, plus `delete`: the
+# server then sets the job as the policy's owner, and OpenShift lets only a
+# caller that may delete an object set its ownerReferences (the second job
+# failed on that, 19:36 CEST; upstream's role lacks it too). ODH owns and
+# resets its own roles, so this sits in a role of ours, in this namespace
+# only. Drop it when ODH ships an operator that grants all four.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: agent-flywheel-evalhub-jobs-networkpolicies
+rules:
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["networkpolicies"]
+    verbs: ["create", "get", "update", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: agent-flywheel-evalhub-jobs-networkpolicies
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: agent-flywheel-evalhub-jobs-networkpolicies
+subjects:
+  - kind: ServiceAccount
+    name: evalhub-service
+    namespace: agent-flywheel

@@ -1,0 +1,21 @@
+# Our builds of the fork clones' `flywheel-integration`, spec 02 phase 2
+# step 1. Binary builds, so nothing is pushed anywhere: the agent uploads a
+# commit with `oc start-build <bc> --from-repo=<clone> --commit=<sha>`, and
+# ODH runs the result through the Subscription's RELATED_IMAGE_* env
+# (deploy/platform/operator).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: agent-flywheel
+resources:
+  - trustyai-service-operator.yaml
+  - eval-hub.yaml
+  - agent-flywheel-ui.yaml
+  - dashboard-operator.yaml
+  - agent-eval-harness.yaml
+  - agent-eval-harness-adapter.yaml
+  - image-puller.yaml
+  - trustyai-operator-rbac.yaml
+  - evalhub-jobs-rbac.yaml
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: agent-flywheel

@@ -1,0 +1,23 @@
+# The TrustyAI operator from the fork's `flywheel-integration` (C29, C14).
+# Its own Dockerfile, as ODH's image is built: ubi9 go-toolset, then
+# ubi-minimal.
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: trustyai-service-operator
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: trustyai-service-operator
+spec:
+  source:
+    type: Binary
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: Dockerfile
+  output:
+    to:
+      kind: ImageStreamTag
+      name: trustyai-service-operator:flywheel-integration

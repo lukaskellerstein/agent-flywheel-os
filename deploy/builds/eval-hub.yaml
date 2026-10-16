@@ -1,0 +1,27 @@
+# The EvalHub server from the fork's `flywheel-integration` (C10, C12). One
+# image holds the server and the job pods' sidecar and init binaries.
+# The Containerfile's build args keep their defaults: `oc start-build`
+# drops `--build-arg` for a binary build ("not supported"). So GIT_HASH is
+# empty, and the server's start log and info API name no commit (eval-hub
+# `cmd/eval_hub/main.go:181`, `handlers/info.go:39`). The commit is the
+# build's `Binary@<sha>`, and the Subscription pins the image's digest.
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: eval-hub
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: eval-hub
+spec:
+  source:
+    type: Binary
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: Containerfile
+  output:
+    to:
+      kind: ImageStreamTag
+      name: eval-hub:flywheel-integration

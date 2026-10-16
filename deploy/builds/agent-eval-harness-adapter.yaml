@@ -1,0 +1,32 @@
+# The EvalHub adapter for agent-eval-harness (C11), from the
+# eval-hub-contrib fork's `flywheel-integration`. Its Containerfile takes
+# its base as `ARG BASE_IMAGE`; a binary build drops `--build-arg`, so
+# `dockerStrategy.from` sets the base to our harness image
+# (agent-eval-harness.yaml). The build runs the adapter's offline smoke
+# test (a fake agent, no network), so a finished build is phase 2's DoD
+# item 3. The context is the adapter's folder, as its Containerfile copies
+# relative paths.
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: agent-eval-harness-adapter
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: agent-eval-harness-adapter
+spec:
+  source:
+    type: Binary
+    contextDir: adapters/agent-eval-harness
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: Containerfile
+      from:
+        kind: ImageStreamTag
+        name: agent-eval-harness:flywheel-integration
+  output:
+    to:
+      kind: ImageStreamTag
+      name: agent-eval-harness-adapter:flywheel-integration

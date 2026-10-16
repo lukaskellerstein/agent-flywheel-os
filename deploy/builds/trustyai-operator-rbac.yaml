@@ -1,0 +1,35 @@
+# The rights our operator build needs that ODH 3.6.0-ea.2's TrustyAI module
+# does not grant. Our build is upstream `main`, newer than ODH's (upstream
+# `bc112d3`, 2026-09-18): its EvalHub and LMES controllers watch
+# NetworkPolicies, and the EvalHub failure watcher lists Events. Without
+# these the caches never sync and the manager exits after two minutes, as it
+# did with our image at 2026-10-15 01:24 CEST. The rules are upstream's own
+# at `2a28e81` (`controllers/evalhub/evalhub_controller.go:61`,
+# `controllers/lmes/lmevaljob_controller.go:176`,
+# `controllers/evalhub/evaluation_job_failure_reconciler.go:107`). ODH owns
+# and resets its own roles, so these sit in a role of ours. Drop it when ODH
+# ships an operator this new.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: agent-flywheel-trustyai-operator-upstream
+rules:
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["networkpolicies"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: agent-flywheel-trustyai-operator-upstream
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: agent-flywheel-trustyai-operator-upstream
+subjects:
+  - kind: ServiceAccount
+    name: trustyai-service-operator-controller-manager
+    namespace: opendatahub
