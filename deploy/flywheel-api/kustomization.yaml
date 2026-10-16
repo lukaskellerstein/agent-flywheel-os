@@ -1,0 +1,18 @@
+# The flywheel API with the registry of use cases, spec 02 phase 3 step 2
+# (decision 17): `services/flywheel-api/`, built on the cluster, at
+# http://flywheel-api.agent-flywheel.svc:8080 for the dashboard module's
+# BFF (spec 01 decision 6). No Route.
+#
+# It reads the bucket claim `flywheel-usecases` (deploy/bucket/) as env: the
+# ConfigMap names the bucket, the Secret holds its key. Apply deploy/bucket/
+# first; the key is never copied into a file here.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: agent-flywheel
+resources:
+  - build.yaml
+  - deployment.yaml
+  - service.yaml
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: agent-flywheel

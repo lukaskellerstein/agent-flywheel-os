@@ -1,0 +1,9 @@
+# generateBucketName keeps the bucket's name unique on NooBaa; the real
+# name is the ConfigMap's BUCKET_NAME.
+apiVersion: objectbucket.io/v1alpha1
+kind: ObjectBucketClaim
+metadata:
+  name: flywheel-usecases
+spec:
+  generateBucketName: flywheel-usecases
+  storageClassName: openshift-storage.noobaa.io

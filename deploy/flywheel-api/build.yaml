@@ -1,0 +1,27 @@
+# The API's image, from this repository's `services/flywheel-api/`. A binary
+# build, so nothing is pushed anywhere: upload one commit of this repo with
+#   oc start-build flywheel-api --from-repo=<this repo> --commit=<sha>
+# The build context is the commit's `services/flywheel-api/`, which holds
+# the Containerfile, pyproject.toml and uv.lock. A finished build moves the
+# tag, and the Deployment's image trigger rolls the pod onto it.
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: flywheel-api
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: flywheel-api
+spec:
+  source:
+    type: Binary
+    contextDir: services/flywheel-api
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: Containerfile
+  output:
+    to:
+      kind: ImageStreamTag
+      name: flywheel-api:latest

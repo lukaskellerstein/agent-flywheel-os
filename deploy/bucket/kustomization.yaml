@@ -1,0 +1,14 @@
+# The registry's bucket, spec 02 phase 3 step 1 (decision 17): one
+# ObjectBucketClaim on the cluster's NooBaa. NooBaa answers it with a
+# ConfigMap (BUCKET_HOST, BUCKET_NAME, BUCKET_PORT, BUCKET_REGION) and a
+# Secret (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY), both named like the
+# claim. The flywheel API reads both as env; the key is never printed and
+# never enters a file. The bucket dies with the cluster (spec 02 risk 3).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: agent-flywheel
+resources:
+  - bucket-claim.yaml
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: agent-flywheel

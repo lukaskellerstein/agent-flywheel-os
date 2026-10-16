@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: flywheel-api
+  labels:
+    app.kubernetes.io/name: flywheel-api
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: flywheel-api
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

@@ -1,0 +1,88 @@
+# One replica, replaced, never two at once: the registry serialises the
+# writes to a use case inside its process (services/flywheel-api,
+# registry.py), so two pods could both write the same version number.
+#
+# The image is the ImageStream tag of build.yaml; the trigger annotation
+# swaps in its digest and rolls the pod after each build. Until the first
+# build the pod waits in ImagePullBackOff.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flywheel-api
+  labels:
+    app.kubernetes.io/name: flywheel-api
+  annotations:
+    image.openshift.io/triggers: >-
+      [{"from":{"kind":"ImageStreamTag","name":"flywheel-api:latest"},"fieldPath":"spec.template.spec.containers[?(@.name==\"api\")].image"}]
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: flywheel-api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: flywheel-api
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: api
+          image: image-registry.openshift-image-registry.svc:5000/agent-flywheel/flywheel-api:latest
+          # The claim's ConfigMap (BUCKET_HOST, BUCKET_PORT, BUCKET_NAME,
+          # BUCKET_REGION) and Secret (AWS_ACCESS_KEY_ID,
+          # AWS_SECRET_ACCESS_KEY), both named like the claim. boto3 reads
+          # the key from env; the API never prints it. A new or rotated key
+          # needs a rollout restart.
+          envFrom:
+            - configMapRef:
+                name: flywheel-usecases
+            - secretRef:
+                name: flywheel-usecases
+          env:
+            # NooBaa's S3 inside the cluster, plain HTTP, so no CA bundle.
+            # It wins over BUCKET_HOST and BUCKET_PORT (443, HTTPS with the
+            # service CA), which the claim's ConfigMap gives.
+            - name: S3_ENDPOINT_URL
+              value: http://s3.openshift-storage.svc:80
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          # An import holds the use case in memory, at most 256 MiB, and the
+          # version before it (services/flywheel-api, files.py).
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            # Uploads spool here, and a git import clones here.
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 2Gi
