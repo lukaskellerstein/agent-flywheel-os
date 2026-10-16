@@ -1,5 +1,8 @@
 # The eval-hub module's page shows only with disableLMEval false; its default
-# is true (docs/research.md, "eval-hub at runtime").
+# is true (docs/research.md, "eval-hub at runtime"). agentFlywheel turns on
+# our own module (spec 02 phase 5); the field exists only in the CRD our
+# dashboard-operator applies (deploy/builds/dashboard-operator.yaml), and
+# the API server drops it in silence before that.
 apiVersion: opendatahub.io/v1alpha
 kind: OdhDashboardConfig
 metadata:
@@ -8,3 +11,4 @@ metadata:
 spec:
   dashboardConfig:
     disableLMEval: false
+    agentFlywheel: true

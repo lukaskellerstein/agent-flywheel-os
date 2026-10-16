@@ -16,3 +16,27 @@ spec:
   sourceNamespace: openshift-marketplace
   installPlanApproval: Manual
   startingCSV: opendatahub-operator.v3.6.0-ea.2
+  # Our builds (deploy/builds), spec 02 phase 2 step 2. OLM puts this env on
+  # the ODH operator, which hands it to the TrustyAI module; a patch further
+  # down is overwritten by its owner. Pinned by digest: the commit is in the
+  # build's `Binary@<sha>`. A change here restarts the ODH operator, which
+  # reconciles every module.
+  config:
+    env:
+      # trustyai-service-operator `flywheel-integration` e4ddb1a (C29, C14),
+      # with the roles of deploy/builds/trustyai-operator-rbac.yaml.
+      - name: RELATED_IMAGE_ODH_TRUSTYAI_SERVICE_OPERATOR_IMAGE
+        value: image-registry.openshift-image-registry.svc:5000/agent-flywheel/trustyai-service-operator@sha256:1f8777089688cfb6cb25de10d64609524307d47229891b02a41d6c43b3b8009f
+      # eval-hub `flywheel-integration` 4315523 (C10, C12, C28). The operator
+      # puts it in the EvalHub server, and the server in its job pods' init
+      # and sidecar containers; all of them run in agent-flywheel, beside the
+      # image.
+      - name: RELATED_IMAGE_ODH_EVAL_HUB_IMAGE
+        value: image-registry.openshift-image-registry.svc:5000/agent-flywheel/eval-hub@sha256:84c90e81893efd8cbd0f2a3dd8e9e6663ca5b577e0e4dee9e5404c8a59ed6642
+      # odh-dashboard `feat/agent-flywheel-module` e98380b86 (upstream
+      # 37dc648, the commit ODH 3.6.0-ea.2's dashboard runs, plus our module
+      # agentFlywheel). It deploys our module from the ImageStream tag
+      # agent-flywheel-ui:latest, which its bundle's params.env names, since
+      # ODH passes it no key for a new module.
+      - name: RELATED_IMAGE_ODH_DASHBOARD_OPERATOR_IMAGE
+        value: image-registry.openshift-image-registry.svc:5000/agent-flywheel/dashboard-operator@sha256:9c4f279748a6a1a2f4cce0120b197b96a888903da7c3440111e1ad3680f5bce3
