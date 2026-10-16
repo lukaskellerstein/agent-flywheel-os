@@ -1,0 +1,19 @@
+# A small use case written by hand for the tests: product questions answered
+# over a two-article knowledge base, under a style guide only the judges read.
+title: Product questions
+description: Answers short product questions over a knowledge base.
+
+task:
+  label: question
+  prompt: question
+  show: [product]
+
+brain:
+  max_skills: 2
+
+adjuster:
+  role: a product support agent
+  causes:
+    - missing fact
+    - wrong article
+  hidden: The style guide is not in the workspace.

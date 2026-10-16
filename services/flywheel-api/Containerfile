@@ -1,0 +1,26 @@
+# The flywheel API (spec 02 phase 3), built on the cluster by the binary
+# BuildConfig in deploy/flywheel-api/, with this folder as its context.
+#
+# UBI 9 Python 3.12 of 2026-09-28, pinned by the digest of its multi-arch
+# index. It runs as 1001 (any UID of group 0 on OpenShift) and ships git
+# (s2i-base), which a git import runs. The dependencies are uv.lock's,
+# exported with their hashes and installed into the image's own venv
+# (/opt/app-root); uv is used only for the export and leaves the image after.
+FROM registry.access.redhat.com/ubi9/python-312:9.8-1790570578@sha256:e6a10c3150624fbfd33dbd7721ef99ce7a1001b417d64427ad58515ab8044121
+
+WORKDIR /opt/app-root/src
+COPY --chown=1001:0 pyproject.toml uv.lock ./
+RUN pip install --no-cache-dir uv==0.11.15 \
+ && UV_PYTHON_DOWNLOADS=never uv export --frozen --no-dev --no-emit-project --output-file /tmp/requirements.txt \
+ && pip install --no-cache-dir --require-hashes -r /tmp/requirements.txt \
+ && pip uninstall --yes uv \
+ && rm /tmp/requirements.txt
+
+COPY --chown=1001:0 flywheel_api ./flywheel_api
+
+USER 1001
+ENV FLYWHEEL_API_HOST=0.0.0.0 \
+    FLYWHEEL_API_PORT=8080 \
+    PYTHONDONTWRITEBYTECODE=1
+EXPOSE 8080
+CMD ["python", "-m", "flywheel_api"]

@@ -1,0 +1,32 @@
+[project]
+name = "flywheel-api"
+version = "0.1.0"
+description = "The flywheel API: the registry of use cases in S3 (spec 02 phase 3)"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "boto3==1.43.106",
+    "fastapi==0.142.2",
+    "pydantic==2.13.5",
+    "python-multipart==0.0.32",
+    "pyyaml==6.0.3",
+    "uvicorn==0.54.0",
+]
+
+[dependency-groups]
+dev = [
+    "httpx2==2.13.1",
+    "moto[s3]==5.2.3",
+    "pytest==9.1.1",
+]
+
+# An application, not a library: uv installs its dependencies only, and the
+# code runs from this folder (`python -m flywheel_api`). The lock takes no
+# release newer than exclude-newer, so a fresh, unproven release never slips
+# in with a transitive dependency; move the date forward to upgrade.
+[tool.uv]
+package = false
+exclude-newer = "2026-10-01T00:00:00Z"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

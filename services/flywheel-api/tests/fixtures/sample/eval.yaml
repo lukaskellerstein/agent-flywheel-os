@@ -1,0 +1,23 @@
+name: product-questions
+description: A product support agent answering questions over resources/kb
+
+execution:
+  mode: case
+  arguments: "{question}"
+
+dataset:
+  path: tasks
+  workspace:
+    files: [resources]
+
+judges:
+  - name: must_mention
+    description: The answer mentions every expected fact
+    check: |
+      answer = outputs.get("files", {}).get("answer.md", "")
+      missing = [f for f in annotations.get("must_mention", []) if f not in answer]
+      return not missing, f"missing: {missing}"
+
+  - name: style
+    description: The answer follows the style guide
+    context: [hidden/style.md]
