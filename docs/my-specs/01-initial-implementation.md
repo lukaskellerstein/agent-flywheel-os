@@ -4,7 +4,10 @@
 spec 02). Reopened the same evening for phase 2's C30 to C34, the upstream
 bugs found while C1 to C9 were built (Lukas: "I would rather fix the 13
 bugs now", `ok` to the plan), and closed again at 19:40 UTC with them
-done. Done: ✅ phase 0, ✅ phase 1 (with the gateway on EnMaaS, decision
+done. A second round, the gaps found while C30 to C34 were built,
+started at 20:56 UTC and moved to spec 02 as C35 to C39 at about 21:50 UTC
+(Lukas: none of it has to be done before spec 02, so it belongs there);
+phase 2 status has what it did. Done: ✅ phase 0, ✅ phase 1 (with the gateway on EnMaaS, decision
 9), and in phase 2 ✅ C1 to C4, C6 to C9 and C30 to C34;
 re-checked on 2026-10-14 between 19:10 and 19:25 CEST (the status of each
 phase). Every open step (C5, C19, phases 3 to 8) and decisions 10 to 13
@@ -553,7 +556,7 @@ the agent with its own identity. Each part is a folder of
   before the job: the lm-eval job image is about 12 GB); memory 20%, CPU
   2% before the job.
 
-### Phase 2: harness contributions ✅ (C5 and C19 → spec 02 phase 1)
+### Phase 2: harness contributions ✅ (C5, C19 and the second round, C35 to C39 → spec 02 phase 1)
 
 In the `agent-eval-harness` fork, one branch each, in this order (section 7
 has the details): C1 stop on SIGTERM, C2 price override, C3 gateway recipes
@@ -693,7 +696,24 @@ All with 4 skipped and 2 deselected. What each one found beyond the plan:
   `fix/mlflow-traces`, `fix/evalhub-pod`, `fix/cost-figures` and
   `fix/anova-cells` from `upstream/main` `9bc9a8d`, `fix/stop-handlers`
   stacked on C1, whose stop handling it reuses. The 13th, an ANOVA cell
-  without a `thresholds:` entry, is left to spec 02's C20.
+  that misses a threshold counting as failed, was left to spec 02's C20;
+  the second round below fixes the bug.
+- Second round, started 20:56 UTC: the gaps of `docs/research.md`
+  section 4, "Found while C30 to C34 were built", fixed on the branch that
+  owns each area, one subagent at a time in the clone (no worktrees):
+  MLflow on C30, then cost on C32, ANOVA on C34 and C8, the EvalHub pod and
+  Harbor on C31, stopping on C33 and the optimize skill on C9. The 13th
+  bug comes with it: a cell that misses a threshold counts as failed
+  (C20's feature part stays in spec 02). Not in it: lm-eval on
+  `/completions` (Lukas: leave it), Harbor's own Codex agent (Harbor's
+  repo), C33's line for C7's pool (needs C1 and C7 together), and
+  skillsaw 0.21.0's removed rule (CI pins 0.10.0).
+  At 21:35 UTC, before a laptop restart, step 1 had committed 6 of its 7
+  gaps (`fix/mlflow-traces` `2a48c71`, not checked or merged). Lukas then
+  moved the whole round to spec 02, as C35 to C39: nothing in it has to be
+  done before spec 02 starts, since spec 02 phase 1 is harness work in the
+  same clone and phase 3, the first real run, comes after it. Spec 02
+  section 5 holds the items, their state and the merge notes.
 - C30 to C34 ran from 18:53 to 19:40 UTC. What each one found beyond the
   plan:
   - C30: the flush had imported a class that no MLflow since 3.5.0 has,
@@ -723,7 +743,7 @@ All with 4 skipped and 2 deselected. What each one found beyond the plan:
     a gateway, with no litellm estimate beside it (a new test in the merge
     commit `1e7868b`); three C2 tests now run on OpenAI's own API, as they
     meant. `e0e21d0` takes C7's scoring function with C31's run arguments.
-  - Found on the way, not fixed: the gaps in `docs/research.md`
+  - Found on the way, now spec 02's C35 to C39: the gaps in `docs/research.md`
     section 4, "Found while C30 to C34 were built". Three are on the
     flywheel's path: the EvalHub pod's judges see no annotations with S3
     or ConfigMap delivery; the pod's defaults are 600 s and 5 USD, not the
@@ -734,7 +754,7 @@ All with 4 skipped and 2 deselected. What each one found beyond the plan:
   3.5.0 has, so links and feedback race the trace writer; case-mode traces
   carry no model; the pod's judges never see the case's stdout or exit
   code (`score_cases` without `run_id`); `--runner evalhub` waits forever
-  without `--timeout`; an ANOVA cell missing a `thresholds:` entry counts
+  without `--timeout`; an ANOVA cell that misses a threshold counts
   as failed; input overrides work in case mode only; two levels can map to
   one run id; the OpenCode cookbook wrapper counts cache reads twice.
 

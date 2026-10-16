@@ -37,8 +37,10 @@ Write clean code from the start. Follow these rules during implementation:
 - **A new top-level folder needs a home in a spec.** The ones a phase
   already names are approved with that phase: `scripts/agent-kubeconfig.sh`
   and `deploy/agent-access/` (spec 01 phase 0 step 4), `scripts/clone-forks.sh`
-  (spec 01 §5, the README). The rest of the layout is agreed with Lukas
-  before spec 02 phase 3 starts (spec 02 §9, question 6). When a folder lands, add a
+  (spec 01 §5, the README), `deploy/builds/` (spec 02 phase 2). The rest
+  of the layout (`services/flywheel-api/`, `flywheel/`, `images/runner/`,
+  `usecases/support/`, the rest of `deploy/`) is agreed for spec 02 phase
+  3 (spec 02 decision 16); any other folder is asked first. When a folder lands, add a
   section for it here: what belongs in it, and what must not.
 
 ## `docs/` — the plan, the evidence and the history
@@ -84,6 +86,33 @@ Write clean code from the start. Follow these rules during implementation:
 - Not here: code the loop or the API needs. That waits for the layout of
   spec 02 phase 3.
 
+## `services/` — our own services
+
+- `flywheel-api/` — spec 02 phase 3 step 2: the registry of use cases
+  (decision 11) and its API (decision 16 question 2), FastAPI on S3. One
+  Python project with its own `pyproject.toml`, `uv.lock` and
+  `Containerfile`; the code in `flywheel_api/`, small modules (the task
+  format and its checks, the use case's files, versions and their diff,
+  the store, the import sources, the routes); the offline tests in
+  `tests/`. It joins S3, EvalHub and MLflow, which is why it is ours
+  (spec 02 section 4.5); a check the harness can hold goes upstream
+  instead (C26). One replica: the writes to a use case are serialised in
+  its process.
+- Not here: code an upstream project can hold, and any key. The bucket's
+  key reaches the pod as env from the claim's Secret, and git runs with
+  an environment that leaves it out.
+
+## `usecases/` — use cases in the task format
+
+- `smoke/` (spec 02 decision 19): three product questions, one
+  deterministic judge as the reward, Codex through the cluster's gateway;
+  the first EvalHub job's test data. `support/` follows (phase 3 step 5).
+  A use case reaches the cluster only through the flywheel API's import,
+  which makes it a fixed version in the bucket. Check one offline first
+  with the harness's `validate_eval.py config` and `workspace.py`.
+- Not here: the API's test fixtures (`services/flywheel-api/tests/`), and
+  any key: a model key never enters `eval.yaml`.
+
 ## `deploy/` — kustomize for the cluster
 
 - `agent-access/` — the agent's identity, applied only by
@@ -101,7 +130,29 @@ Write clean code from the start. Follow these rules during implementation:
   must pass the hook untouched: `cerebras_hook.py` acts only on the
   prefixes in its `CHAT_ONLY`. After a change, run
   `scripts/enmaas/agent_shapes.py` against the gateway.
-- Not here yet: the flywheel Jobs and the API. They land with spec 02 phase 3.
+- `builds/` — spec 02 phase 2 step 1: ImageStreams and binary
+  BuildConfigs for the fork clones (the TrustyAI operator, the EvalHub
+  server, the harness's base image and the EvalHub adapter on top of it,
+  from each `flywheel-integration`; our dashboard module and our
+  dashboard-operator from odh-dashboard's `feat/agent-flywheel-module`,
+  phase 5), and the pull right ODH's `opendatahub` namespace needs for
+  them. A build that a binary upload cannot give its args to sets them in
+  the BuildConfig (`dockerStrategy.from` for the adapter's base). A build uploads one commit with
+  `oc start-build <bc> --from-repo=<clone> --commit=<sha>`, never a
+  working tree with changes nobody committed. No push to any registry
+  outside the cluster.
+- `bucket/` — spec 02 phase 3 step 1 (decision 17): the ObjectBucketClaim
+  `flywheel-usecases` on the cluster's NooBaa. NooBaa answers it with a
+  ConfigMap and a Secret of the same name; pods take them with `envFrom`,
+  and nothing here holds or copies a key. Deleting the claim deletes the
+  bucket and every use case version in it.
+- `flywheel-api/` — the API of `services/flywheel-api/` on the cluster:
+  an ImageStream and a binary BuildConfig whose context is that folder
+  (`oc start-build flywheel-api --from-repo=<this repo> --commit=<sha>`),
+  a Deployment with an image trigger that takes the bucket claim's
+  ConfigMap and Secret with `envFrom`, and a ClusterIP Service on 8080. No
+  Route: the dashboard module's BFF calls it inside the cluster.
+- Not here yet: the flywheel Jobs. They land with spec 02 phase 3.
 
 ## Repository structure
 
@@ -113,6 +164,9 @@ agent-flywheel-os/
 ├── deploy/
 │   ├── agent-access/ the agent's ServiceAccount and its RBAC
 │   ├── platform/     Open Data Hub: operator, DSC, dashboard flags, MLflow, EvalHub
+│   ├── builds/       our images of the forks, built on the cluster
+│   ├── bucket/       the registry's S3 bucket claim
+│   ├── flywheel-api/ the API's build, Deployment and Service
 │   └── gateway/      LiteLLM, every model alias and price
 ├── docs/
 │   ├── my-specs/     the plan: 01 closed, 02 active — read its section 0 first
@@ -120,6 +174,8 @@ agent-flywheel-os/
 │   ├── outreach.md   the Slack post drafts
 │   ├── pr-drafts.md  the PR texts for the fork branches
 │   └── archive/      the first spec, as history
+├── services/
+│   └── flywheel-api/ the registry of use cases and its API (FastAPI, S3)
 └── scripts/
     ├── agent-kubeconfig.sh  the agent's own cluster login
     ├── clone-forks.sh       the fork clones

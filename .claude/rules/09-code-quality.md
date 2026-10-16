@@ -47,10 +47,11 @@ This machine runs "no config, no tool": a formatter or linter acts on this repo
 only if the repo carries that tool's own config file. If `:w` changes nothing and
 the gutter stays empty, the marker file is missing — not the editor broken.
 
-This repo carries no code and no marker file yet, so nothing formats or lints
-here. When spec 02 phase 3 lands the first code, run
+The first code landed on 2026-10-16 (`services/flywheel-api/`, Python), but
+the repo carries no marker file yet, so nothing formats or lints here:
+`nvim-tools` reports every tool `gated-off`. Lukas runs
 `/lint-format-lsp ~/Projects/Github/lukaskellerstein/agent-flywheel-os` from a
-mac-setup session, and replace this paragraph with the resulting tool list.
+mac-setup session; then replace this paragraph with the resulting tool list.
 Inside the fork clones, upstream's own linters and `make` targets win
 (spec 01 §5).
 

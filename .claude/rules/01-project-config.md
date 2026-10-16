@@ -27,16 +27,19 @@ description: Project configuration — architecture, paths, dev environment
   plan: `01-initial-implementation.md` closed, `02-generalization.md`
   active; `research.md`, the evidence with file and line; `outreach.md`, the
   Slack post drafts; `pr-drafts.md`, the PR texts for the fork branches;
-  `archive/`, the first spec as history). No code yet.
+  `archive/`, the first spec as history), and the first code,
+  `services/flywheel-api/` (the registry of use cases and its API, spec 02
+  phase 3, 2026-10-16), deployed by `deploy/flywheel-api/` on the bucket of
+  `deploy/bucket/`.
   Spec 01 phase 0 step 4 adds `scripts/agent-kubeconfig.sh` and `deploy/agent-access/`;
   the README names `scripts/clone-forks.sh`; decision 9 adds
   `scripts/enmaas/` (the probe, the gateway check, the measured models). The rest of the layout
-  (`services/flywheel-api/`, `flywheel/`, `images/runner/`,
-  `usecases/support/`, the rest of `deploy/`) is a proposal to agree
-  with Lukas before spec 02 phase 3 starts (spec 02 §9, question 6)
-- **Build / run / test**: none yet. Until code lands, the Definition of Done of
-  the current phase in spec 02 §6 is the test, and its result is written
-  into that phase's status before the next phase starts
+  (`flywheel/`, `images/runner/`, `usecases/support/`, the rest of
+  `deploy/`) is agreed (spec 02 decision 16) and lands with spec 02 phase 3
+- **Build / run / test**: the flywheel API's pytest suite
+  (`rules/06-testing.md`). For the rest, the Definition of Done of the
+  current phase in spec 02 §6 is the test, and its result is written into
+  that phase's status before the next phase starts
 
 ## Related repos
 

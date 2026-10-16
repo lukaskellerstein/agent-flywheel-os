@@ -14,7 +14,7 @@ is built from, is `~/Projects/Github/lukaskellerstein/openshift-eval`.
 | File | What it holds |
 |:--|:--|
 | [`docs/my-specs/01-initial-implementation.md`](docs/my-specs/01-initial-implementation.md) | Spec 01, closed 2026-10-14 (it was `PLAN.md`): decisions 1 to 9, architecture, phases with their Definition of Done and what is done, contributions C1 to C19 and C30 to C34, risks |
-| [`docs/my-specs/02-generalization.md`](docs/my-specs/02-generalization.md) | Spec 02, the active plan: one flywheel for any use case, decisions 10 on, the registry of use cases, contributions C19 to C29, every open step of spec 01 |
+| [`docs/my-specs/02-generalization.md`](docs/my-specs/02-generalization.md) | Spec 02, the active plan: one flywheel for any use case, decisions 10 on, the registry of use cases, contributions C19 to C29 and C35 to C39, every open step of spec 01 |
 | [`docs/research.md`](docs/research.md) | The evidence: what each upstream project does today, with file and line |
 | [`docs/outreach.md`](docs/outreach.md) | The Slack post to Red Hat colleagues, its fact-check, the blog fixes |
 | [`docs/pr-drafts.md`](docs/pr-drafts.md) | The PR texts for the fork branches, not posted, and the order they must land in |
@@ -26,4 +26,9 @@ is built from, is `~/Projects/Github/lukaskellerstein/openshift-eval`.
 | [`scripts/agent-kubeconfig.sh`](scripts/agent-kubeconfig.sh) | Mints the agent's own cluster login: applies `deploy/agent-access`, writes `~/.config/agent-kube/agent-flywheel-os.yaml` |
 | [`deploy/agent-access/`](deploy/agent-access/) | The agent's identity: ServiceAccount `claude-agent`, cluster-admin |
 | [`deploy/platform/`](deploy/platform/) | Open Data Hub 3.6.0-ea.2: the operator, the DSC, the dashboard's flags, ODH's MLflow, the EvalHub server |
+| [`deploy/builds/`](deploy/builds/) | Our images of the fork clones, built on the cluster with binary BuildConfigs: the TrustyAI operator, the EvalHub server, the harness's base image, the EvalHub adapter (C11), our dashboard module and dashboard-operator; and the rights our newer operator and EvalHub builds need, which ODH's own roles lack |
+| [`services/flywheel-api/`](services/flywheel-api/) | The flywheel API: the registry of use cases in S3, import by upload or from git, fixed versions with their diff (spec 02 phase 3) |
+| [`deploy/flywheel-api/`](deploy/flywheel-api/) | The API on the cluster: its BuildConfig, Deployment and Service, no Route |
+| [`usecases/smoke/`](usecases/smoke/) | The smoke use case: three product questions, one deterministic judge, Codex through the gateway; the first EvalHub job's test data (spec 02 decision 19) |
+| [`deploy/bucket/`](deploy/bucket/) | The registry's S3 bucket: one ObjectBucketClaim on the cluster's NooBaa, `flywheel-usecases` (spec 02 phase 3) |
 | [`deploy/gateway/`](deploy/gateway/) | The LiteLLM model gateway, ported from `openshift-eval`, with every model alias and price; every route on EnMaaS since 2026-10-14 |

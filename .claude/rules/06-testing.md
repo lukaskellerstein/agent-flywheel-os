@@ -31,7 +31,21 @@ can see what you intend to verify. Example:
   the agent's own identity. The agent then applies it for real itself
   (cluster-admin, `CLAUDE.md` § Pre-approved mutations).
 
-When spec 02 phase 3 lands a test command, it goes here.
+**The flywheel API** (`services/flywheel-api/`, spec 02 phase 3) has its
+own pytest suite, offline (S3 through `moto`, git against a local
+repository):
+
+```bash
+cd services/flywheel-api
+UV_PROJECT_ENVIRONMENT="$TMPDIR/flywheel-api-venv" uv sync --frozen
+"$TMPDIR/flywheel-api-venv/bin/python" -m pytest -q
+```
+
+An agent keeps that venv outside the repo: the sandbox refuses to delete
+or replace any `*.pem` in this repo, and botocore ships one, so an upgrade
+in `services/flywheel-api/.venv` breaks halfway (2026-10-16). Run it twice
+before a report. `uv lock --check` shows the lock still matches
+`pyproject.toml`.
 
 **UI changes** — drive the dashboard with Playwright: the federated dev server
 on `http://localhost:4010` (spec 01 phase 5 step 6), or the dashboard's route
@@ -46,9 +60,16 @@ screen means you took the human's path; back out. The Gateway is a reverse
 proxy (kube-auth-proxy), and it accepts that ServiceAccount's Bearer token:
 the dashboard's `/api/config`, `/api/status` and `/api/components` answered
 200 with it on 2026-10-13, at `https://rh-ai.apps.cluster-nm8mw.dyn.redhatworkshops.io`.
-So the first row of the table below applies. Whether the whole page renders
-with the header alone is not checked yet; until it is, a page that does not
-render is Lukas's to open — say so and hand him the click.
+So the first row of the table below applies, and the whole page renders
+with the header alone: our module's pages did on 2026-10-16, with the user
+menu showing `system:serviceaccount:agent-flywheel:claude-agent`. Never put
+the token in a tool call's arguments, where the transcript keeps it. Write
+it with `(umask 077; oc whoami -t > <scratchpad>/sa-token)`; in
+`browser_run_code_unsafe` (it has no `fs` and no `import`) open that file
+in a second page, read its text, close that page, set the header with
+`page.context().setExtraHTTPHeaders`, then `goto`; return nothing that
+holds the token, and delete the file after `browser_close`. Screenshots go
+to `.playwright-mcp/` (gitignored); the MCP server refuses the scratchpad.
 [`12-security.md`](12-security.md) § You have your own identity is the
 authority, and it beats any memory that tells you otherwise.
 

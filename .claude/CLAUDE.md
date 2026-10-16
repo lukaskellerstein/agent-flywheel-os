@@ -75,13 +75,18 @@ follow the rule and rewrite the memory in the same turn —
   identity, Open Data Hub with EvalHub, MLflow and the gateway on EnMaaS),
   and its C1 to C4, C6 to C9 and C30 to C34 are merged into `agent-eval-harness`'s
   `flywheel-integration` (2026-10-14), their PR texts in
-  `docs/pr-drafts.md`. Nothing of the flywheel loop is built yet.
-- **Next step**: spec 02 §0, "How to start" and "The next step" — after
-  Lukas's ok to its plan, one subagent per fork clone, side by side: C29
-  then C14 (the operator), C10 then C12 (eval-hub), C19 (the harness), by
-  spec 02 §6's procedure. C13 is skipped; C5 waits for Lukas to post the
-  PR #90 comment (spec 01 §13); C11 and C20 to C28 wait for his answers to
-  spec 02 §9, which the agent asks in its first message. Status per
+  `docs/pr-drafts.md`. Spec 02's C29 and C14 (the operator), C10 and C12
+  (eval-hub), and C35 to C39 and C19 (the harness) are merged into each
+  fork's `flywheel-integration` (2026-10-15); our operator and EvalHub
+  images run on the cluster (`deploy/builds/`). Nothing of the flywheel
+  loop is built yet.
+- **Next step**: spec 02 §0, "The next step" — Lukas's go 2026-10-16,
+  running: C20 to C26 (the harness, one at a time, C20 and C21 first),
+  C28 (eval-hub), C27 (the dashboard), then C11 (contrib), one subagent
+  per fork clone, by spec 02 §6's procedure; beside it the fast path to
+  our UI (decision 17): the Design canvas, phase 3's flywheel API and
+  registry, then phase 5's module. C13 is skipped; C5 waits for
+  Lukas to post the PR #90 comment (spec 01 §13). Status per
   contribution: spec 02 §5.1.
 - **Evidence**: `docs/research.md` holds every upstream fact behind the specs,
   with file and line; `README.md` indexes every file.
@@ -185,8 +190,8 @@ restate them here.
   (spec 02 decision 15).
 - Any edit in `openshift-eval` or the reference checkouts, and a commit on
   a fork's `main`.
-- Creating the layout of spec 02 phase 3 — agree it with Lukas first (spec 02
-  §9, question 6).
+- A top-level folder beyond the layout Lukas agreed for spec 02 phase 3
+  (spec 02 decision 16).
 - Creating or reading a model key Secret. `enmaas` is Lukas's (spec 01
   decision 9); `cerebras` and `openrouter` stay unread until he deletes
   them. A key never enters a file (spec 01 phase 1 step 6).
