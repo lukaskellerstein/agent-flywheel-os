@@ -242,6 +242,18 @@ class Evaluations:
             raise Invalid(f"the gateway no longer routes {model!r}")
         return model
 
+    def _runner(self, agent: dict) -> dict:
+        """The agent's runner block with the gateway's price of each model it
+        may use (runner.pricing): Claude Code prices tokens at Anthropic's
+        rates and Codex not at all, so without it a run's cost is wrong or empty."""
+        prices = {model["name"]: model for model in self.agents.gateway.models()}
+        pricing = {
+            name: {"input_per_mtok": prices[name]["price_input"], "output_per_mtok": prices[name]["price_output"]}
+            for name in agent["models"]
+            if name in prices and None not in (prices[name]["price_input"], prices[name]["price_output"])
+        }
+        return {**runner_block(agent), **({"pricing": pricing} if pricing else {})}
+
     def _job(
         self, name: str, number: int, split: str | None, agent: dict, model: str, config: Mapping[str, Any]
     ) -> dict:
@@ -257,7 +269,7 @@ class Evaluations:
         benchmark = {
             "id": BENCHMARK,
             "provider_id": self.settings.provider,
-            "parameters": {**({"split": split} if split else {}), "runner": runner_block(agent)},
+            "parameters": {**({"split": split} if split else {}), "runner": self._runner(agent)},
             "test_data_ref": test_data,
         }
         job: dict[str, Any] = {

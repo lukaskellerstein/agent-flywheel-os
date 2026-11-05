@@ -170,7 +170,12 @@ CLAUDE = {
     "models": ["enmaas-glm-5-3"],
     "default_model": "enmaas-glm-5-3",
 }
-CODEX_RUNNER = CODEX["runner"]
+# The gateway fixture's prices of the agents' models, per million tokens.
+PRICING = {
+    "enmaas-glm-5-3": {"input_per_mtok": 0, "output_per_mtok": 0},
+    "enmaas-gpt-5-mini": {"input_per_mtok": 0.25, "output_per_mtok": 2.0},
+}
+CODEX_RUNNER = {**CODEX["runner"], "pricing": PRICING}
 
 
 def _service(tmp_path, evalhub, mlflow) -> TestClient:
@@ -270,7 +275,10 @@ def test_another_agent_brings_its_own_runner_block(client, evalhub):
     response = client.post("/api/usecases/sample/evaluations", json={"agent": "claude-code"}, headers=AUTH)
     assert response.status_code == 201, response.text
     body = evalhub.calls[0][4]
-    assert body["benchmarks"][0]["parameters"]["runner"] == CLAUDE["runner"]
+    assert body["benchmarks"][0]["parameters"]["runner"] == {
+        **CLAUDE["runner"],
+        "pricing": {"enmaas-glm-5-3": PRICING["enmaas-glm-5-3"]},
+    }
     assert "agent:claude-code" in body["tags"]
     assert body["name"] == "sample-v2-all-claude-code-enmaas-glm-5-3"
     assert response.json()["agent"] == "claude-code"
@@ -576,3 +584,16 @@ def test_evaluations_turn_on_with_evalhub_and_need_the_rest(tmp_path):
 def test_without_evaluations_the_routes_do_not_exist(tmp_path):
     client = TestClient(create_app(Registry(FileStore(tmp_path))))
     assert client.get("/api/usecases/sample/evaluations", headers=AUTH).status_code == 404
+
+
+def test_a_model_without_a_gateway_price_gets_none(client, evalhub, monkeypatch):
+    real = Gateway.models
+
+    def unpriced_mini(self):
+        return [{**m, "price_output": None} if m["name"] == "enmaas-gpt-5-mini" else m for m in real(self)]
+
+    monkeypatch.setattr(Gateway, "models", unpriced_mini)
+    client.post("/api/usecases/sample/evaluations", headers=AUTH)
+    assert evalhub.calls[0][4]["benchmarks"][0]["parameters"]["runner"]["pricing"] == {
+        "enmaas-glm-5-3": PRICING["enmaas-glm-5-3"]
+    }
