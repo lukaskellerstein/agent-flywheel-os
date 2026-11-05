@@ -1263,6 +1263,29 @@ branch is not merged into `flywheel-integration`, which is on
   `must_mention` under 0.80). Sent back: AI hub › Models opens ODH's
   Deployments tab ("No model serving platform selected") before ours,
   and model aliases wrap inside a name.
+- 2026-11-05, one task of one evaluation (Lukas's `ok`), from the board
+  "Evaluation · one ticket", and the two defects: six commits,
+  `c8bb96a44` to `aa6e8bb74`. Our tab now sorts first on both AI hub
+  pages (the host orders tabs by `group`), and an alias stays on one
+  line everywhere. The page: the task's verdict on a bar with the
+  per-task floor, how the score adds up (value × weight, as the harness
+  computes the reward), the exchange (steps, tool calls, tokens, cost,
+  time), the input, the answer files, the answer key, each judge with
+  the evaluation's threshold and its reason, and the steps as chips;
+  the Evaluation page's task tiles and the Task page's results link to
+  it. Left out: Brain, online evaluation, "No Adjust step saw this
+  ticket", the judge model's samples; the answer's Markdown shows as
+  text (the host's renderer is a new dependency). The subagent's runs,
+  twice: type check and lint clean, 218 unit tests, the BFF's `go vet`,
+  Go tests under `-race` and golangci-lint 0, the production bundle.
+  Build `agent-flywheel-ui-10` of `aa6e8bb74`. As `claude-agent` on the
+  cluster: AI hub › Models opens `/ai-hub/models/flywheel`, Agents
+  `/ai-hub/agents/flywheel`; `export-data` of Claude Code's `175ce635…`
+  (0.65 = 0.50 × 0.70 + 1 × 0.30, Passes; `must_mention` below 0.80,
+  "Misses 1 of 2 required items: 'CSV'"; 6 steps, 5 tool calls, free,
+  21 s) and of Codex's `400914b6…` (1.00, 9 steps, 4 tool calls, free,
+  28 s), each with its answer. Sent back: the model cards on Start
+  evaluation scroll sideways when the alias is wider than the card.
 
 ### Phase 6: the proof
 
