@@ -18,6 +18,15 @@ configMapGenerator:
     files:
       - config/litellm.yaml
       - config/cerebras_hook.py
+  # The same litellm.yaml for the flywheel API's AI hub › Models
+  # (deploy/flywheel-api/): it lists the aliases and prices the gateway
+  # routes. No hash in the name, so the API's mount follows an apply in
+  # about a minute without a restart. The file holds no key.
+  - name: gateway-models
+    files:
+      - config/litellm.yaml
+    options:
+      disableNameSuffixHash: true
 labels:
   - pairs:
       app.kubernetes.io/part-of: agent-flywheel

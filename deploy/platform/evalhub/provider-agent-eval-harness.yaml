@@ -1,6 +1,6 @@
 # C11's provider (eval-hub-contrib `adapters/agent-eval-harness/provider.yaml`
-# at `flywheel-integration` 98d7683), with our adapter image by digest: build
-# agent-eval-harness-adapter-3 of contrib 98d7683 on our harness base
+# at `flywheel-integration` 6d352b8), with our adapter image by digest: build
+# agent-eval-harness-adapter-4 of contrib 6d352b8 on our harness base
 # agent-eval-harness-2 of harness 23f7690 (deploy/builds/). A new adapter
 # build changes the digest here.
 #
@@ -54,7 +54,7 @@ data:
 
     runtime:
       k8s:
-        image: image-registry.openshift-image-registry.svc:5000/agent-flywheel/agent-eval-harness-adapter@sha256:849342b16de53035fff2dc588174f3a2e8eab494e43fb4ada06b88323249d27e
+        image: image-registry.openshift-image-registry.svc:5000/agent-flywheel/agent-eval-harness-adapter@sha256:2924f5f861dea986d347d1a975efb6359e88aa8c3a5e9a3d954fb17257b85024
         entrypoint:
           - python
           - main.py
@@ -109,3 +109,10 @@ data:
           MLflow artifact URI runs:/<run_id>/<path> of a folder (for example an
           AGENTS.md and skills) laid over the eval folder's root and linked into
           each task's workspace; none when unset.
+      - name: runner
+        type: object
+        description: >-
+          A runner block (agent-eval-harness runner.md) that runs another agent on
+          the same eval. Its type, permission_mode, settings and env replace
+          eval.yaml's, which wire the eval's own agent; the eval's other runner
+          keys stay. eval.yaml's runner when unset.

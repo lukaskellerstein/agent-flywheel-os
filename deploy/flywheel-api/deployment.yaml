@@ -67,6 +67,11 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            # AI hub › Models: the gateway's own config, the ConfigMap
+            # gateway-models of deploy/gateway/. An agent may use only these
+            # aliases, and an evaluation only one of its agent's.
+            - name: FLYWHEEL_GATEWAY_CONFIG
+              value: /etc/flywheel-api/gateway/litellm.yaml
           ports:
             - name: http
               containerPort: 8080
@@ -103,6 +108,10 @@ spec:
             - name: service-ca
               mountPath: /etc/flywheel-api/service-ca
               readOnly: true
+            # A whole folder, not a subPath, so a changed ConfigMap reaches it.
+            - name: gateway-models
+              mountPath: /etc/flywheel-api/gateway
+              readOnly: true
       volumes:
         - name: tmp
           emptyDir:
@@ -110,3 +119,6 @@ spec:
         - name: service-ca
           configMap:
             name: flywheel-api-service-ca
+        - name: gateway-models
+          configMap:
+            name: gateway-models
