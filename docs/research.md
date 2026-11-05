@@ -1692,6 +1692,56 @@ job are `reward`, `reward_scored_cases`, `<judge>_mean` and, for a
 pass/fail judge, `<judge>_pass_rate`. Reward 1.0 on all three tasks,
 every check passed. Cost 0 USD.
 
+**One eval, another agent (V, 2026-11-05).** What an evaluation's agent
+choice rests on:
+
+- The harness switches the agent of a run with `execute.py --agent`
+  (`agent = args.agent or config.runner.type`, then the runner's
+  permissions are checked again for it; harness `23f7690`,
+  `skills/eval-run/scripts/execute.py:369, 480-507`). No other eval-run
+  script takes it. `agent_eval.agent.RUNNERS` is the list it checks
+  (`execute.py:201`, `agent_eval/prompt_backends.py:274`).
+- `runner.settings` means a different thing per runner: merged into
+  `.claude/settings.json` for `claude-code`, `-c` overrides for `codex`
+  (`website/reference/config/runner.md`, field table). So a runner block
+  for another agent replaces eval.yaml's wiring keys rather than merging.
+- `EvalConfig.from_yaml` checks little of the runner block: an unknown
+  `permission_mode` or `effort` loads, and a string `settings` raises
+  `AttributeError`, not `ValueError` (run against the adapter's fixture
+  eval). `execute.py` refuses an unknown runner type only after the
+  workspaces exist.
+- Claude Code gets only allowlisted variables from the environment, but
+  every `runner.env` entry passes (`agent_eval/agent/claude_code.py:854-930`,
+  `_SAFE_ENV_KEYS` and `_build_env`). The harness maps the job's model to
+  `--model` only; `ANTHROPIC_DEFAULT_HAIKU_MODEL`, which Claude Code's
+  background calls use, it sets only under a provider plan
+  (`agent_eval/providers/env.py:111`).
+- The harness image pins `@anthropic-ai/claude-code@2.1.228` and
+  `@openai/codex@0.147.0` (`deploy/Containerfile:23-24`); no OpenCode.
+- C11's adapter took `eval_dir`, `split` and `brain` and ignored any other
+  parameter (contrib `98d7683`, `main.py` `_run`). EvalHub passes a
+  benchmark's `parameters` as `map[string]any` and checks none of them
+  against the provider's list (eval-hub `flywheel-integration`,
+  `internal/eval_hub/runtimes/shared/jobspec.go:17`,
+  `internal/eval_hub/handlers/helpers.go:263-283`); a provider may declare
+  `type: object` (`config/providers/atif.yaml:77`).
+- EvalHub watches its provider folder and reloads it
+  (`internal/eval_hub/config/watcher.go`, `cmd/eval_hub/main.go:193`): a
+  changed tenant ConfigMap reached `GET /api/v1/evaluations/providers/agent-eval-harness`
+  (the new adapter digest) within minutes, with no restart.
+- Measured on `smoke` version 3, GLM 5.3, each agent's runner block as
+  `parameters.runner`: Codex (job `d052347a…`, 2 min 52 s) and Claude
+  Code (`d753970c…`, 2 min 23 s) both ran all three tasks; the adapter
+  logged `runner <type> from parameters.runner`, the harness `Agent:
+  <type> | Model: enmaas-glm-5-3`. Claude Code through the gateway with
+  `ANTHROPIC_BASE_URL`, `ANTHROPIC_AUTH_TOKEN` and `bypassPermissions`
+  needed nothing more in the pod. Without `runner.pricing` Claude Code
+  reported 0.27, 0.12 and 0.25 USD (`runner:estimate`, Anthropic's
+  rates for a model that never ran) and Codex `cost n/a`; with the
+  gateway's prices both reported 0.00 USD (`harness:estimate`, jobs
+  `400914b6…` and `175ce635…`). The same agent scores 0.883 or 1.0 on
+  the same version from run to run.
+
 **EnMaaS's OpenAI models fail in bursts (V, 2026-10-16, 17:38 to 17:42
 UTC).** Calls with Lukas's key from the gateway pod: `gpt-5-mini`,
 `gpt-5-nano`, `gpt-4.1-mini` and `gpt-4o-mini` answered `404` with an
@@ -1710,6 +1760,11 @@ answered 200 when replayed straight to EnMaaS, with and without its
 20:39 UTC, after the cluster's restart, `gpt-5-mini` failed 20 of 20, and
 EnMaaS's `/v1/models` listed 15 ids: Claude, Gemini, and no GPT and no
 GLM; `rits/zai-org/glm-5-3` and `gemini-3.6-flash` still answered 200.
+On 2026-11-05 at 14:31 UTC GPT was back: `probe.py --stage catalog` in
+the gateway pod listed 23 ids on the Bearer header (`gpt-5-mini`,
+`gpt-6-luna`, `gpt-6-sol` among them, and GLM) and 11 on `x-api-key`
+(Claude, GLM, DeepSeek), and `enmaas-gpt-5-mini` through the gateway
+answered 200 in 1.8 s (25 tokens).
 
 ## 8. `openshift-eval` facts this work must know
 

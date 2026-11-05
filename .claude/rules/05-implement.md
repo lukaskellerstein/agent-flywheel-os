@@ -94,7 +94,8 @@ Write clean code from the start. Follow these rules during implementation:
   `Containerfile`; the code in `flywheel_api/`, small modules (the task
   format and its checks, the use case's files, versions and their diff,
   the store, the import sources, the evaluations, their results as the
-  module reads them, the client for EvalHub and MLflow, the routes); the
+  module reads them, the agents of AI hub and the gateway's models, the
+  client for EvalHub and MLflow, the routes); the
   offline tests in `tests/`, with EvalHub
   and MLflow faked in their real shapes. It joins S3, EvalHub and MLflow,
   which is why it is ours (spec 02 section 4.5); a check the harness can
@@ -133,7 +134,10 @@ Write clean code from the start. Follow these rules during implementation:
   EvalHub images.
 - `gateway/` — LiteLLM, spec 01 phase 1 step 6, ported from `openshift-eval`;
   every route is EnMaaS since 2026-10-14 (decision 9). Every model
-  alias and price lives in `config/`, never a key. A GPT or Claude alias
+  alias and price lives in `config/`, never a key. `litellm.yaml` also
+  goes out as the ConfigMap `gateway-models`, with no hash, for the
+  flywheel API's AI hub › Models: an alias added here is a model an agent
+  may use after the next apply. A GPT or Claude alias
   must pass the hook untouched: `cerebras_hook.py` acts only on the
   prefixes in its `CHAT_ONLY`. After a change, run
   `scripts/enmaas/agent_shapes.py` against the gateway.
@@ -161,6 +165,11 @@ Write clean code from the start. Follow these rules during implementation:
   Route: the dashboard module's BFF calls it inside the cluster. For
   evaluations: the service CA (both EvalHub and MLflow serve with it) and
   a NetworkPolicy that adds the API pod to those EvalHub admits.
+  `agents/` holds the AI hub › Agents records the cluster starts with,
+  one JSON per agent, posted to `POST /api/agents` (kustomize does not
+  apply them); an agent is never changed, so a new wiring is a new
+  name. A value for a variable that names a key is the gateway's
+  placeholder, never a key.
 - Not here yet: the flywheel Jobs. They land with spec 02 phase 3.
 
 ## Repository structure
