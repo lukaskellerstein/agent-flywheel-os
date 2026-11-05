@@ -5,7 +5,9 @@
 #
 # It reads the bucket claim `flywheel-usecases` (deploy/bucket/) as env: the
 # ConfigMap names the bucket, the Secret holds its key. Apply deploy/bucket/
-# first; the key is never copied into a file here.
+# first; the key is never copied into a file here. It starts evaluations as
+# EvalHub jobs with C11's provider (deploy/platform/evalhub/), as the
+# caller: the pod's own ServiceAccount gets no rights for that.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: agent-flywheel
@@ -13,6 +15,8 @@ resources:
   - build.yaml
   - deployment.yaml
   - service.yaml
+  - service-ca.yaml
+  - evalhub-ingress.yaml
 labels:
   - pairs:
       app.kubernetes.io/part-of: agent-flywheel

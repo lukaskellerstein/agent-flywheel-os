@@ -1,0 +1,10 @@
+# The cluster's service CA, which signs EvalHub's and MLflow's serving
+# certificates. OpenShift's service CA operator writes it into this
+# ConfigMap as `service-ca.crt`; the API verifies both with it
+# (FLYWHEEL_CA_FILE in deployment.yaml).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: flywheel-api-service-ca
+  annotations:
+    service.beta.openshift.io/inject-cabundle: "true"
