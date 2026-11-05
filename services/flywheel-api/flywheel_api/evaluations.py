@@ -16,6 +16,7 @@ summary.yaml of a job that has ended.
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import threading
@@ -27,7 +28,7 @@ from typing import Any
 import yaml
 from pydantic import BaseModel, ConfigDict, Field
 
-from . import results
+from . import exchange, results
 from .agents import Agents, runner_block
 from .problems import Invalid, NotFound
 from .registry import Registry
@@ -42,7 +43,8 @@ TAG = "agent-flywheel"
 PAGE = 100  # EvalHub's largest page
 CACHE_SIZE = 512
 # Where the adapter puts the harness's run folder in its MLflow run (C11).
-SUMMARY = "run/summary.yaml"
+RUN_FOLDER = "run"
+SUMMARY = f"{RUN_FOLDER}/summary.yaml"
 ARTIFACTS_SCHEME = "mlflow-artifacts:/"
 
 
@@ -93,6 +95,7 @@ class Evaluations:
         self._configs = _Cache()
         self._records = _Cache()
         self._summaries = _Cache()
+        self._tasks = _Cache()
 
     def start(self, name: str, request: StartRequest, token: str) -> dict:
         number = request.version or self.registry.get(name)["current"]
@@ -147,6 +150,70 @@ class Evaluations:
                 rows.append({"evaluation": row, "reward": task["reward"], "judges": task["judges"]})
         return sorted(rows, key=lambda r: r["evaluation"]["created"] or "", reverse=True)
 
+    def task(self, name: str, job_id: str, task_id: str, token: str) -> dict:
+        """One task of one job: its reward and verdicts, the agent's answer,
+        its steps and what it cost, from the job's run folder in MLflow."""
+        row, config, summary_yaml = self._read(name, self._job_of(name, job_id, token), token)
+        if not summary_yaml:
+            raise Invalid(f"evaluation {job_id!r} has no results yet: {row['tasks_detail'] or 'its summary is empty'}")
+        valid = exchange.TASK_ID.fullmatch(task_id)
+        task = results.task_of(summary_yaml, task_id, results.judge_names(config)) if valid else None
+        if task is None:
+            raise NotFound(f"evaluation {job_id!r} has no task {task_id!r}")
+        key = (row["mlflow_run_id"], task_id)
+        if (detail := self._tasks.get(key)) is None:
+            detail = self._task_files(row["mlflow_run_id"], task_id, config, token)
+            if results.is_final(row):
+                self._tasks.put(key, detail)
+        return {"evaluation": row, "task": task, **detail}
+
+    def _task_files(self, run_id: str, task_id: str, config: Mapping[str, Any], token: str) -> dict:
+        base = self._artifact_base(run_id, token)
+        folder = f"{RUN_FOLDER}/cases/{task_id}"
+        run_result = self._optional_json(base, f"{folder}/run_result.json", token)
+        events = self._optional_json(base, f"{folder}/events.json", token)
+        return {
+            "answer": self._answer(run_id, base, folder, config, token),
+            "run": exchange.run_of(run_result) if isinstance(run_result, Mapping) else None,
+            "steps": exchange.steps_of(events, task_id) if isinstance(events, list) else None,
+        }
+
+    def _answer(self, run_id: str, base: str, folder: str, config: Mapping[str, Any], token: str) -> list[dict]:
+        """The files the agent left in eval.yaml's outputs paths, at most MAX_FILES."""
+        files = []
+        for output in exchange.output_paths(config):
+            paths = self._artifact_files(run_id, f"{folder}/{output}", token) or [f"{folder}/{output}"]
+            for path in paths:
+                if len(files) == exchange.MAX_FILES:
+                    return files
+                if (data := self._optional(base, path, token)) is not None:
+                    files.append(exchange.answer_file(path[len(folder) + 1 :], data))
+        return files
+
+    def _artifact_files(self, run_id: str, path: str, token: str) -> list[str]:
+        """Every file under *path* in the run, the runner's own logs left out."""
+        query = {"run_id": run_id, "path": path}
+        listing = self.mlflow.json("GET", "/api/2.0/mlflow/artifacts/list", token, query=query) or {}
+        found = []
+        for entry in listing.get("files") or []:
+            if entry.get("is_dir"):
+                found += self._artifact_files(run_id, entry["path"], token)
+            elif entry["path"].rsplit("/", 1)[-1] not in exchange.RUNNER_LOGS:
+                found.append(entry["path"])
+        return found
+
+    def _optional_json(self, base: str, path: str, token: str) -> Any:
+        data = self._optional(base, path, token)
+        return json.loads(data) if data is not None else None
+
+    def _optional(self, base: str, path: str, token: str) -> bytes | None:
+        try:
+            return self.mlflow.raw("GET", f"/api/2.0/mlflow-artifacts/artifacts/{base}/{path}", token)
+        except RemoteError as exc:
+            if exc.status == 404:
+                return None
+            raise
+
     def stop(self, name: str, job_id: str, token: str, *, delete: bool) -> None:
         """Cancel a job, or with *delete* remove it and its record from EvalHub.
         Its MLflow run stays."""
@@ -194,11 +261,15 @@ class Evaluations:
         return data, None
 
     def _summary_file(self, run_id: str, token: str) -> bytes:
+        return self.mlflow.raw("GET", f"/api/2.0/mlflow-artifacts/artifacts/{self._artifact_base(run_id, token)}/{SUMMARY}", token)
+
+    def _artifact_base(self, run_id: str, token: str) -> str:
+        """The run's artifact folder on MLflow's artifact proxy."""
         run = self.mlflow.json("GET", "/api/2.0/mlflow/runs/get", token, query={"run_id": run_id})
         uri = run["run"]["info"]["artifact_uri"]
         if not uri.startswith(ARTIFACTS_SCHEME):
             raise RemoteError(502, f"MLflow keeps run {run_id}'s files at {uri}, which the API cannot read")
-        return self.mlflow.raw("GET", f"/api/2.0/mlflow-artifacts/artifacts/{uri[len(ARTIFACTS_SCHEME) :]}/{SUMMARY}", token)
+        return uri[len(ARTIFACTS_SCHEME) :]
 
     def _task_count(self, name: str, number: int, split: str | None) -> int | None:
         """How many tasks the job ran: the split's, or every task of the version."""

@@ -18,6 +18,8 @@
     GET  /api/usecases/{name}/evaluations/{id} one job: judges, tasks, threshold verdicts
     DELETE /api/usecases/{name}/evaluations/{id} stop it; ?delete=true removes it
     GET  /api/usecases/{name}/evaluations/{id}/logs its pod logs, as text
+    GET  /api/usecases/{name}/evaluations/{id}/tasks/{task_id}
+                                             one task: its answer, steps and cost (exchange.py)
     GET  /api/usecases/{name}/versions/{n}/tasks/{id}/results
                                                every run of the version that
                                                scored the task, its verdicts
@@ -166,6 +168,11 @@ def _add_evaluation_routes(app: FastAPI, evaluations: Evaluations) -> None:
     def stop_evaluation(name: str, job_id: str, request: Request, delete: bool = False) -> None:
         """Stop the job; with ?delete=true remove it from EvalHub too."""
         evaluations.stop(name, job_id, _token(request), delete=delete)
+
+    @app.get("/api/usecases/{name}/evaluations/{job_id}/tasks/{task_id}")
+    def evaluation_task(name: str, job_id: str, task_id: str, request: Request) -> dict:
+        """One task of the job: verdicts, the agent's answer, its steps and its cost."""
+        return evaluations.task(name, job_id, task_id, _token(request))
 
     @app.get("/api/usecases/{name}/evaluations/{job_id}/logs", response_class=PlainTextResponse)
     def evaluation_logs(name: str, job_id: str, request: Request) -> str:

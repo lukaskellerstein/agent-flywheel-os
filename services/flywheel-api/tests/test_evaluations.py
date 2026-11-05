@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import copy
+import json
 
 import pytest
 import yaml
@@ -39,6 +40,8 @@ reward:
 thresholds:
   reward: {min_mean: 0.6, min_per_case: 0.5}
   must_mention: {min_pass_rate: 1.0}
+outputs:
+  - path: output
 """
 # The harness's summary.yaml (the shape of job 6bbcc140's, smoke version 2), cut to what the API reads.
 CHECKS = [
@@ -135,8 +138,21 @@ class FakeMLflow:
 
     def json(self, method, path, token, *, query=None, body=None):
         self.calls.append((method, path, token))
+        if path == "/api/2.0/mlflow/artifacts/list":
+            return self._listing(query["path"])
         assert path == "/api/2.0/mlflow/runs/get"
         return {"run": {"info": {"run_id": query["run_id"], "artifact_uri": self.artifact_uri}}}
+
+    def _listing(self, folder: str) -> dict:
+        """MLflow's artifacts/list: the entries right under *folder*, dirs marked."""
+        root = "/api/2.0/mlflow-artifacts/artifacts/" + self.artifact_uri.removeprefix("mlflow-artifacts:/") + "/"
+        entries = {}
+        for key in self.files:
+            path = key.removeprefix(root)
+            if path.startswith(folder + "/"):
+                child = folder + "/" + path[len(folder) + 1 :].split("/")[0]
+                entries[child] = {"path": child, "is_dir": child != path}
+        return {"files": sorted(entries.values(), key=lambda entry: entry["path"])} if entries else {}
 
     def raw(self, method, path, token, *, query=None, body=None):
         self.calls.append((method, path, token))
@@ -597,3 +613,105 @@ def test_a_model_without_a_gateway_price_gets_none(client, evalhub, monkeypatch)
     assert evalhub.calls[0][4]["benchmarks"][0]["parameters"]["runner"]["pricing"] == {
         "enmaas-glm-5-3": PRICING["enmaas-glm-5-3"]
     }
+
+
+CASE = "/api/2.0/mlflow-artifacts/artifacts/workspaces/agent-flywheel/2/run-1/artifacts/run/cases/export-data"
+WORKSPACE = "/tmp/agent-eval-harness-x/tmp/agent-eval/sample/job-1_0/cases/export-data"
+# events.json as the harness writes it, one Claude Code turn and one Codex shell call.
+EVENTS = [
+    {"type": "system", "subtype": "init", "model": "enmaas-glm-5-3"},
+    {"type": "assistant", "text": "", "tools": [{"name": "Grep", "id": "t1", "input": {"pattern": "export", "path": f"{WORKSPACE}/resources/kb"}}]},
+    {"type": "tool_result", "tool_use_id": "t1", "tool_name": "Grep", "content": "kb/002-export.md", "is_error": False},
+    {"type": "assistant", "text": "", "tools": [{"name": "Read", "id": "t2", "input": {"file_path": f"{WORKSPACE}/screen.txt"}}]},
+    {"type": "tool_result", "tool_use_id": "t2", "tool_name": "Read", "content": "no such file", "is_error": True},
+    {"type": "assistant", "text": "", "tools": [{"name": "Bash", "id": "t3", "input": {"command": "/usr/bin/bash -lc 'cat output/answer.md'"}}]},
+    {"type": "assistant", "text": "Answer written to output/answer.md.", "tools": []},
+    {"type": "result", "cost_usd": 0.0, "num_turns": 4},
+]
+RUN_RESULT = {
+    "exit_code": 0,
+    "duration_s": 27.5,
+    "token_usage": {"input": 3107, "output": 769, "cache_read": 45568},
+    "cost_usd": 0.0,
+    "num_turns": 4,
+    "model": "enmaas-glm-5-3",
+    "message_ids": ["msg_1"],
+    "cost_source": "harness:estimate",
+    "error_class": None,
+}
+ANSWER = "Reports export at most 10,000 rows, as CSV."
+
+
+def _completed_task_run(client, evalhub, mlflow) -> None:
+    client.post("/api/usecases/sample/evaluations", headers=AUTH)
+    evalhub.complete("job-1", 0.5, "run-1")
+    mlflow.files.update({
+        f"{CASE}/run_result.json": json.dumps(RUN_RESULT).encode(),
+        f"{CASE}/events.json": json.dumps(EVENTS).encode(),
+        f"{CASE}/output/answer.md": ANSWER.encode(),
+        f"{CASE}/output/stdout.log": b"the runner's own log",
+    })
+
+
+def test_one_task_has_its_answer_steps_and_cost(client, evalhub, mlflow):
+    _completed_task_run(client, evalhub, mlflow)
+    response = client.get("/api/usecases/sample/evaluations/job-1/tasks/export-data", headers=AUTH)
+    assert response.status_code == 200, response.text
+    task = response.json()
+    assert (task["evaluation"]["id"], task["evaluation"]["agent"]) == ("job-1", "codex")
+    assert task["task"]["reward"] == 0.0
+    assert task["task"]["judges"]["must_mention"] == {"value": False, "rationale": "missing: CSV", "error": None}
+    assert task["answer"] == [{"path": "output/answer.md", "size": len(ANSWER), "text": ANSWER, "truncated": False}]
+    assert task["run"] == {
+        "exit_code": 0,
+        "duration_s": 27.5,
+        "num_turns": 4,
+        "model": "enmaas-glm-5-3",
+        "cost_usd": 0.0,
+        "cost_source": "harness:estimate",
+        "error_class": None,
+        "tokens": {"input": 3107, "output": 769, "cache_read": 45568, "cache_create": None},
+    }
+    assert task["steps"] == [
+        {"kind": "tool", "tool": "Grep", "input": "export resources/kb", "error": False},
+        {"kind": "tool", "tool": "Read", "input": "screen.txt", "error": True},
+        {"kind": "tool", "tool": "Bash", "input": "cat output/answer.md", "error": False},
+        {"kind": "message", "text": "Answer written to output/answer.md."},
+    ]
+
+
+def test_a_finished_tasks_files_are_read_once(client, evalhub, mlflow):
+    _completed_task_run(client, evalhub, mlflow)
+    client.get("/api/usecases/sample/evaluations/job-1/tasks/export-data", headers=AUTH)
+    reads = len(mlflow.calls)
+    client.get("/api/usecases/sample/evaluations/job-1/tasks/export-data", headers=AUTH)
+    assert not [call for call in mlflow.calls[reads:] if "/cases/" in call[1] or "artifacts/list" in call[1]]
+
+
+def test_a_task_without_its_trace_still_has_its_verdicts(client, evalhub, mlflow):
+    client.post("/api/usecases/sample/evaluations", headers=AUTH)
+    evalhub.complete("job-1", 0.5, "run-1")
+    task = client.get("/api/usecases/sample/evaluations/job-1/tasks/pricing", headers=AUTH).json()
+    assert (task["task"]["reward"], task["answer"], task["run"], task["steps"]) == (1.0, [], None, None)
+
+
+@pytest.mark.parametrize(
+    ("task_id", "status", "detail"),
+    [
+        ("reset-password", 404, "evaluation 'job-1' has no task 'reset-password'"),
+        (".env", 404, "evaluation 'job-1' has no task '.env'"),
+    ],
+)
+def test_a_task_the_run_did_not_score_is_404(client, evalhub, mlflow, task_id, status, detail):
+    _completed_task_run(client, evalhub, mlflow)
+    response = client.get(f"/api/usecases/sample/evaluations/job-1/tasks/{task_id}", headers=AUTH)
+    assert (response.status_code, response.json()["detail"]) == (status, detail)
+
+
+def test_a_task_of_a_job_without_results_is_422(client, evalhub):
+    client.post("/api/usecases/sample/evaluations", headers=AUTH)
+    response = client.get("/api/usecases/sample/evaluations/job-1/tasks/export-data", headers=AUTH)
+    assert (response.status_code, response.json()["detail"]) == (
+        422,
+        "evaluation 'job-1' has no results yet: the job has no MLflow run yet",
+    )
