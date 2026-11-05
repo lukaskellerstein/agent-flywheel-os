@@ -8,8 +8,8 @@ task's verdicts and the threshold verdicts. Nothing about an evaluation is
 stored here: the job's tags find a use case's jobs, and every call runs as
 the caller (remote.py).
 
-Two caches, each of something that never changes: a version's eval.yaml, and
-the summary.yaml of a job that has ended.
+Caches of what never changes: a version's eval.yaml and record, and the
+summary.yaml of a job that has ended.
 """
 
 from __future__ import annotations
@@ -84,6 +84,7 @@ class Evaluations:
         self.mlflow = mlflow
         self.settings = settings
         self._configs = _Cache()
+        self._records = _Cache()
         self._summaries = _Cache()
 
     def start(self, name: str, request: StartRequest, token: str) -> dict:
@@ -136,11 +137,12 @@ class Evaluations:
         return job
 
     def _read(self, name: str, job: Mapping[str, Any], token: str) -> tuple[dict, dict, dict | None]:
-        """The job's row (its summary, agent and threshold verdicts), its
-        version's eval.yaml, and its summary.yaml once MLflow has it."""
+        """The job's row (its summary, agent, task count and threshold
+        verdicts), its version's eval.yaml, and its summary.yaml once MLflow has it."""
         row = results.summary(job)
         config = self._eval_config(name, row["version"]) if row["version"] else {}
         row["agent"] = (config.get("runner") or {}).get("type")
+        row["task_count"] = self._task_count(name, row["version"], row["split"]) if row["version"] else None
         summary_yaml, row["tasks_detail"] = self._summary_yaml(row, token)
         row["thresholds"] = results.thresholds_of(summary_yaml) if summary_yaml else None
         return row, config, summary_yaml
@@ -167,6 +169,14 @@ class Evaluations:
         if not uri.startswith(ARTIFACTS_SCHEME):
             raise RemoteError(502, f"MLflow keeps run {run_id}'s files at {uri}, which the API cannot read")
         return self.mlflow.raw("GET", f"/api/2.0/mlflow-artifacts/artifacts/{uri[len(ARTIFACTS_SCHEME) :]}/{SUMMARY}", token)
+
+    def _task_count(self, name: str, number: int, split: str | None) -> int | None:
+        """How many tasks the job ran: the split's, or every task of the version."""
+        key = (name, number)
+        if (record := self._records.get(key)) is None:
+            record = self.registry.record(name, number)
+            self._records.put(key, record)
+        return record["tasks_per_split"].get(split) if split else record["task_count"]
 
     def _eval_config(self, name: str, number: int) -> dict:
         """A version's eval.yaml, which never changes."""

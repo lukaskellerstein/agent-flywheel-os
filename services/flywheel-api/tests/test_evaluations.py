@@ -209,6 +209,7 @@ def test_a_start_sends_the_job_as_the_caller(client, evalhub):
     started = response.json()
     assert (started["id"], started["version"], started["split"], started["state"]) == ("job-1", 1, "validation", "pending")
     assert (started["agent"], started["thresholds"], started["tasks_detail"]) == ("codex", None, "the job has no MLflow run yet")
+    assert started["task_count"] == 1
 
 
 def test_a_version_says_what_eval_yaml_sets_for_a_run(client):
@@ -361,6 +362,7 @@ def test_the_list_carries_each_ended_jobs_threshold_verdicts(client, evalhub):
     assert rows["job-1"]["thresholds"] == {"passed": False, "checks": CHECKS}
     assert (rows["job-2"]["thresholds"], rows["job-2"]["tasks_detail"]) == (None, "the job has no MLflow run yet")
     assert {row["agent"] for row in rows.values()} == {"codex"}
+    assert {row["task_count"] for row in rows.values()} == {3}  # every task of the version
 
 
 def test_an_ended_jobs_summary_is_read_from_mlflow_once(client, evalhub, mlflow):
