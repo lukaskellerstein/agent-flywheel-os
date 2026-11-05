@@ -10,8 +10,14 @@ spec:
   # In memory: a restart forgets jobs and API-made providers.
   database:
     type: sqlite
-  # No providers list: the CRD's default mounts garak, garak-kfp and
-  # lm-evaluation-harness, the built-in ones phase 1's DoD runs.
+  # The CRD's default three, the built-in ones phase 1's DoD runs, and C11's
+  # agent-eval-harness from provider-agent-eval-harness.yaml in this
+  # namespace, which outlives the in-memory database.
+  providers:
+    - garak
+    - garak-kfp
+    - lm-evaluation-harness
+    - agent-eval-harness
   env:
     # ODH's MLflow (deploy/platform/mlflow), which serves under /mlflow. The
     # operator adds its CA and a token; the job pods send this namespace as
