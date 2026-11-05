@@ -195,18 +195,13 @@ class Evaluations:
                 "secret_ref": self.settings.secret,
             }
         }
-        benchmark: dict[str, Any] = {
+        benchmark = {
             "id": BENCHMARK,
             "provider_id": self.settings.provider,
             "parameters": {"split": split} if split else {},
             "test_data_ref": test_data,
         }
-        # EvalHub's pass verdict carries the use case's own mean-reward rule
-        # (the first rule of the module's release gate); without one, EvalHub's 0.5.
-        min_mean = ((config.get("thresholds") or {}).get("reward") or {}).get("min_mean")
-        if isinstance(min_mean, int | float) and not isinstance(min_mean, bool):
-            benchmark["pass_criteria"] = {"threshold": min_mean}
-        return {
+        job: dict[str, Any] = {
             "name": f"{name}-v{number}-{split or 'all'}-{model}",
             "tags": tags,
             "model": {"name": model, "url": self.settings.model_url},
@@ -220,6 +215,13 @@ class Evaluations:
                 ],
             },
         }
+        # EvalHub's own verdict (results.test) takes the job's pass criteria, else
+        # 0.5 (evaluations_results.go, getPassCriteriaThreshold): give it the use
+        # case's mean-reward rule, the first rule of the module's release gate.
+        min_mean = ((config.get("thresholds") or {}).get("reward") or {}).get("min_mean")
+        if isinstance(min_mean, int | float) and not isinstance(min_mean, bool):
+            job["pass_criteria"] = {"threshold": min_mean}
+        return job
 
 
 def usecase_tag(name: str) -> str:

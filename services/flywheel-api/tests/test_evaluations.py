@@ -194,7 +194,6 @@ def test_a_start_sends_the_job_as_the_caller(client, evalhub):
                         "secret_ref": "flywheel-usecases",
                     }
                 },
-                "pass_criteria": {"threshold": 0.6},
             }
         ],
         "experiment": {
@@ -205,6 +204,7 @@ def test_a_start_sends_the_job_as_the_caller(client, evalhub):
                 {"key": "split", "value": "validation"},
             ],
         },
+        "pass_criteria": {"threshold": 0.6},
     }
     started = response.json()
     assert (started["id"], started["version"], started["split"], started["state"]) == ("job-1", 1, "validation", "pending")
@@ -225,7 +225,7 @@ def test_without_a_reward_min_mean_evalhub_keeps_its_own_pass_criteria(tmp_path,
     files["eval.yaml"] += b"\nmodels:\n  skill: enmaas-glm-5-3\n"
     _upload(client, files)
     client.post("/api/usecases/sample/evaluations", headers=AUTH)
-    assert "pass_criteria" not in evalhub.calls[0][4]["benchmarks"][0]
+    assert "pass_criteria" not in evalhub.calls[0][4]
 
 
 def test_a_bare_start_takes_the_current_version_every_task_and_the_eval_model(client, evalhub):
