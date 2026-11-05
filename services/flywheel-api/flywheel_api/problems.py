@@ -43,6 +43,18 @@ class TooLarge(BadRequest):
     status = 413
 
 
+class Invalid(BadRequest):
+    """A request the API reads but cannot do: a split the version does not have."""
+
+    status = 422
+
+
+class Unauthorized(BadRequest):
+    """No caller to act as: an evaluation runs with the caller's own token."""
+
+    status = 401
+
+
 class NotFound(LookupError):
     pass
 

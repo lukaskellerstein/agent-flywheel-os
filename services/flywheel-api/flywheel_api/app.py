@@ -7,9 +7,15 @@
     POST /api/usecases/{name}/imports    an upload (multipart, field `file`: one
                                          .tar.gz or .zip of the use case folder)
                                          or JSON {"git": {"url", "ref", "path"}}
+    POST /api/usecases/{name}/evaluations      JSON {"version", "split", "model"},
+                                               each optional: an EvalHub job
+    GET  /api/usecases/{name}/evaluations      the use case's jobs, newest first
+    GET  /api/usecases/{name}/evaluations/{id} one job, with each task's verdicts
 
 An import answers 201 with the new version, 200 "unchanged" with the current
-one, or 422 with every problem by file and field. No delete.
+one, or 422 with every problem by file and field. No delete. The evaluation
+routes exist when EvalHub is configured (evaluations.py), and run as their
+caller: they need its Bearer token, which the dashboard module's BFF sends.
 """
 
 from __future__ import annotations
@@ -22,8 +28,10 @@ from starlette.concurrency import run_in_threadpool
 from starlette.datastructures import UploadFile
 
 from . import sources
-from .problems import BadRequest, ImportRefused, NotFound, TooLarge
+from .evaluations import Evaluations, StartRequest
+from .problems import BadRequest, ImportRefused, NotFound, TooLarge, Unauthorized
 from .registry import Registry, check_name
+from .remote import RemoteError
 
 MAX_UPLOAD_BYTES = 100 * 1024 * 1024
 MAX_JSON_BYTES = 64 * 1024
@@ -48,10 +56,19 @@ class ImportRequest(BaseModel):
         return self
 
 
-def create_app(registry: Registry, *, allow_file_urls: bool = False) -> FastAPI:
+def create_app(
+    registry: Registry, evaluations: Evaluations | None = None, *, allow_file_urls: bool = False
+) -> FastAPI:
     """*allow_file_urls* lets a git import read a `file://` repository; only the tests set it."""
     app = FastAPI(title="Agent Flywheel API")
     _add_error_handlers(app)
+    _add_registry_routes(app, registry, allow_file_urls)
+    if evaluations is not None:
+        _add_evaluation_routes(app, evaluations)
+    return app
+
+
+def _add_registry_routes(app: FastAPI, registry: Registry, allow_file_urls: bool) -> None:
 
     @app.get("/healthz")
     def healthz() -> dict:
@@ -78,7 +95,27 @@ def create_app(registry: Registry, *, allow_file_urls: bool = False) -> FastAPI:
         status = 201 if result.status == "created" else 200
         return JSONResponse({"status": result.status, "version": result.version}, status_code=status)
 
-    return app
+
+def _add_evaluation_routes(app: FastAPI, evaluations: Evaluations) -> None:
+    # Plain functions: FastAPI runs them in its thread pool, where the calls to EvalHub block.
+    @app.post("/api/usecases/{name}/evaluations", status_code=201)
+    def start_evaluation(name: str, request: Request, body: StartRequest | None = None) -> dict:
+        return evaluations.start(name, body or StartRequest(), _token(request))
+
+    @app.get("/api/usecases/{name}/evaluations")
+    def evaluation_list(name: str, request: Request) -> list[dict]:
+        return evaluations.list(name, _token(request))
+
+    @app.get("/api/usecases/{name}/evaluations/{job_id}")
+    def evaluation(name: str, job_id: str, request: Request) -> dict:
+        return evaluations.get(name, job_id, _token(request))
+
+
+def _token(request: Request) -> str:
+    scheme, _, token = request.headers.get("authorization", "").partition(" ")
+    if scheme.lower() != "bearer" or not token.strip():
+        raise Unauthorized("an evaluation runs as its caller: send its Bearer token")
+    return token.strip()
 
 
 async def _fetch(request: Request, allow_file_urls: bool) -> sources.Fetched:
@@ -130,3 +167,7 @@ def _add_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(NotFound)
     def not_found(_: Request, exc: NotFound) -> JSONResponse:
         return JSONResponse({"detail": str(exc.args[0])}, status_code=404)
+
+    @app.exception_handler(RemoteError)
+    def remote(_: Request, exc: RemoteError) -> JSONResponse:
+        return JSONResponse({"detail": str(exc)}, status_code=exc.status)
