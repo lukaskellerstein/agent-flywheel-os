@@ -11,9 +11,10 @@ from fastapi.testclient import TestClient
 from helpers import tar_gz
 
 from flywheel_api.app import create_app
-from flywheel_api.evaluations import JOBS, Evaluations, Settings, evaluations_from_env, tasks_of
+from flywheel_api.evaluations import JOBS, Evaluations, Settings, evaluations_from_env
 from flywheel_api.registry import Registry
 from flywheel_api.remote import RemoteError
+from flywheel_api.results import judges_of, tasks_of, thresholds_of
 from flywheel_api.store import FileStore
 
 TOKEN = "caller-token"
@@ -24,14 +25,47 @@ SETTINGS = Settings(
     secret="flywheel-usecases",
     model_url="http://gateway.agent-flywheel.svc:4000/v1",
 )
-# The harness's summary.yaml of job 6bbcc140 (smoke version 2), cut to what the API reads.
+# What the tests add to the sample's eval.yaml: the agent, the reward and the thresholds (C20).
+EVAL_ADDITIONS = b"""
+models:
+  skill: enmaas-glm-5-3
+runner:
+  type: codex
+reward:
+  weights: {must_mention: 0.7, style: 0.3}
+thresholds:
+  reward: {min_mean: 0.6, min_per_case: 0.5}
+  must_mention: {min_pass_rate: 1.0}
+"""
+# The harness's summary.yaml (the shape of job 6bbcc140's, smoke version 2), cut to what the API reads.
+CHECKS = [
+    {"target": "must_mention", "check": "min_pass_rate", "metric": "pass_rate", "limit": 1.0, "value": 0.5, "passed": False},
+    {"target": "reward", "check": "min_mean", "metric": "mean", "limit": 0.6, "value": 0.5, "passed": False},
+    {
+        "target": "reward",
+        "check": "min_per_case",
+        "metric": "lowest_case",
+        "limit": 0.5,
+        "value": 0.0,
+        "passed": False,
+        "cases_below": ["export-data"],
+        "detail": "1 of 2 cases below 0.5",
+    },
+]
 SUMMARY = {
-    "judges": {"must_mention": {"mean": 0.667, "pass_rate": 0.667}},
+    "judges": {
+        "must_mention": {"mean": 0.5, "pass_rate": 0.5, "scored_cases": 2, "errored_cases": 0},
+        "style": {"mean": 1.0, "pass_rate": 1.0, "scored_cases": 2, "errored_cases": 0},
+    },
     "per_case": {
-        "export-data": {"must_mention": {"judge_type": "check", "rationale": "missing: CSV", "value": False}},
+        "export-data": {
+            "style": {"judge_type": "llm", "rationale": "follows the guide", "value": True},
+            "must_mention": {"judge_type": "check", "rationale": "missing: CSV", "value": False},
+        },
         "pricing": {"must_mention": {"judge_type": "check", "rationale": "mentions every expected fact", "value": True}},
     },
     "reward": {"mean": 0.5, "per_case": {"export-data": 0.0, "pricing": 1.0, "unscored": None}, "scored_cases": 2},
+    "thresholds": {"passed": False, "enforced": False, "checks": CHECKS},
 }
 
 
@@ -104,7 +138,7 @@ def client(tmp_path, files, evalhub, mlflow) -> TestClient:
     registry = Registry(FileStore(tmp_path / "store"))
     app = create_app(registry, Evaluations(registry, evalhub, mlflow, SETTINGS))
     client = TestClient(app)
-    files["eval.yaml"] = files["eval.yaml"] + b"\nmodels:\n  skill: enmaas-glm-5-3\n"
+    files["eval.yaml"] = files["eval.yaml"] + EVAL_ADDITIONS
     _upload(client, files)
     files["usecase.yaml"] = files["usecase.yaml"].replace(b"Product questions", b"Product questions, again")
     _upload(client, files)
@@ -137,6 +171,7 @@ def test_a_start_sends_the_job_as_the_caller(client, evalhub):
                         "secret_ref": "flywheel-usecases",
                     }
                 },
+                "pass_criteria": {"threshold": 0.6},
             }
         ],
         "experiment": {
@@ -150,6 +185,16 @@ def test_a_start_sends_the_job_as_the_caller(client, evalhub):
     }
     started = response.json()
     assert (started["id"], started["version"], started["split"], started["state"]) == ("job-1", 1, "validation", "pending")
+    assert (started["agent"], started["thresholds"], started["tasks_detail"]) == ("codex", None, "the job has no MLflow run yet")
+
+
+def test_without_a_reward_min_mean_evalhub_keeps_its_own_pass_criteria(tmp_path, files, evalhub, mlflow):
+    registry = Registry(FileStore(tmp_path / "store"))
+    client = TestClient(create_app(registry, Evaluations(registry, evalhub, mlflow, SETTINGS)))
+    files["eval.yaml"] += b"\nmodels:\n  skill: enmaas-glm-5-3\n"
+    _upload(client, files)
+    client.post("/api/usecases/sample/evaluations", headers=AUTH)
+    assert "pass_criteria" not in evalhub.calls[0][4]["benchmarks"][0]
 
 
 def test_a_bare_start_takes_the_current_version_every_task_and_the_eval_model(client, evalhub):
@@ -235,13 +280,36 @@ def test_a_finished_job_carries_its_scores_and_each_tasks_verdicts(client, evalh
         0.5,
     )
     assert job["message"] == "Evaluation job is completed"
-    assert job["mlflow_run_id"] == "run-1"
-    assert job["tasks_detail"] is None
+    assert (job["mlflow_run_id"], job["agent"], job["tasks_detail"]) == ("run-1", "codex", None)
+    assert job["judges"] == [
+        {
+            "name": "must_mention",
+            "description": "The answer mentions every expected fact",
+            "weight": 0.7,
+            "mean": 0.5,
+            "pass_rate": 0.5,
+            "scored_cases": 2,
+            "errored_cases": 0,
+        },
+        {
+            "name": "style",
+            "description": "The answer follows the style guide",
+            "weight": 0.3,
+            "mean": 1.0,
+            "pass_rate": 1.0,
+            "scored_cases": 2,
+            "errored_cases": 0,
+        },
+    ]
+    assert job["thresholds"] == {"passed": False, "checks": CHECKS}
     assert job["tasks"] == [
         {
             "id": "export-data",
             "reward": 0.0,
-            "judges": {"must_mention": {"value": False, "rationale": "missing: CSV", "error": None}},
+            "judges": {
+                "must_mention": {"value": False, "rationale": "missing: CSV", "error": None},
+                "style": {"value": True, "rationale": "follows the guide", "error": None},
+            },
         },
         {
             "id": "pricing",
@@ -251,6 +319,51 @@ def test_a_finished_job_carries_its_scores_and_each_tasks_verdicts(client, evalh
         {"id": "unscored", "reward": None, "judges": {}},
     ]
     assert all(token == TOKEN for _, _, token in mlflow.calls)
+
+
+def test_the_list_carries_each_ended_jobs_threshold_verdicts(client, evalhub):
+    client.post("/api/usecases/sample/evaluations", headers=AUTH)
+    client.post("/api/usecases/sample/evaluations", headers=AUTH)
+    evalhub.complete("job-1", 0.5, "run-1")
+    rows = {row["id"]: row for row in client.get("/api/usecases/sample/evaluations", headers=AUTH).json()}
+    assert rows["job-1"]["thresholds"] == {"passed": False, "checks": CHECKS}
+    assert (rows["job-2"]["thresholds"], rows["job-2"]["tasks_detail"]) == (None, "the job has no MLflow run yet")
+    assert {row["agent"] for row in rows.values()} == {"codex"}
+
+
+def test_an_ended_jobs_summary_is_read_from_mlflow_once(client, evalhub, mlflow):
+    client.post("/api/usecases/sample/evaluations", headers=AUTH)
+    evalhub.complete("job-1", 0.5, "run-1")
+    for _ in range(3):
+        client.get("/api/usecases/sample/evaluations", headers=AUTH)
+        client.get("/api/usecases/sample/evaluations/job-1", headers=AUTH)
+    assert len(mlflow.calls) == 2  # the run's record and its summary.yaml, once
+
+
+def test_a_running_jobs_summary_is_read_again(client, evalhub, mlflow):
+    client.post("/api/usecases/sample/evaluations", headers=AUTH)
+    evalhub.complete("job-1", 0.5, "run-1")
+    evalhub.jobs["job-1"]["status"]["state"] = "running"
+    for _ in range(2):
+        client.get("/api/usecases/sample/evaluations/job-1", headers=AUTH)
+    assert len(mlflow.calls) == 4
+
+
+def test_tasks_of_orders_the_judges_as_eval_yaml_and_the_rest_by_name():
+    summary_yaml = {"per_case": {"t": {"b": {"value": 1}, "z": {"value": 2}, "a": {"value": 3}}}}
+    [task] = tasks_of(summary_yaml, ["z", "b"])
+    assert list(task["judges"]) == ["z", "b", "a"]
+
+
+def test_judges_of_a_run_without_aggregates_keeps_eval_yamls_judges():
+    config = {"judges": [{"name": "exit"}], "reward": {"weights": {}}}
+    assert judges_of(config, {}) == [
+        {"name": "exit", "description": None, "weight": None, "mean": None, "pass_rate": None, "scored_cases": None, "errored_cases": None}
+    ]
+
+
+def test_thresholds_of_a_summary_without_thresholds_is_none():
+    assert thresholds_of({"judges": {}}) is None
 
 
 def test_a_job_without_its_mlflow_run_still_answers_and_says_why(client, evalhub, mlflow):
