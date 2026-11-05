@@ -47,6 +47,7 @@ def test_the_reads(client, files):
     assert [j["name"] for j in version["judges"]] == ["must_mention", "style"]
     assert version["diff"]["tasks"]["added"] == ["export-data", "pricing", "reset-password"]
     assert version["usecase"]["task"]["label"] == "question"
+    assert [version[key] for key in ("agent", "model", "reward", "thresholds")] == [None, None, None, None]
 
 
 def test_a_git_import_of_the_same_content_is_unchanged(client, files, tmp_path):

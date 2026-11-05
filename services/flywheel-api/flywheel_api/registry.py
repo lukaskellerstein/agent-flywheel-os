@@ -58,14 +58,21 @@ class Registry:
         return entry
 
     def version(self, name: str, number: int) -> dict:
-        """version.json with the version's definition, tasks, judges and file list."""
+        """version.json with the version's definition, tasks, judges, file list,
+        and what eval.yaml says about a run: the agent, its model, the reward
+        and the thresholds (C20), each null when eval.yaml leaves it out."""
         record = self.record(name, number)
         files = self._files(name, number)
         usecase = load(files)
+        config = usecase.eval
         return {
             **record,
             "usecase": usecase.definition.model_dump(),
             "judges": usecase.judges,
+            "agent": (config.get("runner") or {}).get("type"),
+            "model": (config.get("models") or {}).get("skill"),
+            "reward": config.get("reward"),
+            "thresholds": config.get("thresholds"),
             "tasks": [task.data for task in usecase.tasks],
             "files": sorted(files),
         }

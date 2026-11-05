@@ -80,7 +80,12 @@ class FakeEvalHub:
         self.calls.append((method, path, token, query, body))
         if (method, path) == ("POST", JOBS):
             job_id = f"job-{len(self.jobs) + 1}"
-            resource = {"id": job_id, "created_at": f"2026-11-05T10:0{len(self.jobs)}:00Z", "owner": "lukas"}
+            resource = {
+                "id": job_id,
+                "created_at": f"2026-11-05T10:0{len(self.jobs)}:00Z",
+                "owner": "lukas",
+                "mlflow_experiment_id": "2",
+            }
             self.jobs[job_id] = {**copy.deepcopy(body), "resource": resource, "status": {"state": "pending"}}
             return self.jobs[job_id]
         if (method, path) == ("GET", JOBS):
@@ -188,6 +193,13 @@ def test_a_start_sends_the_job_as_the_caller(client, evalhub):
     assert (started["agent"], started["thresholds"], started["tasks_detail"]) == ("codex", None, "the job has no MLflow run yet")
 
 
+def test_a_version_says_what_eval_yaml_sets_for_a_run(client):
+    version = client.get("/api/usecases/sample/versions/2").json()
+    assert (version["agent"], version["model"]) == ("codex", "enmaas-glm-5-3")
+    assert version["reward"] == {"weights": {"must_mention": 0.7, "style": 0.3}}
+    assert version["thresholds"] == {"reward": {"min_mean": 0.6, "min_per_case": 0.5}, "must_mention": {"min_pass_rate": 1.0}}
+
+
 def test_without_a_reward_min_mean_evalhub_keeps_its_own_pass_criteria(tmp_path, files, evalhub, mlflow):
     registry = Registry(FileStore(tmp_path / "store"))
     client = TestClient(create_app(registry, Evaluations(registry, evalhub, mlflow, SETTINGS)))
@@ -280,7 +292,7 @@ def test_a_finished_job_carries_its_scores_and_each_tasks_verdicts(client, evalh
         0.5,
     )
     assert job["message"] == "Evaluation job is completed"
-    assert (job["mlflow_run_id"], job["agent"], job["tasks_detail"]) == ("run-1", "codex", None)
+    assert (job["mlflow_experiment_id"], job["mlflow_run_id"], job["agent"], job["tasks_detail"]) == ("2", "run-1", "codex", None)
     assert job["judges"] == [
         {
             "name": "must_mention",

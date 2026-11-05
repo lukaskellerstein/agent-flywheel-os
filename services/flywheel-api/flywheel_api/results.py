@@ -46,6 +46,7 @@ def summary(job: Mapping[str, Any]) -> dict:
         "passed": test.get("pass"),
         "threshold": test.get("threshold"),
         "mlflow_run_id": result.get("mlflow_run_id"),
+        "mlflow_experiment_id": resource.get("mlflow_experiment_id"),
     }
 
 
