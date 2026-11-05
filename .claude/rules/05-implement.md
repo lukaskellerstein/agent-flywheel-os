@@ -93,8 +93,9 @@ Write clean code from the start. Follow these rules during implementation:
   Python project with its own `pyproject.toml`, `uv.lock` and
   `Containerfile`; the code in `flywheel_api/`, small modules (the task
   format and its checks, the use case's files, versions and their diff,
-  the store, the import sources, the evaluations, the client for EvalHub
-  and MLflow, the routes); the offline tests in `tests/`, with EvalHub
+  the store, the import sources, the evaluations, their results as the
+  module reads them, the client for EvalHub and MLflow, the routes); the
+  offline tests in `tests/`, with EvalHub
   and MLflow faked in their real shapes. It joins S3, EvalHub and MLflow,
   which is why it is ours (spec 02 section 4.5); a check the harness can
   hold goes upstream instead (C26). One replica: the writes to a use case

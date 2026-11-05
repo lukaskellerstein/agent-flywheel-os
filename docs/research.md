@@ -1657,6 +1657,40 @@ static handler and answers the page's HTML with 200.
   version 2, every task, Codex on `enmaas-glm-5-3`, 10:40:58 to
   10:42:14 UTC; `reward` 0.667, pass against 0.5, MLflow run
   `3811f847…`, the same three verdicts as on 2026-10-16. Cost 0 USD.
+- EvalHub's job verdict `results.test` compares the job's score with the
+  job's own `pass_criteria.threshold`, else its collection's, else 0.5;
+  a benchmark's `pass_criteria` sets only that benchmark's own `test`, and
+  only when a primary score is known (eval-hub `4315523`,
+  `internal/eval_hub/storage/sql/evaluations_results.go:84-102, 154-160`;
+  `pkg/api/evaluations.go:282, 448`).
+- A job's `resource.mlflow_experiment_id` names its MLflow experiment
+  (`EvaluationResource` in `docs/openapi.json`; `"2"` for
+  `agent-flywheel-smoke` on the cluster).
+- `DELETE /api/v1/evaluations/jobs/{id}` cancels a job and answers 204;
+  with `hard_delete=true` it removes the job. Cancelling one that has
+  ended answers 409 "The job <id> can not be cancelled because it is
+  'completed'." `GET …/jobs/{id}/logs` answers `text/plain`, the logs of
+  the job's pods (`X-Log-Truncated` when cut); once the pods are gone it
+  holds only the header line `=== pod=unknown container=adapter
+  benchmark_id=eval-run ===` (job `cef912d8…`, 2026-11-05). While a job
+  runs, it holds the harness's output.
+
+**The harness's verdicts in `summary.yaml` (V, 2026-11-05, cluster-nm8mw).**
+`smoke` version 3 (two builtin judges of C22, `contains` with `partial:
+true` and `length`, a weighted reward and thresholds of C20) through
+harness `23f7690`: job `cef912d8…`, every task, 57 s; MLflow run
+`d9ef899b…`'s `run/summary.yaml` holds `judges.<name>` with `mean`,
+`pass_rate` (null for the scored `contains`), `scored_cases` and
+`errored_cases`; `per_case.<task>.<judge>` with the value (a share for
+`contains`, a bool for `length`) and the builtin's rationale ("Mentions
+all 2 required items.", "Has 36 words, within the limits."); and
+`thresholds` with `passed`, `enforced` and one check per key, the
+reward's first: `{target: reward, check: min_mean, metric: mean, limit:
+0.5, value: 1.0, passed: true}`, `{target: reward, check: min_per_case,
+metric: lowest_case, …}`, then each judge's. EvalHub's metrics for the
+job are `reward`, `reward_scored_cases`, `<judge>_mean` and, for a
+pass/fail judge, `<judge>_pass_rate`. Reward 1.0 on all three tasks,
+every check passed. Cost 0 USD.
 
 **EnMaaS's OpenAI models fail in bursts (V, 2026-10-16, 17:38 to 17:42
 UTC).** Calls with Lukas's key from the gateway pod: `gpt-5-mini`,

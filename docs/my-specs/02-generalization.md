@@ -139,8 +139,11 @@ Codex on GLM 5.3 through EvalHub and our adapter, `reward` 0.667, each
 task's reason in MLflow (phase 3 status). On 2026-11-05 (Lukas's go)
 the API got its evaluation routes and the module its Evaluations, Start
 evaluation and Evaluation pages: an evaluation now starts from the
-dashboard and shows each task's verdict, the same numbers as MLflow
-(phases 3 and 5 status). Next on this path: phase 3's loop, runner
+dashboard and shows each task's verdict, the same numbers as MLflow.
+The same day the three pages were brought up to their Evaluate boards:
+the release gate's three rules from the version's thresholds (C20),
+the scorecard by judge, every task, and Stop, Delete, View log and the
+links to MLflow and EvalHub (phases 3 and 5 status). Next on this path: phase 3's loop, runner
 image and support as version 1, which wait for Lukas's commit of
 `openshift-eval`'s `generalization` (decision 17); then "Start training".
 
@@ -988,6 +991,32 @@ cluster:
   2026-10-16 again, read back through the API from MLflow run
   `3811f847…`. Cost 0 USD.
 
+The release gate's data (Lukas's go, 2026-11-05; commits `87ca728`,
+`1d6c48b`, `b6a99fe`, `1f4ff17`, `b02110f`, `36dc7ad`), for the
+module's Evaluation pages as their boards:
+
+- A job row carries the agent (`runner.type`), its task count, its
+  MLflow experiment and, once it has ended, the harness's threshold
+  verdicts (C20) from `summary.yaml`, never judged again here; one job
+  adds each judge's description, weight and aggregates in `eval.yaml`'s
+  order. A version answers its agent, model, reward and thresholds.
+  `DELETE …/evaluations/{id}` stops a job (`?delete=true` removes it)
+  and `…/{id}/logs` passes on EvalHub's pod logs, both as the caller.
+  The job's `pass_criteria` is the version's `thresholds.reward.min_mean`,
+  so EvalHub's own verdict uses the same limit as the gate's first rule.
+  168 tests pass twice.
+- `smoke` version 3: C22's `contains` (a share) and `length` (pass or
+  fail) in place of the inline check, a weighted reward, and thresholds
+  for the gate's three rules (the mean reward, every judge, every task).
+  The harness's `validate_eval.py` and config loader take it; imported
+  as version 3, hash `fac9a2a356e2`.
+- On the cluster, build `flywheel-api-7` of `36dc7ad`. Jobs `cef912d8…`
+  (every task, 57 s), `6d66c08c…` (validation) and `0f4d36e2…` (train)
+  on version 3: reward 1.0, every check passed, cost 0 USD. Stopping an
+  ended job answers EvalHub's 409; the logs of a running job hold the
+  harness's output, those of an ended one only a header
+  (`docs/research.md`).
+
 ### Phase 4: Hugging Face import
 
 The second import source of decision 11: a dataset id, a revision and a
@@ -1101,6 +1130,35 @@ branch is not merged into `flywheel-integration`, which is on
   evaluations; Benchmarks, Training and Brains are still placeholders.
   Item 2 waits for Lukas and for training. Duration shows "—": EvalHub
   drops a completed benchmark's `started_at` (`docs/research.md`).
+- 2026-11-05, the Evaluate boards (Lukas's go, after he found that the
+  pages showed about a third of the Evaluation board): eleven commits,
+  `8af9eb56d` to `f2a056c49`. The BFF forwards stop, delete and the logs
+  and answers the jobs' namespace (`GET /api/v1/config`); the gate's
+  rules come from the version's thresholds in one module with its tests;
+  the Evaluation page has the board's header, gate box (n of m rules
+  fail, three rule cards, why it is blocked), 1 · Score, 2 · Scorecard by
+  judge and 3 · Every task; the list has the board's columns with
+  Version in place of Brain, a score bar with the rule's tick and the
+  verdict with its rule count; Start evaluation has the agent fixed by
+  `eval.yaml`, the model, the version, the task sets and the rules that
+  will gate. Left out, with no data or feature behind them: Brain, the
+  Online tab, the estimate, model cards with prices, the per-task answer
+  text. Duration is now `completed` minus `created`. The subagents'
+  runs at `f2a056c49`: type check and lint clean, 118 unit tests, the
+  BFF's `go vet` and Go tests, golangci-lint 0, the production bundle;
+  the agent ran the type check and the tests again at `0d58191a2`. Build
+  `agent-flywheel-ui-7` of `f2a056c49`. As `claude-agent` with Playwright
+  on the cluster, each page beside its board at 1440 px, 0 console
+  errors in the module: the list fits without a sideways scroll; `smoke`
+  job `cef912d8…` Passed, all 3 rules; the Blocked state with support's
+  mock served to the page (2 of 3 rules fail, `policy` below 1.00,
+  `case-030` under the floor); a job started with Evaluate again,
+  stopped (EvalHub `cancelled`, the page "Canceled", "Stopped before it
+  had a verdict.") and deleted (EvalHub 404); View log; the MLflow run
+  and EvalHub results pages behind the two links. The board differences
+  that stay: the gate box has no warm tint, "why it is blocked" is
+  PatternFly's gold warning, the breadcrumbs keep the module's own
+  pattern, Stop and Delete sit in a kebab.
 
 ### Phase 6: the proof
 
