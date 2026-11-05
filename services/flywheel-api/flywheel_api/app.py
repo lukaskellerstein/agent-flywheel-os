@@ -10,10 +10,13 @@
     POST /api/usecases/{name}/evaluations      JSON {"version", "split", "model"},
                                                each optional: an EvalHub job
     GET  /api/usecases/{name}/evaluations      the use case's jobs, newest first
-    GET  /api/usecases/{name}/evaluations/{id} one job, with each task's verdicts
+    GET  /api/usecases/{name}/evaluations/{id} one job: judges, tasks, threshold verdicts
+    DELETE /api/usecases/{name}/evaluations/{id} stop it; ?delete=true removes it
+    GET  /api/usecases/{name}/evaluations/{id}/logs its pod logs, as text
 
 An import answers 201 with the new version, 200 "unchanged" with the current
-one, or 422 with every problem by file and field. No delete. The evaluation
+one, or 422 with every problem by file and field. A use case and its versions
+have no delete. The evaluation
 routes exist when EvalHub is configured (evaluations.py), and run as their
 caller: they need its Bearer token, which the dashboard module's BFF sends.
 """
@@ -22,7 +25,7 @@ from __future__ import annotations
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi import Path as PathParam
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel, ConfigDict, ValidationError, model_validator
 from starlette.concurrency import run_in_threadpool
 from starlette.datastructures import UploadFile
@@ -109,6 +112,15 @@ def _add_evaluation_routes(app: FastAPI, evaluations: Evaluations) -> None:
     @app.get("/api/usecases/{name}/evaluations/{job_id}")
     def evaluation(name: str, job_id: str, request: Request) -> dict:
         return evaluations.get(name, job_id, _token(request))
+
+    @app.delete("/api/usecases/{name}/evaluations/{job_id}", status_code=204)
+    def stop_evaluation(name: str, job_id: str, request: Request, delete: bool = False) -> None:
+        """Stop the job; with ?delete=true remove it from EvalHub too."""
+        evaluations.stop(name, job_id, _token(request), delete=delete)
+
+    @app.get("/api/usecases/{name}/evaluations/{job_id}/logs", response_class=PlainTextResponse)
+    def evaluation_logs(name: str, job_id: str, request: Request) -> str:
+        return evaluations.logs(name, job_id, _token(request))
 
 
 def _token(request: Request) -> str:

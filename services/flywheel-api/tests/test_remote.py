@@ -29,6 +29,8 @@ class Handler(BaseHTTPRequestHandler):
             "/ok": (200, b'{"items": []}'),
             "/empty": (204, b""),
             "/forbidden": (403, b'{"message": "user cannot create evaluations"}'),
+            "/conflict": (409, b'{"message": "job is completed"}'),
+            "/text": (200, b"INFO starting evaluation\n"),
             "/broken": (500, b"panic: something"),
             "/redirect": (302, b""),
         }
@@ -66,6 +68,11 @@ def test_a_call_carries_the_callers_token_its_headers_and_its_body(server):
     assert json.loads(seen["body"]) == {"a": 1}
 
 
+def test_a_text_answer_asks_for_text(server):
+    assert Remote("EvalHub", server).raw("GET", "/text", "t", accept="text/plain") == b"INFO starting evaluation\n"
+    assert Handler.seen[0]["headers"]["Accept"] == "text/plain"
+
+
 def test_an_empty_answer_is_none(server):
     assert Remote("EvalHub", server).json("GET", "/empty", "t") is None
 
@@ -75,6 +82,7 @@ def test_an_empty_answer_is_none(server):
     [
         ("/forbidden", 403, "EvalHub answered 403: user cannot create evaluations"),
         ("/missing", 404, "EvalHub answered 404: no route"),
+        ("/conflict", 409, "EvalHub answered 409: job is completed"),
         ("/broken", 502, "EvalHub answered 500: panic: something"),
         ("/redirect", 502, "EvalHub answered 302: no body"),
     ],

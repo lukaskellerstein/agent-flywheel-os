@@ -17,9 +17,10 @@ import urllib.request
 from collections.abc import Mapping
 from typing import Any
 
-# Answers passed on as they are: the caller's own rights, or a missing object.
-# Any other refusal is the API's or the service's fault, so it answers 502.
-PASSED_ON = frozenset({401, 403, 404})
+# Answers passed on as they are: the caller's own rights, a missing object, or
+# a conflict with its state (stopping a job that has ended). Any other refusal
+# is the API's or the service's fault, so it answers 502.
+PASSED_ON = frozenset({401, 403, 404, 409})
 
 
 class RemoteError(Exception):
@@ -58,9 +59,18 @@ class Remote:
         data = self.raw(method, path, token, query=query, body=body)
         return json.loads(data) if data else None
 
-    def raw(self, method: str, path: str, token: str, *, query: Mapping | None = None, body: Any = None) -> bytes:
+    def raw(
+        self,
+        method: str,
+        path: str,
+        token: str,
+        *,
+        query: Mapping | None = None,
+        body: Any = None,
+        accept: str = "application/json",
+    ) -> bytes:
         url = self.base_url + path + ("?" + urllib.parse.urlencode(query) if query else "")
-        headers = {**self.headers, "Accept": "application/json", "Authorization": f"Bearer {token}"}
+        headers = {**self.headers, "Accept": accept, "Authorization": f"Bearer {token}"}
         payload = None
         if body is not None:
             payload = json.dumps(body).encode()

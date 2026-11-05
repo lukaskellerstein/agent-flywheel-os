@@ -96,6 +96,24 @@ class FakeEvalHub:
             return self.jobs[job_id]
         raise RemoteError(404, f"EvalHub answered 404: no job {job_id}")
 
+    def raw(self, method, path, token, *, query=None, body=None, accept="application/json"):
+        """DELETE (cancel, or remove with hard_delete) and the job's logs."""
+        self.calls.append((method, path, token, query, body))
+        job_id = path.removeprefix(JOBS + "/").removesuffix("/logs")
+        if job_id not in self.jobs:
+            raise RemoteError(404, f"EvalHub answered 404: no job {job_id}")
+        if path.endswith("/logs"):
+            assert (method, accept) == ("GET", "text/plain")
+            return f"=== pod={job_id}-adapter container=adapter benchmark_id=eval-run ===\nINFO starting evaluation\n".encode()
+        assert method == "DELETE"
+        if query["hard_delete"] == "true":
+            del self.jobs[job_id]
+        elif self.jobs[job_id]["status"]["state"] == "completed":
+            raise RemoteError(409, "EvalHub answered 409: the job is completed")
+        else:
+            self.jobs[job_id]["status"]["state"] = "cancelled"
+        return b""
+
     def complete(self, job_id: str, reward: float, run_id: str | None) -> None:
         self.jobs[job_id]["status"] = {
             "state": "completed",
@@ -252,6 +270,8 @@ def test_every_evaluation_route_needs_the_callers_token(client, evalhub, header)
         ("POST", "/api/usecases/sample/evaluations"),
         ("GET", "/api/usecases/sample/evaluations"),
         ("GET", "/api/usecases/sample/evaluations/job-1"),
+        ("DELETE", "/api/usecases/sample/evaluations/job-1"),
+        ("GET", "/api/usecases/sample/evaluations/job-1/logs"),
     ]:
         response = client.request(method, path, headers=header)
         assert response.status_code == 401, (method, path)
@@ -398,6 +418,40 @@ def test_a_job_of_another_use_case_or_none_is_404(client, evalhub):
     response = client.get("/api/usecases/sample/evaluations/job-9", headers=AUTH)
     assert response.status_code == 404
     assert response.json()["detail"] == "EvalHub answered 404: no job job-9"
+
+
+def test_a_stop_cancels_the_job_and_a_delete_removes_it(client, evalhub):
+    client.post("/api/usecases/sample/evaluations", headers=AUTH)
+    client.post("/api/usecases/sample/evaluations", headers=AUTH)
+    evalhub.calls.clear()
+    assert client.delete("/api/usecases/sample/evaluations/job-1", headers=AUTH).status_code == 204
+    assert evalhub.calls[-1][:4] == ("DELETE", f"{JOBS}/job-1", TOKEN, {"hard_delete": "false"})
+    assert client.get("/api/usecases/sample/evaluations/job-1", headers=AUTH).json()["state"] == "cancelled"
+    assert client.delete("/api/usecases/sample/evaluations/job-2?delete=true", headers=AUTH).status_code == 204
+    assert [job["id"] for job in client.get("/api/usecases/sample/evaluations", headers=AUTH).json()] == ["job-1"]
+
+
+def test_a_stop_of_an_ended_job_is_evalhubs_409(client, evalhub):
+    client.post("/api/usecases/sample/evaluations", headers=AUTH)
+    evalhub.complete("job-1", 0.5, "run-1")
+    response = client.delete("/api/usecases/sample/evaluations/job-1", headers=AUTH)
+    assert (response.status_code, response.json()) == (409, {"detail": "EvalHub answered 409: the job is completed"})
+
+
+def test_the_logs_are_evalhubs_text(client):
+    client.post("/api/usecases/sample/evaluations", headers=AUTH)
+    response = client.get("/api/usecases/sample/evaluations/job-1/logs", headers=AUTH)
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/plain")
+    assert response.text.endswith("INFO starting evaluation\n")
+
+
+def test_a_stop_or_the_logs_of_another_use_cases_job_is_404(client, evalhub):
+    evalhub.json("POST", JOBS, TOKEN, body={"name": "other", "tags": ["usecase:other"]})
+    evalhub.calls.clear()
+    assert client.delete("/api/usecases/sample/evaluations/job-1", headers=AUTH).status_code == 404
+    assert client.get("/api/usecases/sample/evaluations/job-1/logs", headers=AUTH).status_code == 404
+    assert [call[0] for call in evalhub.calls] == ["GET", "GET"]  # nothing deleted, no logs read
 
 
 def test_evalhubs_refusal_is_passed_on(client, evalhub, monkeypatch):

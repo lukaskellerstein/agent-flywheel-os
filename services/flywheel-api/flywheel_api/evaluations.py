@@ -112,13 +112,28 @@ class Evaluations:
 
     def get(self, name: str, job_id: str, token: str) -> dict:
         """One job, with its judges, every task's verdicts and the threshold verdicts."""
-        job = self.evalhub.json("GET", f"{JOBS}/{urllib.parse.quote(job_id, safe='')}", token)
-        if usecase_tag(name) not in (job.get("tags") or []):
-            raise NotFound(f"no evaluation {job_id!r} of use case {name!r}")
-        row, config, summary_yaml = self._read(name, job, token)
+        row, config, summary_yaml = self._read(name, self._job_of(name, job_id, token), token)
         row["judges"] = results.judges_of(config, summary_yaml or {})
         row["tasks"] = results.tasks_of(summary_yaml, results.judge_names(config)) if summary_yaml else None
         return row
+
+    def stop(self, name: str, job_id: str, token: str, *, delete: bool) -> None:
+        """Cancel a job, or with *delete* remove it and its record from EvalHub.
+        Its MLflow run stays."""
+        self._job_of(name, job_id, token)
+        self.evalhub.raw("DELETE", _job_path(job_id), token, query={"hard_delete": str(delete).lower()})
+        log.info("use case %s: job %s %s", name, job_id, "deleted" if delete else "cancelled")
+
+    def logs(self, name: str, job_id: str, token: str) -> str:
+        """The job's pod logs, as EvalHub has them: none once its pods are gone."""
+        self._job_of(name, job_id, token)
+        return self.evalhub.raw("GET", f"{_job_path(job_id)}/logs", token, accept="text/plain").decode("utf-8", "replace")
+
+    def _job_of(self, name: str, job_id: str, token: str) -> dict:
+        job = self.evalhub.json("GET", _job_path(job_id), token)
+        if usecase_tag(name) not in (job.get("tags") or []):
+            raise NotFound(f"no evaluation {job_id!r} of use case {name!r}")
+        return job
 
     def _read(self, name: str, job: Mapping[str, Any], token: str) -> tuple[dict, dict, dict | None]:
         """The job's row (its summary, agent and threshold verdicts), its
@@ -199,6 +214,10 @@ class Evaluations:
 
 def usecase_tag(name: str) -> str:
     return f"usecase:{name}"
+
+
+def _job_path(job_id: str) -> str:
+    return f"{JOBS}/{urllib.parse.quote(job_id, safe='')}"
 
 
 def _split(name: str, record: dict, split: str | None) -> str | None:
