@@ -1,8 +1,13 @@
 # The smoke evaluation (spec 02 decision 19): Codex answers each question
-# from the knowledge base, and one deterministic judge is the reward, so no
-# judge calls a model. The job's model name (enmaas-glm-5-3) reaches Codex
-# as --model, through the cluster's LiteLLM gateway. GLM 5.3, not
+# from the knowledge base, and two deterministic judges make the reward, so
+# no judge calls a model. The job's model name (enmaas-glm-5-3) reaches
+# Codex as --model, through the cluster's LiteLLM gateway. GLM 5.3, not
 # gpt-5-mini: EnMaaS stopped serving GPT on 2026-10-16 (decision 19).
+#
+# Version 3 (2026-11-05): the harness's builtin judges (C22) in place of an
+# inline check, a numeric one and a pass/fail one, and thresholds (C20) for
+# the three rules of the module's release gate: the mean reward, every
+# judge at its threshold, every task's reward.
 name: smoke
 description: A product support agent answering questions over resources/kb
 
@@ -58,20 +63,34 @@ outputs:
 
 judges:
   - name: must_mention
-    description: The answer mentions every expected fact
-    check: |
-      text = (outputs.get("output_content") or "").strip()
-      if not text:
-          return False, "no answer in output/answer.md"
-      answer = text.lower().replace(",", "")
-      expected = outputs.get("annotations", {}).get("must_mention", [])
-      missing = [fact for fact in expected
-                 if fact.lower().replace(",", "") not in answer]
-      if missing:
-          return False, "missing: " + ", ".join(missing)
-      return True, "mentions every expected fact"
+    description: The share of the task's expected facts the answer names
+    builtin: contains
+    score_range: [0, 1]
+    arguments:
+      file: output/answer.md
+      # Each task's expected.must_mention; an entry may list alternatives.
+      items_from: must_mention
+      partial: true
+  - name: short
+    description: The answer stays within 80 words, as the prompt asks
+    builtin: length
+    arguments:
+      file: output/answer.md
+      min_words: 1
+      max_words: 80
 
 reward:
   weights:
-    must_mention: 1
+    must_mention: 0.7
+    short: 0.3
+  # A long answer lowers the reward; it does not zero it.
   gate: false
+
+thresholds:
+  reward:
+    min_mean: 0.5
+    min_per_case: 0.5
+  must_mention:
+    min_mean: 0.8
+  short:
+    min_pass_rate: 1.0
