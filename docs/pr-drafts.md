@@ -1389,12 +1389,12 @@ threshold gets a summary with the failed check and `enforced: false`);
 `ci.md` and `thresholds.md` combine both texts. The subagent's runs of the
 merge: 2903 passed twice.
 
-## Phase 5 — odh-dashboard `feat/agent-flywheel-module` (`dcf4dbf53`)
+## Phase 5 — odh-dashboard `feat/agent-flywheel-module` (`b73a080c8`)
 
 Not a PR yet: Benchmarks, Training and Brains are still placeholders
 (spec 02 phase 5). From upstream `37dc648`, the commit ODH 3.6.0-ea.2's
 host runs, not from `upstream/main`, and never merged into
-`flywheel-integration`. Thirty commits: `2ca7b5593` (the module tests lose
+`flywheel-integration`. Thirty-nine commits: `2ca7b5593` (the module tests lose
 `dataRegistry`, which #9850 commented out; four tests failed on the base),
 `146f2539a` (the `agentFlywheel` flag), `b428634c2` (the package),
 `89c1ee360` (`modules.go` and the manifests), `e98380b86` (fork-only:
@@ -1414,8 +1414,14 @@ and the Use case page's judges as their boards), then `6e3e18e88` (the
 BFF forwards and mocks every version's record and a task's results),
 `65dc2861a` (the frontend reads them), `d3d88edf5`, `72cdf7bb4`,
 `f311598bb`, `d34b3ebff` and `dcf4dbf53` (the Use cases, Use case and
-Task pages as their boards, and Start evaluation in the list's kebab).
-The PR text is written when every page is real, on
+Task pages as their boards, and Start evaluation in the list's kebab),
+then `38382cd04` (the BFF forwards and mocks AI hub's agents and
+models), `dcd4475e6` (table headers never cut), `dbbd50c4d` (the
+frontend's calls), `6011affae` (the Models tab), `84a2fee9d` (the Agents
+catalog and one agent's page), `b6ce39e52` (Add agent), `d56e06b9f` (the
+two tabs on ODH's AI hub pages), `4afe25938` (Start evaluation picks an
+agent and one of its models) and `b73a080c8` (every page names the
+agent by its title; decision 20). The PR text is written when every page is real, on
 a branch rebased onto the `upstream/main` of that day, without
 `e98380b86`.
 

@@ -1240,6 +1240,29 @@ branch is not merged into `flywheel-integration`, which is on
   back to the subagent. Left out with no data: the Project selector, the
   registry line, the EvalHub collection, "by lukas", Brain, a task's
   "To pass" sentence and its file contents.
+- 2026-11-05, AI hub › Agents and Models (decision 20): nine commits,
+  `38382cd04` to `b73a080c8`. ODH's AI hub already has the tab pages
+  "Agents" and "Models", so the module adds a tab "Agent flywheel" to
+  each, with no second nav item and no change to ODH's pages or flags:
+  the Agents catalog, one agent's page, Add agent (only the runners the
+  harness knows; a variable that names a key is fixed to the gateway's
+  placeholder), and the Models table (price, the agents that use it,
+  "Routed" or "Laptop only"; adding a model is disabled). Start
+  evaluation's agent cards come from AI hub › Agents and its model cards
+  from that agent's models with their prices; every page names the
+  agent by its title. The subagent's runs, twice: type check and lint
+  clean, 187 unit tests, the BFF's `go vet`, Go tests under `-race` and
+  golangci-lint 0, the production bundle. Build `agent-flywheel-ui-9`
+  of `b73a080c8`. As `claude-agent` with Playwright on the cluster: AI
+  hub lists Agents and Models once each; Codex and Claude Code as cards
+  and on their pages with their models and prices; the seven gateway
+  models; Add agent prefilled from Claude Code, and the name `codex`
+  refused inline with the API's 409 (nothing stored); Start evaluation
+  with Claude Code sent `agent` and `model`, and job `220f3225…` names
+  "Claude Code · enmaas-glm-5-3" (validation, 28 s, 0.650, Blocked:
+  `must_mention` under 0.80). Sent back: AI hub › Models opens ODH's
+  Deployments tab ("No model serving platform selected") before ours,
+  and model aliases wrap inside a name.
 
 ### Phase 6: the proof
 
