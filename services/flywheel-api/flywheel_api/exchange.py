@@ -91,5 +91,8 @@ def _input(value: Any, task_id: str) -> str:
 
 def _relative(text: str, task_id: str) -> str:
     """Paths as the agent's workspace has them: it ran in cases/<task>/ of a
-    temporary folder in the job's pod, which means nothing on the page."""
-    return re.sub(r"/\S*?/cases/" + re.escape(task_id) + r"(/|\b)", "", text)
+    temporary folder in the job's pod, which means nothing on the page. A
+    path inside it loses that prefix; the folder itself becomes `.`."""
+    workspace = r"/\S*?/cases/" + re.escape(task_id)
+    text = re.sub(workspace + "/", "", text)
+    return re.sub(workspace + r"(?![\w.-])", ".", text)

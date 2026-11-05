@@ -625,6 +625,7 @@ EVENTS = [
     {"type": "assistant", "text": "", "tools": [{"name": "Read", "id": "t2", "input": {"file_path": f"{WORKSPACE}/screen.txt"}}]},
     {"type": "tool_result", "tool_use_id": "t2", "tool_name": "Read", "content": "no such file", "is_error": True},
     {"type": "assistant", "text": "", "tools": [{"name": "Bash", "id": "t3", "input": {"command": "/usr/bin/bash -lc 'cat output/answer.md'"}}]},
+    {"type": "assistant", "text": "", "tools": [{"name": "Bash", "id": "t4", "input": {"command": f"find {WORKSPACE} -type f"}}]},
     {"type": "assistant", "text": "Answer written to output/answer.md.", "tools": []},
     {"type": "result", "cost_usd": 0.0, "num_turns": 4},
 ]
@@ -676,6 +677,7 @@ def test_one_task_has_its_answer_steps_and_cost(client, evalhub, mlflow):
         {"kind": "tool", "tool": "Grep", "input": "export resources/kb", "error": False},
         {"kind": "tool", "tool": "Read", "input": "screen.txt", "error": True},
         {"kind": "tool", "tool": "Bash", "input": "cat output/answer.md", "error": False},
+        {"kind": "tool", "tool": "Bash", "input": "find . -type f", "error": False},
         {"kind": "message", "text": "Answer written to output/answer.md."},
     ]
 
