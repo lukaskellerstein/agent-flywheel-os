@@ -100,16 +100,19 @@ class Evaluations:
     def list(self, name: str, token: str) -> list[dict]:
         """The use case's jobs, newest first, each with its threshold verdicts once it has ended."""
         self.registry.get(name)
+        rows = (self._read(name, job, token)[0] for job in self._jobs(name, token))
+        return sorted(rows, key=lambda row: row["created"] or "", reverse=True)
+
+    def _jobs(self, name: str, token: str) -> list[dict]:
+        """Every EvalHub job of the use case, page by page."""
         jobs, offset = [], 0
         while True:
             query = {"tags": usecase_tag(name), "limit": PAGE, "offset": offset}
             items = self.evalhub.json("GET", JOBS, token, query=query).get("items") or []
             jobs += items
             if len(items) < PAGE:
-                break
+                return jobs
             offset += PAGE
-        rows = (self._read(name, job, token)[0] for job in jobs)
-        return sorted(rows, key=lambda row: row["created"] or "", reverse=True)
 
     def get(self, name: str, job_id: str, token: str) -> dict:
         """One job, with its judges, every task's verdicts and the threshold verdicts."""
@@ -117,6 +120,20 @@ class Evaluations:
         row["judges"] = results.judges_of(config, summary_yaml or {})
         row["tasks"] = results.tasks_of(summary_yaml, results.judge_names(config)) if summary_yaml else None
         return row
+
+    def task_results(self, name: str, number: int, task_id: str, token: str) -> list[dict]:
+        """Every run of version *number* that scored the task, newest first: the
+        job's row, the task's reward and each judge's verdict on it."""
+        self.registry.record(name, number)
+        rows = []
+        for job in self._jobs(name, token):
+            row, config, summary_yaml = self._read(name, job, token)
+            if row["version"] != number or not summary_yaml:
+                continue
+            task = results.task_of(summary_yaml, task_id, results.judge_names(config))
+            if task is not None:
+                rows.append({"evaluation": row, "reward": task["reward"], "judges": task["judges"]})
+        return sorted(rows, key=lambda r: r["evaluation"]["created"] or "", reverse=True)
 
     def stop(self, name: str, job_id: str, token: str, *, delete: bool) -> None:
         """Cancel a job, or with *delete* remove it and its record from EvalHub.

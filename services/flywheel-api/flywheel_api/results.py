@@ -85,6 +85,11 @@ def tasks_of(summary_yaml: Mapping[str, Any], order: list[str] | None = None) ->
     ]
 
 
+def task_of(summary_yaml: Mapping[str, Any], task_id: str, order: list[str]) -> dict | None:
+    """One task's reward and judges' verdicts in a run, or None when the run did not have it."""
+    return next((task for task in tasks_of(summary_yaml, order) if task["id"] == task_id), None)
+
+
 def thresholds_of(summary_yaml: Mapping[str, Any]) -> dict | None:
     """The harness's threshold verdicts, or None when eval.yaml has no thresholds."""
     block = summary_yaml.get("thresholds")

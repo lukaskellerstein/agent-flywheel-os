@@ -383,6 +383,23 @@ def test_a_running_jobs_summary_is_read_again(client, evalhub, mlflow):
     assert len(mlflow.calls) == 4
 
 
+def test_a_tasks_results_are_every_scored_run_of_its_version(client, evalhub):
+    for version in (2, 2, 1):
+        client.post("/api/usecases/sample/evaluations", json={"version": version}, headers=AUTH)
+    evalhub.complete("job-1", 0.5, "run-1")
+    evalhub.complete("job-3", 0.5, "run-1")  # version 1: not on this page
+    response = client.get("/api/usecases/sample/versions/2/tasks/export-data/results", headers=AUTH)
+    assert response.status_code == 200, response.text
+    [row] = response.json()  # job-2 has no summary yet
+    assert (row["evaluation"]["id"], row["evaluation"]["agent"], row["reward"]) == ("job-1", "codex", 0.0)
+    assert list(row["judges"]) == ["must_mention", "style"]
+    assert row["judges"]["must_mention"] == {"value": False, "rationale": "missing: CSV", "error": None}
+    assert row["evaluation"]["thresholds"]["checks"] == CHECKS
+    assert client.get("/api/usecases/sample/versions/2/tasks/nothing/results", headers=AUTH).json() == []
+    assert client.get("/api/usecases/sample/versions/9/tasks/export-data/results", headers=AUTH).status_code == 404
+    assert client.get("/api/usecases/sample/versions/2/tasks/export-data/results").status_code == 401
+
+
 def test_tasks_of_orders_the_judges_as_eval_yaml_and_the_rest_by_name():
     summary_yaml = {"per_case": {"t": {"b": {"value": 1}, "z": {"value": 2}, "a": {"value": 3}}}}
     [task] = tasks_of(summary_yaml, ["z", "b"])

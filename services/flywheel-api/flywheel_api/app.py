@@ -3,6 +3,7 @@
     GET  /healthz
     GET  /api/usecases
     GET  /api/usecases/{name}
+    GET  /api/usecases/{name}/versions       every version's record, newest first
     GET  /api/usecases/{name}/versions/{n}
     POST /api/usecases/{name}/imports    an upload (multipart, field `file`: one
                                          .tar.gz or .zip of the use case folder)
@@ -13,6 +14,9 @@
     GET  /api/usecases/{name}/evaluations/{id} one job: judges, tasks, threshold verdicts
     DELETE /api/usecases/{name}/evaluations/{id} stop it; ?delete=true removes it
     GET  /api/usecases/{name}/evaluations/{id}/logs its pod logs, as text
+    GET  /api/usecases/{name}/versions/{n}/tasks/{id}/results
+                                               every run of the version that
+                                               scored the task, its verdicts
 
 An import answers 201 with the new version, 200 "unchanged" with the current
 one, or 422 with every problem by file and field. A use case and its versions
@@ -85,6 +89,11 @@ def _add_registry_routes(app: FastAPI, registry: Registry, allow_file_urls: bool
     def usecase(name: str) -> dict:
         return registry.get(name)
 
+    @app.get("/api/usecases/{name}/versions")
+    def version_list(name: str) -> list[dict]:
+        """Every version's record, newest first: hash, source, time, tasks per split, diff."""
+        return registry.records(name)
+
     @app.get("/api/usecases/{name}/versions/{number}")
     def version(name: str, number: int = PathParam(ge=1)) -> dict:
         """The version's record, definition, tasks, judges, diff to the version before, and file list."""
@@ -112,6 +121,11 @@ def _add_evaluation_routes(app: FastAPI, evaluations: Evaluations) -> None:
     @app.get("/api/usecases/{name}/evaluations/{job_id}")
     def evaluation(name: str, job_id: str, request: Request) -> dict:
         return evaluations.get(name, job_id, _token(request))
+
+    @app.get("/api/usecases/{name}/versions/{number}/tasks/{task_id}/results")
+    def task_results(name: str, task_id: str, request: Request, number: int = PathParam(ge=1)) -> list[dict]:
+        """Every run of the version that scored the task, with the task's reward and verdicts."""
+        return evaluations.task_results(name, number, task_id, _token(request))
 
     @app.delete("/api/usecases/{name}/evaluations/{job_id}", status_code=204)
     def stop_evaluation(name: str, job_id: str, request: Request, delete: bool = False) -> None:

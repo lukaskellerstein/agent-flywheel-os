@@ -111,6 +111,11 @@ class Registry:
             "diff": diff(previous, (usecase, files), entry["current"] if entry else None),
         }
 
+    def records(self, name: str) -> list[dict]:
+        """Every version's version.json, newest first: source, time, tasks per split, diff."""
+        entry = self.get(name)
+        return [self.record(name, summary["number"]) for summary in reversed(entry["versions"])]
+
     def record(self, name: str, number: int) -> dict:
         """A version's version.json."""
         data = self.store.get(self.version_prefix(name, number) + VERSION_FILE) if NAME.fullmatch(name) else None
