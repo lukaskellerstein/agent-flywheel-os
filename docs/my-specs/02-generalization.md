@@ -1067,6 +1067,17 @@ commits `847f6c3`, `9305114` and `33c9d9c` on this repo's `main`):
   `runner.pricing`, the reruns `400914b6…` (Codex, 1.0) and `175ce635…`
   (Claude Code, 0.883) show 0.00 USD, the true price. Cost 0 USD, plus
   one 25-token `gpt-5-mini` call to check that EnMaaS serves GPT again.
+- One task of one evaluation, for the module's one-task page (Lukas's
+  `ok`, 2026-11-05; commits `17744e2` and `063c25a`): `GET
+  …/evaluations/{id}/tasks/{task_id}` answers the task's reward and
+  verdicts, the files the agent left in `eval.yaml`'s outputs paths,
+  its `run_result.json` (turns, tokens, cost, duration) and its steps
+  from `events.json` (each message and tool call, the pod's workspace
+  path removed), all from the job's run folder in MLflow, as the caller.
+  199 tests pass twice. Build `flywheel-api-12`: Claude Code's
+  `export-data` in `175ce635…` (0.65, six steps, `find . -type f`,
+  three reads, the write) and Codex's in `400914b6…` (1.0, four shell
+  calls and five messages), each with its answer and 0.00 USD.
 
 ### Phase 4: Hugging Face import
 

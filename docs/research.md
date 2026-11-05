@@ -1741,6 +1741,20 @@ choice rests on:
   gateway's prices both reported 0.00 USD (`harness:estimate`, jobs
   `400914b6…` and `175ce635…`). The same agent scores 0.883 or 1.0 on
   the same version from run to run.
+- A job's MLflow run holds the harness's run folder under `run/`:
+  `summary.yaml`, `run_result.json`, `console.log`, `collection.json`,
+  and per task `cases/<task>/` with `input.yaml`, `run_result.json`
+  (`exit_code`, `duration_s`, `token_usage`, `cost_usd`, `cost_source`,
+  `num_turns`, `model`, per-model usage), `events.json`, `stdout.log`,
+  `stderr.log`, `_diffstat.json` and the outputs folder (`output/answer.md`,
+  plus a copy of the runner's logs). `events.json` has one shape for
+  Claude Code and Codex: `system`, `assistant` (`text`, `tools[{name,
+  id, input}]`), `tool_result` (`tool_use_id`, `content`, `is_error`)
+  and `result` events; Codex wraps each command as `/usr/bin/bash -lc
+  "…"`, and both name the pod's temporary workspace
+  (`/tmp/agent-eval-harness-…/cases/<task>`) in their inputs. MLflow's
+  `GET /api/2.0/mlflow/artifacts/list?run_id=&path=` lists a folder
+  (runs `50ebf1c5…` and `a7afb5af…`, 2026-11-05).
 
 **EnMaaS's OpenAI models fail in bursts (V, 2026-10-16, 17:38 to 17:42
 UTC).** Calls with Lukas's key from the gateway pod: `gpt-5-mini`,
