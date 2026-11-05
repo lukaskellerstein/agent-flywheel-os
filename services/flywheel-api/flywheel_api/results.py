@@ -107,9 +107,14 @@ def _first(items: list | None) -> dict:
     return items[0] if items else {}
 
 
-def _tag_number(tags: list[str], key: str) -> int | None:
+def tag_value(tags: list[str], key: str) -> str | None:
     for tag in tags:
         prefix, _, value = tag.partition(":")
-        if prefix == key and value.isdigit():
-            return int(value)
+        if prefix == key and value:
+            return value
     return None
+
+
+def _tag_number(tags: list[str], key: str) -> int | None:
+    value = tag_value(tags, key)
+    return int(value) if value is not None and value.isdigit() else None

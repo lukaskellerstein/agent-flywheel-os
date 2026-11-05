@@ -2,7 +2,9 @@
 
 One job runs C11's benchmark `eval-run` on one version, which EvalHub's init
 container copies from the registry's bucket to `/test_data`, on all its
-tasks or one split. EvalHub keeps the job, its state and its scores; the
+tasks or one split, with one agent of AI hub › Agents (agents.py) and one of
+the models that agent may use. The agent's runner block reaches the adapter
+as `parameters.runner`, which it lays over the version's eval.yaml. EvalHub keeps the job, its state and its scores; the
 adapter's MLflow run keeps the harness's `run/summary.yaml`, with every
 task's verdicts and the threshold verdicts. Nothing about an evaluation is
 stored here: the job's tags find a use case's jobs, and every call runs as
@@ -26,6 +28,7 @@ import yaml
 from pydantic import BaseModel, ConfigDict, Field
 
 from . import results
+from .agents import Agents, runner_block
 from .problems import Invalid, NotFound
 from .registry import Registry
 from .remote import Remote, RemoteError
@@ -55,7 +58,10 @@ class StartRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     version: int | None = Field(default=None, ge=1)  # the current version when left out
     split: str | None = Field(default=None, min_length=1)  # every task when left out
-    model: str | None = Field(default=None, min_length=1)  # eval.yaml's models.skill when left out
+    # The agent that runs eval.yaml's runner.type when left out.
+    agent: str | None = Field(default=None, min_length=1)
+    # eval.yaml's models.skill when the agent may use it, else the agent's default.
+    model: str | None = Field(default=None, min_length=1)
 
 
 class _Cache:
@@ -78,8 +84,9 @@ class _Cache:
 
 
 class Evaluations:
-    def __init__(self, registry: Registry, evalhub: Remote, mlflow: Remote, settings: Settings):
+    def __init__(self, registry: Registry, agents: Agents, evalhub: Remote, mlflow: Remote, settings: Settings):
         self.registry = registry
+        self.agents = agents
         self.evalhub = evalhub
         self.mlflow = mlflow
         self.settings = settings
@@ -92,9 +99,14 @@ class Evaluations:
         record = self.registry.record(name, number)
         split = _split(name, record, request.split)
         config = self._eval_config(name, number)
-        model = request.model or _default_model(config, number)
-        job = self.evalhub.json("POST", JOBS, token, body=self._job(name, number, split, model, config))
-        log.info("use case %s: version %d, split %s, model %s, job %s", name, number, split, model, job["resource"]["id"])
+        agent = self._agent(request.agent, config)
+        model = self._model(agent, request.model, config)
+        body = self._job(name, number, split, agent, model, config)
+        job = self.evalhub.json("POST", JOBS, token, body=body)
+        log.info(
+            "use case %s: version %d, split %s, agent %s, model %s, job %s",
+            *(name, number, split, agent["name"], model, job["resource"]["id"]),
+        )
         return self._read(name, job, token)[0]
 
     def list(self, name: str, token: str) -> list[dict]:
@@ -158,7 +170,8 @@ class Evaluations:
         verdicts), its version's eval.yaml, and its summary.yaml once MLflow has it."""
         row = results.summary(job)
         config = self._eval_config(name, row["version"]) if row["version"] else {}
-        row["agent"] = (config.get("runner") or {}).get("type")
+        # The job's agent; a job from before AI hub › Agents ran eval.yaml's runner.
+        row["agent"] = results.tag_value(job.get("tags") or [], "agent") or (config.get("runner") or {}).get("type")
         row["task_count"] = self._task_count(name, row["version"], row["split"]) if row["version"] else None
         summary_yaml, row["tasks_detail"] = self._summary_yaml(row, token)
         row["thresholds"] = results.thresholds_of(summary_yaml) if summary_yaml else None
@@ -203,8 +216,37 @@ class Evaluations:
             self._configs.put(key, cached)
         return cached
 
-    def _job(self, name: str, number: int, split: str | None, model: str, config: Mapping[str, Any]) -> dict:
+    def _agent(self, name: str | None, config: Mapping[str, Any]) -> dict:
+        """The named agent, or the one that runs eval.yaml's runner.type."""
+        if name is not None:
+            try:
+                return self.agents.get(name)
+            except NotFound as exc:
+                raise Invalid(str(exc)) from exc
+        runner_type = (config.get("runner") or {}).get("type")
+        if not runner_type:
+            raise Invalid(f"{EVAL_FILE} names no runner.type: pick an agent")
+        for agent in self.agents.list():
+            if agent["runner"]["type"] == runner_type:
+                return agent
+        raise Invalid(f"no agent in AI hub › Agents runs {runner_type!r}, which {EVAL_FILE} names: add one, or pick an agent")
+
+    def _model(self, agent: dict, model: str | None, config: Mapping[str, Any]) -> str:
+        """The model asked for, eval.yaml's models.skill, or the agent's default:
+        one the agent may use and the gateway still routes."""
+        skill = (config.get("models") or {}).get("skill")
+        model = model or (skill if skill in agent["models"] else agent["default_model"])
+        if model not in agent["models"]:
+            raise Invalid(f"agent {agent['name']!r} may not use {model!r}; its models: {', '.join(agent['models'])}")
+        if model not in self.agents.gateway.names():
+            raise Invalid(f"the gateway no longer routes {model!r}")
+        return model
+
+    def _job(
+        self, name: str, number: int, split: str | None, agent: dict, model: str, config: Mapping[str, Any]
+    ) -> dict:
         tags = [TAG, usecase_tag(name), f"version:{number}", *([f"split:{split}"] if split else [])]
+        tags.append(f"agent:{agent['name']}")
         test_data = {
             "s3": {
                 "bucket": self.settings.bucket,
@@ -215,11 +257,11 @@ class Evaluations:
         benchmark = {
             "id": BENCHMARK,
             "provider_id": self.settings.provider,
-            "parameters": {"split": split} if split else {},
+            "parameters": {**({"split": split} if split else {}), "runner": runner_block(agent)},
             "test_data_ref": test_data,
         }
         job: dict[str, Any] = {
-            "name": f"{name}-v{number}-{split or 'all'}-{model}",
+            "name": f"{name}-v{number}-{split or 'all'}-{agent['name']}-{model}",
             "tags": tags,
             "model": {"name": model, "url": self.settings.model_url},
             "benchmarks": [benchmark],
@@ -229,6 +271,7 @@ class Evaluations:
                     {"key": "usecase", "value": name},
                     {"key": "usecase_version", "value": str(number)},
                     {"key": "split", "value": split or "all"},
+                    {"key": "agent", "value": agent["name"]},
                 ],
             },
         }
@@ -257,14 +300,7 @@ def _split(name: str, record: dict, split: str | None) -> str | None:
     return split
 
 
-def _default_model(config: Mapping[str, Any], number: int) -> str:
-    model = (config.get("models") or {}).get("skill")
-    if not isinstance(model, str) or not model:
-        raise Invalid(f"give a model: {EVAL_FILE} of version {number} names no models.skill")
-    return model
-
-
-def evaluations_from_env(registry: Registry, env: Mapping[str, str] = os.environ) -> Evaluations | None:
+def evaluations_from_env(registry: Registry, agents: Agents, env: Mapping[str, str] = os.environ) -> Evaluations | None:
     """EVALHUB_URL turns evaluations on; without it the API serves the registry alone.
 
     MLFLOW_URL, FLYWHEEL_NAMESPACE (the tenant and the MLflow workspace) and
@@ -288,4 +324,4 @@ def evaluations_from_env(registry: Registry, env: Mapping[str, str] = os.environ
         model_url=env.get("FLYWHEEL_MODEL_URL", f"http://gateway.{namespace}.svc:4000/v1"),
     )
     log.info("evaluations: EvalHub %s, MLflow %s, provider %s", evalhub_url, env["MLFLOW_URL"], settings.provider)
-    return Evaluations(registry, evalhub, mlflow, settings)
+    return Evaluations(registry, agents, evalhub, mlflow, settings)

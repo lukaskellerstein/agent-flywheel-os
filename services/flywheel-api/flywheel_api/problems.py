@@ -49,6 +49,14 @@ class Invalid(BadRequest):
     status = 422
 
 
+class Conflict(BadRequest):
+    status = 409
+
+
+class Unavailable(BadRequest):
+    status = 503
+
+
 class Unauthorized(BadRequest):
     """No caller to act as: an evaluation runs with the caller's own token."""
 

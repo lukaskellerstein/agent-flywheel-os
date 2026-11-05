@@ -10,12 +10,15 @@ import yaml
 from fastapi.testclient import TestClient
 from helpers import tar_gz
 
+from flywheel_api.agents import Agents
 from flywheel_api.app import create_app
 from flywheel_api.evaluations import JOBS, Evaluations, Settings, evaluations_from_env
 from flywheel_api.registry import Registry
 from flywheel_api.remote import RemoteError
 from flywheel_api.results import judges_of, tasks_of, thresholds_of
+from flywheel_api.gateway import Gateway
 from flywheel_api.store import FileStore
+from test_agents import CODEX, GATEWAY
 
 TOKEN = "caller-token"
 AUTH = {"Authorization": f"Bearer {TOKEN}"}
@@ -155,12 +158,35 @@ def mlflow() -> FakeMLflow:
     return FakeMLflow({SUMMARY_PATH: yaml.safe_dump(SUMMARY).encode()})
 
 
+CLAUDE = {
+    "name": "claude-code",
+    "title": "Claude Code",
+    "runner": {
+        "type": "claude-code",
+        "permission_mode": "bypassPermissions",
+        "env": {"ANTHROPIC_BASE_URL": "http://gateway.agent-flywheel.svc:4000", "ANTHROPIC_AUTH_TOKEN": "gateway-takes-no-key"},
+    },
+    "brain": {"instructions_file": "CLAUDE.md", "skills_folder": ".claude/skills/"},
+    "models": ["enmaas-glm-5-3"],
+    "default_model": "enmaas-glm-5-3",
+}
+CODEX_RUNNER = CODEX["runner"]
+
+
+def _service(tmp_path, evalhub, mlflow) -> TestClient:
+    """The API with Codex and Claude Code in AI hub › Agents."""
+    store = FileStore(tmp_path / "store")
+    registry = Registry(store)
+    agents = Agents(store, Gateway(GATEWAY))
+    for agent in (CODEX, CLAUDE):
+        agents.add(copy.deepcopy(agent))
+    return TestClient(create_app(registry, Evaluations(registry, agents, evalhub, mlflow, SETTINGS), agents))
+
+
 @pytest.fixture
 def client(tmp_path, files, evalhub, mlflow) -> TestClient:
     """The sample use case imported twice: version 2 adds a split-less change."""
-    registry = Registry(FileStore(tmp_path / "store"))
-    app = create_app(registry, Evaluations(registry, evalhub, mlflow, SETTINGS))
-    client = TestClient(app)
+    client = _service(tmp_path, evalhub, mlflow)
     files["eval.yaml"] = files["eval.yaml"] + EVAL_ADDITIONS
     _upload(client, files)
     files["usecase.yaml"] = files["usecase.yaml"].replace(b"Product questions", b"Product questions, again")
@@ -179,14 +205,14 @@ def test_a_start_sends_the_job_as_the_caller(client, evalhub):
     [(method, path, token, _, body)] = evalhub.calls
     assert (method, path, token) == ("POST", JOBS, TOKEN)
     assert body == {
-        "name": "sample-v1-validation-enmaas-glm-5-3",
-        "tags": ["agent-flywheel", "usecase:sample", "version:1", "split:validation"],
+        "name": "sample-v1-validation-codex-enmaas-glm-5-3",
+        "tags": ["agent-flywheel", "usecase:sample", "version:1", "split:validation", "agent:codex"],
         "model": {"name": "enmaas-glm-5-3", "url": "http://gateway.agent-flywheel.svc:4000/v1"},
         "benchmarks": [
             {
                 "id": "eval-run",
                 "provider_id": "agent-eval-harness",
-                "parameters": {"split": "validation"},
+                "parameters": {"split": "validation", "runner": CODEX_RUNNER},
                 "test_data_ref": {
                     "s3": {
                         "bucket": "flywheel-usecases-1234",
@@ -202,6 +228,7 @@ def test_a_start_sends_the_job_as_the_caller(client, evalhub):
                 {"key": "usecase", "value": "sample"},
                 {"key": "usecase_version", "value": "1"},
                 {"key": "split", "value": "validation"},
+                {"key": "agent", "value": "codex"},
             ],
         },
         "pass_criteria": {"threshold": 0.6},
@@ -220,11 +247,10 @@ def test_a_version_says_what_eval_yaml_sets_for_a_run(client):
 
 
 def test_without_a_reward_min_mean_evalhub_keeps_its_own_pass_criteria(tmp_path, files, evalhub, mlflow):
-    registry = Registry(FileStore(tmp_path / "store"))
-    client = TestClient(create_app(registry, Evaluations(registry, evalhub, mlflow, SETTINGS)))
-    files["eval.yaml"] += b"\nmodels:\n  skill: enmaas-glm-5-3\n"
+    client = _service(tmp_path, evalhub, mlflow)
     _upload(client, files)
-    client.post("/api/usecases/sample/evaluations", headers=AUTH)
+    response = client.post("/api/usecases/sample/evaluations", json={"agent": "codex"}, headers=AUTH)
+    assert response.status_code == 201, response.text
     assert "pass_criteria" not in evalhub.calls[0][4]
 
 
@@ -232,12 +258,51 @@ def test_a_bare_start_takes_the_current_version_every_task_and_the_eval_model(cl
     response = client.post("/api/usecases/sample/evaluations", headers=AUTH)
     assert response.status_code == 201, response.text
     body = evalhub.calls[0][4]
-    assert body["name"] == "sample-v2-all-enmaas-glm-5-3"
-    assert body["benchmarks"][0]["parameters"] == {}
+    assert body["name"] == "sample-v2-all-codex-enmaas-glm-5-3"
+    assert body["benchmarks"][0]["parameters"] == {"runner": CODEX_RUNNER}
     assert body["benchmarks"][0]["test_data_ref"]["s3"]["key"] == "usecases/sample/versions/2/"
     assert "split:all" not in body["tags"]
-    other = client.post("/api/usecases/sample/evaluations", json={"model": "enmaas-gemini"}, headers=AUTH)
-    assert evalhub.calls[1][4]["model"]["name"] == "enmaas-gemini", other.text
+    other = client.post("/api/usecases/sample/evaluations", json={"model": "enmaas-gpt-5-mini"}, headers=AUTH)
+    assert evalhub.calls[1][4]["model"]["name"] == "enmaas-gpt-5-mini", other.text
+
+
+def test_another_agent_brings_its_own_runner_block(client, evalhub):
+    response = client.post("/api/usecases/sample/evaluations", json={"agent": "claude-code"}, headers=AUTH)
+    assert response.status_code == 201, response.text
+    body = evalhub.calls[0][4]
+    assert body["benchmarks"][0]["parameters"]["runner"] == CLAUDE["runner"]
+    assert "agent:claude-code" in body["tags"]
+    assert body["name"] == "sample-v2-all-claude-code-enmaas-glm-5-3"
+    assert response.json()["agent"] == "claude-code"
+
+
+def test_the_agents_default_model_when_eval_yaml_names_one_it_may_not_use(tmp_path, files, evalhub, mlflow):
+    client = _service(tmp_path, evalhub, mlflow)
+    files["eval.yaml"] += b"\nmodels:\n  skill: enmaas-gpt-5-mini\n"
+    _upload(client, files)
+    client.post("/api/usecases/sample/evaluations", json={"agent": "claude-code"}, headers=AUTH)
+    assert evalhub.calls[0][4]["model"]["name"] == "enmaas-glm-5-3"
+
+
+@pytest.mark.parametrize(
+    ("request_body", "detail"),
+    [
+        ({"agent": "cursor"}, "no agent 'cursor' in AI hub › Agents"),
+        ({"agent": "claude-code", "model": "enmaas-gpt-5-mini"}, "agent 'claude-code' may not use 'enmaas-gpt-5-mini'; its models: enmaas-glm-5-3"),
+        ({"model": "enmaas-gemini"}, "agent 'codex' may not use 'enmaas-gemini'; its models: enmaas-glm-5-3, enmaas-gpt-5-mini"),
+    ],
+)
+def test_only_a_listed_agent_with_one_of_its_models_runs(client, evalhub, request_body, detail):
+    response = client.post("/api/usecases/sample/evaluations", json=request_body, headers=AUTH)
+    assert (response.status_code, response.json()["detail"]) == (422, detail)
+    assert evalhub.calls == []
+
+
+def test_a_model_the_gateway_dropped_does_not_run(client, evalhub, monkeypatch):
+    monkeypatch.setattr(Gateway, "names", lambda self: ["enmaas-gpt-5-mini"])
+    response = client.post("/api/usecases/sample/evaluations", headers=AUTH)
+    assert (response.status_code, response.json()["detail"]) == (422, "the gateway no longer routes 'enmaas-glm-5-3'")
+    assert evalhub.calls == []
 
 
 @pytest.mark.parametrize(
@@ -256,13 +321,16 @@ def test_a_start_that_cannot_run_reaches_no_evalhub(client, evalhub, request_bod
     assert evalhub.calls == []
 
 
-def test_a_start_without_a_model_anywhere_is_refused(tmp_path, files, evalhub, mlflow):
-    registry = Registry(FileStore(tmp_path / "store"))
-    client = TestClient(create_app(registry, Evaluations(registry, evalhub, mlflow, SETTINGS)))
+def test_a_start_without_an_agent_for_eval_yamls_runner_is_refused(tmp_path, files, evalhub, mlflow):
+    client = _service(tmp_path, evalhub, mlflow)
     _upload(client, files)
     response = client.post("/api/usecases/sample/evaluations", headers=AUTH)
-    assert response.status_code == 422
-    assert response.json()["detail"] == "give a model: eval.yaml of version 1 names no models.skill"
+    assert (response.status_code, response.json()["detail"]) == (422, "eval.yaml names no runner.type: pick an agent")
+    files["eval.yaml"] += b"\nrunner:\n  type: opencode\n"
+    _upload(client, files)
+    response = client.post("/api/usecases/sample/evaluations", headers=AUTH)
+    assert response.json()["detail"] == "no agent in AI hub › Agents runs 'opencode', which eval.yaml names: add one, or pick an agent"
+    assert evalhub.calls == []
 
 
 @pytest.mark.parametrize("header", [{}, {"Authorization": "Basic abc"}, {"Authorization": "Bearer  "}])
@@ -489,16 +557,17 @@ def test_tasks_of_an_empty_summary():
 
 def test_evaluations_turn_on_with_evalhub_and_need_the_rest(tmp_path):
     registry = Registry(FileStore(tmp_path))
-    assert evaluations_from_env(registry, {}) is None
+    agents = Agents(FileStore(tmp_path), Gateway(GATEWAY))
+    assert evaluations_from_env(registry, agents, {}) is None
     with pytest.raises(RuntimeError, match="MLFLOW_URL, FLYWHEEL_NAMESPACE, BUCKET_NAME"):
-        evaluations_from_env(registry, {"EVALHUB_URL": "https://evalhub:8443"})
+        evaluations_from_env(registry, agents, {"EVALHUB_URL": "https://evalhub:8443"})
     env = {
         "EVALHUB_URL": "https://evalhub:8443",
         "MLFLOW_URL": "https://mlflow:8443/mlflow",
         "FLYWHEEL_NAMESPACE": "agent-flywheel",
         "BUCKET_NAME": "b",
     }
-    evaluations = evaluations_from_env(registry, env)
+    evaluations = evaluations_from_env(registry, agents, env)
     assert evaluations.settings == Settings("agent-eval-harness", "b", "flywheel-usecases", "http://gateway.agent-flywheel.svc:4000/v1")
     assert evaluations.evalhub.headers == {"X-Tenant": "agent-flywheel"}
     assert evaluations.mlflow.headers == {"X-MLflow-Workspace": "agent-flywheel"}

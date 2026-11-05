@@ -3,12 +3,16 @@
     GET  /healthz
     GET  /api/usecases
     GET  /api/usecases/{name}
+    GET  /api/models                         the models the gateway routes
+    GET  /api/agents                         AI hub › Agents
+    GET  /api/agents/{name}
+    POST /api/agents                         JSON, one agent (agents.py)
     GET  /api/usecases/{name}/versions       every version's record, newest first
     GET  /api/usecases/{name}/versions/{n}
     POST /api/usecases/{name}/imports    an upload (multipart, field `file`: one
                                          .tar.gz or .zip of the use case folder)
                                          or JSON {"git": {"url", "ref", "path"}}
-    POST /api/usecases/{name}/evaluations      JSON {"version", "split", "model"},
+    POST /api/usecases/{name}/evaluations      JSON {"version", "split", "agent", "model"},
                                                each optional: an EvalHub job
     GET  /api/usecases/{name}/evaluations      the use case's jobs, newest first
     GET  /api/usecases/{name}/evaluations/{id} one job: judges, tasks, threshold verdicts
@@ -27,7 +31,7 @@ caller: they need its Bearer token, which the dashboard module's BFF sends.
 
 from __future__ import annotations
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import Body, FastAPI, HTTPException, Request
 from fastapi import Path as PathParam
 from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel, ConfigDict, ValidationError, model_validator
@@ -35,6 +39,7 @@ from starlette.concurrency import run_in_threadpool
 from starlette.datastructures import UploadFile
 
 from . import sources
+from .agents import Agents
 from .evaluations import Evaluations, StartRequest
 from .problems import BadRequest, ImportRefused, NotFound, TooLarge, Unauthorized
 from .registry import Registry, check_name
@@ -64,12 +69,18 @@ class ImportRequest(BaseModel):
 
 
 def create_app(
-    registry: Registry, evaluations: Evaluations | None = None, *, allow_file_urls: bool = False
+    registry: Registry,
+    evaluations: Evaluations | None = None,
+    agents: Agents | None = None,
+    *,
+    allow_file_urls: bool = False,
 ) -> FastAPI:
     """*allow_file_urls* lets a git import read a `file://` repository; only the tests set it."""
     app = FastAPI(title="Agent Flywheel API")
     _add_error_handlers(app)
     _add_registry_routes(app, registry, allow_file_urls)
+    if agents is not None:
+        _add_hub_routes(app, agents)
     if evaluations is not None:
         _add_evaluation_routes(app, evaluations)
     return app
@@ -106,6 +117,30 @@ def _add_registry_routes(app: FastAPI, registry: Registry, allow_file_urls: bool
         result = await run_in_threadpool(registry.import_files, name, fetched.files, fetched.source)
         status = 201 if result.status == "created" else 200
         return JSONResponse({"status": result.status, "version": result.version}, status_code=status)
+
+
+def _add_hub_routes(app: FastAPI, agents: Agents) -> None:
+    """AI hub › Agents and Models: the agents in the store, the models the gateway routes."""
+
+    @app.get("/api/models")
+    def model_list() -> list[dict]:
+        used_by: dict[str, list[str]] = {}
+        for agent in agents.list():
+            for model in agent["models"]:
+                used_by.setdefault(model, []).append(agent["name"])
+        return [{**model, "used_by": used_by.get(model["name"], [])} for model in agents.gateway.models()]
+
+    @app.get("/api/agents")
+    def agent_list() -> list[dict]:
+        return agents.list()
+
+    @app.get("/api/agents/{name}")
+    def agent(name: str) -> dict:
+        return agents.get(name)
+
+    @app.post("/api/agents", status_code=201)
+    def add_agent(body: dict = Body()) -> dict:
+        return agents.add(body)
 
 
 def _add_evaluation_routes(app: FastAPI, evaluations: Evaluations) -> None:

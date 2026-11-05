@@ -1,0 +1,49 @@
+{
+  "name": "claude-code",
+  "title": "Claude Code",
+  "description": "Anthropic's coding agent, run headless with claude --print.",
+  "framework": "Claude Code",
+  "version": "2.1.228",
+  "image": "image-registry.openshift-image-registry.svc:5000/agent-flywheel/agent-eval-harness:flywheel-integration",
+  "repository": "https://github.com/anthropics/claude-code",
+  "environment": [
+    {
+      "name": "ANTHROPIC_BASE_URL",
+      "required": true,
+      "description": "The model gateway. Claude Code calls its Messages route, which LiteLLM turns into each model's own."
+    },
+    {
+      "name": "ANTHROPIC_AUTH_TOKEN",
+      "required": true,
+      "description": "The gateway takes no key inside the cluster, so it holds a placeholder."
+    },
+    {
+      "name": "ANTHROPIC_DEFAULT_HAIKU_MODEL",
+      "required": false,
+      "description": "Claude Code's background calls. The gateway has no Claude alias, so they go to the free GLM 5.3."
+    }
+  ],
+  "runner": {
+    "type": "claude-code",
+    "permission_mode": "bypassPermissions",
+    "env": {
+      "ANTHROPIC_BASE_URL": "http://gateway.agent-flywheel.svc:4000",
+      "ANTHROPIC_AUTH_TOKEN": "gateway-takes-no-key",
+      "ANTHROPIC_API_KEY": "gateway-takes-no-key",
+      "ANTHROPIC_DEFAULT_HAIKU_MODEL": "enmaas-glm-5-3",
+      "CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS": "1",
+      "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+      "CLAUDE_CODE_ATTRIBUTION_HEADER": "0",
+      "DISABLE_TELEMETRY": "1",
+      "DISABLE_AUTOUPDATER": "1",
+      "API_TIMEOUT_MS": "600000"
+    }
+  },
+  "brain": {
+    "instructions_file": "CLAUDE.md",
+    "skills_folder": ".claude/skills/",
+    "trainable": true
+  },
+  "models": ["enmaas-glm-5-3", "enmaas-gpt-5-mini", "enmaas-gpt-6-luna"],
+  "default_model": "enmaas-glm-5-3"
+}
