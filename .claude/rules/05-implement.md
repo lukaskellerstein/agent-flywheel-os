@@ -93,14 +93,17 @@ Write clean code from the start. Follow these rules during implementation:
   Python project with its own `pyproject.toml`, `uv.lock` and
   `Containerfile`; the code in `flywheel_api/`, small modules (the task
   format and its checks, the use case's files, versions and their diff,
-  the store, the import sources, the routes); the offline tests in
-  `tests/`. It joins S3, EvalHub and MLflow, which is why it is ours
-  (spec 02 section 4.5); a check the harness can hold goes upstream
-  instead (C26). One replica: the writes to a use case are serialised in
-  its process.
+  the store, the import sources, the evaluations, the client for EvalHub
+  and MLflow, the routes); the offline tests in `tests/`, with EvalHub
+  and MLflow faked in their real shapes. It joins S3, EvalHub and MLflow,
+  which is why it is ours (spec 02 section 4.5); a check the harness can
+  hold goes upstream instead (C26). One replica: the writes to a use case
+  are serialised in its process.
 - Not here: code an upstream project can hold, and any key. The bucket's
   key reaches the pod as env from the claim's Secret, and git runs with
-  an environment that leaves it out.
+  an environment that leaves it out. No identity of its own for EvalHub
+  or MLflow: an evaluation call carries its caller's token, and an
+  evaluation's record stays in EvalHub and MLflow, not in the bucket.
 
 ## `usecases/` — use cases in the task format
 
@@ -121,9 +124,12 @@ Write clean code from the start. Follow these rules during implementation:
 - `platform/` — Open Data Hub, spec 01 phase 1: `operator/` (the Subscription),
   `dsc/` (DSCInitialization and DataScienceCluster), `dashboard/` (a partial
   OdhDashboardConfig, server-side apply only), `mlflow/` (ODH's MLflow),
-  `evalhub/` (the EvalHub server). Applied in that order; each needs the one
-  before it. Configuration of ODH's own objects; from spec 02 phase 2 the
-  Subscription also points ODH at our operator and EvalHub images.
+  `evalhub/` (the EvalHub server, and C11's provider as a tenant
+  ConfigMap that its `spec.providers` names, with our adapter image by
+  digest: a new adapter build changes that digest). Applied in that order;
+  each needs the one before it. Configuration of ODH's own objects; from
+  spec 02 phase 2 the Subscription also points ODH at our operator and
+  EvalHub images.
 - `gateway/` — LiteLLM, spec 01 phase 1 step 6, ported from `openshift-eval`;
   every route is EnMaaS since 2026-10-14 (decision 9). Every model
   alias and price lives in `config/`, never a key. A GPT or Claude alias
@@ -151,7 +157,9 @@ Write clean code from the start. Follow these rules during implementation:
   (`oc start-build flywheel-api --from-repo=<this repo> --commit=<sha>`),
   a Deployment with an image trigger that takes the bucket claim's
   ConfigMap and Secret with `envFrom`, and a ClusterIP Service on 8080. No
-  Route: the dashboard module's BFF calls it inside the cluster.
+  Route: the dashboard module's BFF calls it inside the cluster. For
+  evaluations: the service CA (both EvalHub and MLflow serve with it) and
+  a NetworkPolicy that adds the API pod to those EvalHub admits.
 - Not here yet: the flywheel Jobs. They land with spec 02 phase 3.
 
 ## Repository structure

@@ -1612,7 +1612,51 @@ static handler and answers the page's HTML with 200.
   `3e9b9bf2…` answered `resource_not_found`. MLflow kept its runs. So a
   provider is registered again after every EvalHub restart (now
   `b63ce249-faa2-4663-89b4-3f20078b0e0f`), until EvalHub gets a database
-  that outlives its pod.
+  that outlives its pod. Since 2026-11-05 C11's provider is mounted from
+  a ConfigMap instead, with the id `agent-eval-harness` (below).
+
+**Evaluations started by the flywheel API (V, 2026-11-05, cluster-nm8mw).**
+- After a stop of 20 days, every pod with an image from the internal
+  registry stayed in `ImagePullBackOff` for 7 minutes: the registry
+  refused their pull secrets' bound tokens (`invalid token:
+  Unauthorized`), and openshift-controller-manager renews them only
+  once it holds its leader lease, whose old holder's 270 s had to run
+  out first (node Ready 10:13:33 UTC, lease taken 10:20:23, every image
+  pulled 10:21:24). Nothing to fix: wait about 7 minutes after a start.
+- The TrustyAI operator's NetworkPolicy on the EvalHub pod
+  (`trustyai-np-<hash>`) admits 8443 only from the router's namespaces,
+  the dashboard's `eval-hub-ui` pod, EvalHub's own job pods and
+  Prometheus (8081). Any other client in the cluster needs a policy of
+  its own beside it (`deploy/flywheel-api/evalhub-ingress.yaml`).
+  MLflow's policy `mlflow` in `opendatahub` admits every pod on 8443.
+  Both serve with certificates of the service CA.
+- A provider named in the `EvalHub`'s `spec.providers`: in single
+  tenancy the operator takes a ConfigMap labelled
+  `trustyai.opendatahub.io/evalhub-provider-type: tenant` and
+  `…-provider-name: <name>` from the instance's namespace when the
+  operator's namespace has no `system` one (`controllers/evalhub/configmap.go`,
+  `reconcileProviderConfigMaps`), and copies its data to
+  `<instance>-provider-<name>` in the same namespace, without the
+  labels, owned by the `EvalHub`. A source named like that copy
+  collides with it. The provider answers by its file's `id`, owner
+  `system`, and outlives the server's in-memory database.
+- A job created through EvalHub's API with a user's token names that
+  user as its `owner`, so a client that forwards the token keeps the
+  user's identity and rights. Once a benchmark completes, its status
+  keeps `status` and `completed_at` only: `phase` and `started_at` are
+  gone. `results.test` holds the score, the threshold and `pass`.
+- Every job leaves two MLflow runs in its experiment: the server's,
+  tagged `context: eval-hub` and `evaluation_job_id`, which stays
+  `RUNNING` and holds no files (an upstream gap to check), and the
+  adapter's, `FINISHED`, whose id is `results.benchmarks[0].mlflow_run_id`
+  and whose `run/` holds the harness's run folder. Its `artifact_uri` is
+  `mlflow-artifacts:/workspaces/<namespace>/<experiment>/<run>/artifacts`;
+  a file reads at `/api/2.0/mlflow-artifacts/artifacts/` plus that path,
+  with the header `X-MLflow-Workspace`.
+- The first evaluation through the API: job `17c3edb5…`, `smoke`
+  version 2, every task, Codex on `enmaas-glm-5-3`, 10:40:58 to
+  10:42:14 UTC; `reward` 0.667, pass against 0.5, MLflow run
+  `3811f847…`, the same three verdicts as on 2026-10-16. Cost 0 USD.
 
 **EnMaaS's OpenAI models fail in bursts (V, 2026-10-16, 17:38 to 17:42
 UTC).** Calls with Lukas's key from the gateway pod: `gpt-5-mini`,

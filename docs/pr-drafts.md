@@ -1389,19 +1389,25 @@ threshold gets a summary with the failed check and `enforced: false`);
 `ci.md` and `thresholds.md` combine both texts. The subagent's runs of the
 merge: 2903 passed twice.
 
-## Phase 5 — odh-dashboard `feat/agent-flywheel-module` (`0d8575068`)
+## Phase 5 — odh-dashboard `feat/agent-flywheel-module` (`989e25606`)
 
-Not a PR yet: every page is a placeholder until Lukas has reviewed the
-boards (spec 02 phase 5). From upstream `37dc648`, the commit ODH
-3.6.0-ea.2's host runs, not from `upstream/main`, and never merged into
-`flywheel-integration`. Six commits: `2ca7b5593` (the module tests lose
+Not a PR yet: Benchmarks, Training and Brains are still placeholders
+(spec 02 phase 5). From upstream `37dc648`, the commit ODH 3.6.0-ea.2's
+host runs, not from `upstream/main`, and never merged into
+`flywheel-integration`. Twelve commits: `2ca7b5593` (the module tests lose
 `dataRegistry`, which #9850 commented out; four tests failed on the base),
 `146f2539a` (the `agentFlywheel` flag), `b428634c2` (the package),
 `89c1ee360` (`modules.go` and the manifests), `e98380b86` (fork-only:
 `params.env` points at our cluster's ImageStream, so it never goes
-upstream), `0d8575068` (the BFF builds as root in its builder stage). The
-PR text is written when the pages are real, on a branch rebased onto the
-`upstream/main` of that day, without `e98380b86`.
+upstream), `0d8575068` (the BFF builds as root in its builder stage),
+`bae799cf6` and `3fbdc402a` (the Use cases, Use case and Task pages and
+the BFF's mock, 2026-10-16), and on 2026-11-05 `20d50c5ac` (the BFF
+forwards the evaluation routes), `c630dd4d5` (the mock serves support's
+evaluations), `db0fe66b6` (the frontend's evaluation calls) and
+`989e25606` (the Evaluations, Start evaluation and Evaluation pages, from
+the Evaluate boards). The PR text is written when every page is real, on
+a branch rebased onto the `upstream/main` of that day, without
+`e98380b86`.
 
 ## C27 — odh-dashboard `feat/eval-hub-test-data-sources` (`2676e771e`)
 

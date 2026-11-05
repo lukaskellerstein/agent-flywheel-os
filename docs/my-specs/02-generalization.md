@@ -107,10 +107,9 @@ All of it is merged, 2026-10-16 by 23:00 CEST: the harness's C20, C21,
 C26, C22, C23, C24 and C25 (`flywheel-integration` `23f7690`, 3347
 passed twice), eval-hub's C28, odh-dashboard's C27, and C11 with its
 adapter image on the cluster. Each row is in section 5.1, each PR text
-in `docs/pr-drafts.md`. The harness image on the cluster is older
-(`flywheel-integration` `2137cdd`, the C21 merge; build
-`agent-eval-harness-1`): a run that needs C22 to C25 in a pod needs the
-base image and the adapter built again.
+in `docs/pr-drafts.md`. The harness image on the cluster has them all
+since 2026-11-05 (build `agent-eval-harness-2` of `23f7690`, and the
+adapter on it, build `agent-eval-harness-adapter-3`).
 
 Not next:
 
@@ -137,17 +136,26 @@ boards are approved (decision 18), and the module's subagent builds
 the Use cases, Use case and Task pages from them. At 22:56 CEST the
 first evaluation with answers ran (decision 19): `smoke` version 2,
 Codex on GLM 5.3 through EvalHub and our adapter, `reward` 0.667, each
-task's reason in MLflow (phase 3 status). Next on this path: a run
-route in the API, then "Start evaluation" on the Use case page.
+task's reason in MLflow (phase 3 status). On 2026-11-05 (Lukas's go)
+the API got its evaluation routes and the module its Evaluations, Start
+evaluation and Evaluation pages: an evaluation now starts from the
+dashboard and shows each task's verdict, the same numbers as MLflow
+(phases 3 and 5 status). Next on this path: phase 3's loop, runner
+image and support as version 1, which wait for Lukas's commit of
+`openshift-eval`'s `generalization` (decision 17); then "Start training".
 
 **The cluster.** `cluster-nm8mw` auto-destroys on 2026-11-12. RHDP also
 auto-stops it; the auto-stop read last was Thu 2026-10-15 02:23 CEST, and
 only Lukas can move it (spec 01 section 0). It stopped after 2026-10-15
 and ran again on 2026-10-16 (Lukas); the agent's token had expired and
 was renewed at 15:15 CEST, until 2026-10-17 15:15 CEST. It stopped again
-on 2026-10-16 about 21:15 CEST and ran again by 22:38 CEST. The new
-auto-stop time is not read. A stop erases EvalHub's providers and jobs
-(SQLite in the pod). Before cluster work that
+on 2026-10-16 about 21:15 CEST and ran again by 22:38 CEST, then
+stopped until Lukas started it on 2026-11-05 (node Ready 11:13 CET); the
+agent's token was renewed at 11:16 CET, until 2026-11-06 11:16 CET, after
+Lukas's `oc login`. The new auto-stop time is not read. A stop erases
+EvalHub's jobs (SQLite in the pod); C11's provider is mounted from a
+ConfigMap since 2026-11-05 and stays. After a long stop, pods with our
+images wait about 7 minutes for their pull secrets (`docs/research.md`). Before cluster work that
 takes hours, ask him whether the auto-stop is far enough. If the API times
 out, ask him whether the cluster stopped before you debug anything.
 
@@ -897,7 +905,7 @@ problem refused at once with its file, field and line (422), a version
 only when the content hash changes, nothing overwritten. 127 tests pass
 twice (the agent's run, offline: S3 through `moto`). It runs on the
 cluster since 2026-10-16 18:30 CEST (decision 18): commits `4befbc5` and
-`637c9af` on this repo's `main`, not pushed; build `flywheel-api-1` of
+`637c9af` on this repo's `main`, on `origin/main` by 2026-11-05; build `flywheel-api-1` of
 `637c9af`; `c62e9bb` turns off the pod's service links, since the
 Service `flywheel-api` injected `FLYWHEEL_API_PORT=tcp://…` and the pod
 crashed. Through the dashboard (host, our module's BFF, the API, with
@@ -949,6 +957,36 @@ limit and the fix, not the format), so validation scores 0.0 and train
 1.0. Tokens: 24,680 input, 90,112 cache read, 1,880 output, 3 turns;
 cost 0 USD, GLM 5.3 is free. DoD items 2 and 3 are checked on `smoke`;
 items 1 and 4 wait for support.
+
+Evaluations from the API (Lukas's go, 2026-11-05; commits `8cc5553`,
+`153e859`, `5c2e58e` on this repo's `main`): `POST
+/api/usecases/{name}/evaluations` (`version`, `split`, `model`, each
+optional: the current version, every task, `eval.yaml`'s
+`models.skill`) starts one EvalHub job with C11's `eval-run` on the
+version's folder in the bucket; `GET` lists a use case's jobs by the tag
+`usecase:<name>`; `GET …/evaluations/{id}` adds each task's reward and
+verdicts from the adapter's MLflow run (`run/summary.yaml`). The API
+holds no identity there: it forwards the caller's token, so EvalHub
+names the caller as the job's owner, and nothing about an evaluation is
+stored in the bucket. 154 tests pass twice (the agent's run, offline;
+EvalHub and MLflow faked in the shapes read on the cluster). On the
+cluster:
+
+- C11's provider is no longer registered through EvalHub's API, which
+  lost it at every restart: `deploy/platform/evalhub/` mounts it from a
+  tenant ConfigMap that `spec.providers` names, id `agent-eval-harness`,
+  with the adapter by digest (`docs/research.md`, "Evaluations started
+  by the flywheel API").
+- New images: build `agent-eval-harness-2` of harness `23f7690` (C22 to
+  C25 now in the pod) and `agent-eval-harness-adapter-3` of contrib
+  `98d7683` on it, its smoke test passed in the build; build
+  `flywheel-api-2` of `5c2e58e`.
+- `deploy/flywheel-api/` adds the service CA and a NetworkPolicy: the
+  operator's own policy admits only its known clients to EvalHub.
+- Job `17c3edb5…` from the API, `smoke` version 2, every task: completed
+  in 76 s, `reward` 0.667, pass against 0.5, the three verdicts of
+  2026-10-16 again, read back through the API from MLflow run
+  `3811f847…`. Cost 0 USD.
 
 ### Phase 4: Hugging Face import
 
@@ -1044,6 +1082,25 @@ branch is not merged into `flywheel-integration`, which is on
   gate), no runs or per-task results (MLflow), no source or diff per
   version in the list, no file contents or sizes, no EvalHub
   collection; a ref is a branch or a tag, and an upload is one archive.
+- 2026-11-05, evaluations (Lukas's go): `20d50c5ac` (the BFF forwards
+  the API's three evaluation routes), `c630dd4d5` (the mock serves
+  support's evaluations), `db0fe66b6` and `989e25606` (the Evaluations,
+  Start evaluation and Evaluation pages, from the Evaluate boards of
+  spec 01 phase 5 step 1, with what the API lacks as one sentence each:
+  agent, brain, log, stop, a per-question answer). The subagent's runs,
+  twice: type check and lint clean, 72 unit tests (35 before), the BFF's
+  Go tests under `-race`, golangci-lint 0, the production bundle; the
+  agent's runs of the 72 tests and the Go tests once more. Build
+  `agent-flywheel-ui-4` of `989e25606`. As `claude-agent`, with
+  Playwright on the cluster: Use case `smoke` › Start evaluation ›
+  Validation · 1 started job `47a662e6…`; its page read it every 10 s
+  until it completed, 0 console errors: Blocked, `reward` 0.000 against
+  0.50, `export-data` Fail "missing: CSV", and MLflow run `a611f2cc…`
+  holds the same numbers and verdict. The Evaluations list shows both of
+  the day's jobs (0.000 Blocked, 0.667 Passes). DoD item 3 holds for
+  evaluations; Benchmarks, Training and Brains are still placeholders.
+  Item 2 waits for Lukas and for training. Duration shows "—": EvalHub
+  drops a completed benchmark's `started_at` (`docs/research.md`).
 
 ### Phase 6: the proof
 

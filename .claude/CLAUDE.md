@@ -77,17 +77,17 @@ follow the rule and rewrite the memory in the same turn —
   `flywheel-integration` (2026-10-14), their PR texts in
   `docs/pr-drafts.md`. Spec 02's C29 and C14 (the operator), C10 and C12
   (eval-hub), and C35 to C39 and C19 (the harness) are merged into each
-  fork's `flywheel-integration` (2026-10-15); our operator and EvalHub
-  images run on the cluster (`deploy/builds/`). Nothing of the flywheel
-  loop is built yet.
-- **Next step**: spec 02 §0, "The next step" — Lukas's go 2026-10-16,
-  running: C20 to C26 (the harness, one at a time, C20 and C21 first),
-  C28 (eval-hub), C27 (the dashboard), then C11 (contrib), one subagent
-  per fork clone, by spec 02 §6's procedure; beside it the fast path to
-  our UI (decision 17): the Design canvas, phase 3's flywheel API and
-  registry, then phase 5's module. C13 is skipped; C5 waits for
-  Lukas to post the PR #90 comment (spec 01 §13). Status per
-  contribution: spec 02 §5.1.
+  fork's `flywheel-integration` (2026-10-15), C20 to C28 and C11
+  (2026-10-16); our operator, EvalHub, harness and adapter images run on
+  the cluster (`deploy/builds/`). The flywheel API (registry, imports,
+  evaluations as EvalHub jobs) and our dashboard module (Use cases, Use
+  case, Task, Evaluations) run there too: an evaluation starts from the
+  dashboard (2026-11-05). Nothing of the flywheel loop is built yet.
+- **Next step**: spec 02 §0 — phase 3's loop, runner image and support
+  as version 1, which wait for Lukas's commit of `openshift-eval`'s
+  `generalization` (decision 17); then "Start training" in the module.
+  C13 is skipped; C5 waits for Lukas to post the PR #90 comment (spec 01
+  §13). Status per contribution: spec 02 §5.1.
 - **Evidence**: `docs/research.md` holds every upstream fact behind the specs,
   with file and line; `README.md` indexes every file.
 - **Other repos** (spec 01 §0): the fork clones in

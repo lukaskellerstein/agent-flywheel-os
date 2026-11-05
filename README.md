@@ -27,8 +27,8 @@ is built from, is `~/Projects/Github/lukaskellerstein/openshift-eval`.
 | [`deploy/agent-access/`](deploy/agent-access/) | The agent's identity: ServiceAccount `claude-agent`, cluster-admin |
 | [`deploy/platform/`](deploy/platform/) | Open Data Hub 3.6.0-ea.2: the operator, the DSC, the dashboard's flags, ODH's MLflow, the EvalHub server |
 | [`deploy/builds/`](deploy/builds/) | Our images of the fork clones, built on the cluster with binary BuildConfigs: the TrustyAI operator, the EvalHub server, the harness's base image, the EvalHub adapter (C11), our dashboard module and dashboard-operator; and the rights our newer operator and EvalHub builds need, which ODH's own roles lack |
-| [`services/flywheel-api/`](services/flywheel-api/) | The flywheel API: the registry of use cases in S3, import by upload or from git, fixed versions with their diff (spec 02 phase 3) |
-| [`deploy/flywheel-api/`](deploy/flywheel-api/) | The API on the cluster: its BuildConfig, Deployment and Service, no Route |
+| [`services/flywheel-api/`](services/flywheel-api/) | The flywheel API: the registry of use cases in S3, import by upload or from git, fixed versions with their diff, and evaluations as EvalHub jobs with each task's verdicts from MLflow (spec 02 phase 3) |
+| [`deploy/flywheel-api/`](deploy/flywheel-api/) | The API on the cluster: its BuildConfig, Deployment and Service, no Route; the service CA and its way into EvalHub |
 | [`usecases/smoke/`](usecases/smoke/) | The smoke use case: three product questions, one deterministic judge, Codex through the gateway; the first EvalHub job's test data (spec 02 decision 19) |
 | [`deploy/bucket/`](deploy/bucket/) | The registry's S3 bucket: one ObjectBucketClaim on the cluster's NooBaa, `flywheel-usecases` (spec 02 phase 3) |
 | [`deploy/gateway/`](deploy/gateway/) | The LiteLLM model gateway, ported from `openshift-eval`, with every model alias and price; every route on EnMaaS since 2026-10-14 |
