@@ -1286,6 +1286,11 @@ branch is not merged into `flywheel-integration`, which is on
   21 s) and of Codex's `400914b6…` (1.00, 9 steps, 4 tool calls, free,
   28 s), each with its answer. Sent back: the model cards on Start
   evaluation scroll sideways when the alias is wider than the card.
+  Fixed in `2998bf6f7` (a card is at least as wide as its alias; the
+  agent page's models move to their own line rather than overflow);
+  the subagent's checks pass twice, 218 unit tests. Not built yet: at
+  16:13 UTC the cluster's API answered "Bad Gateway", then nothing, and
+  the dashboard did not answer either.
 
 ### Phase 6: the proof
 
