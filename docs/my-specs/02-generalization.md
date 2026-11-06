@@ -1288,9 +1288,26 @@ branch is not merged into `flywheel-integration`, which is on
   evaluation scroll sideways when the alias is wider than the card.
   Fixed in `2998bf6f7` (a card is at least as wide as its alias; the
   agent page's models move to their own line rather than overflow);
-  the subagent's checks pass twice, 218 unit tests. Not built yet: at
-  16:13 UTC the cluster's API answered "Bad Gateway", then nothing, and
-  the dashboard did not answer either.
+  the subagent's checks pass twice, 218 unit tests. The cluster stopped
+  at 16:13 UTC (RHDP's auto-stop) and ran again on 2026-11-06; the
+  agent's token had expired with it, so Lukas's `oc login` and
+  `scripts/agent-kubeconfig.sh` minted a new one. Build
+  `agent-flywheel-ui-12` of `2998bf6f7` (`-11` died with the node), as
+  `claude-agent` at 1440 px: no card or cell scrolls sideways on Start
+  evaluation or on Claude Code's page, whose models card lost the
+  scrollbar it had in `aa6e8bb74`. At 390 px ODH's own Projects page is
+  696 px wide, so phone width is the host's limit, not the module's.
+  Sent back: variable names on an agent's page break inside a name,
+  and the third model card stretches to the full row.
+- 2026-11-06, the answer as Markdown (Lukas: "Feel free to use it
+  now", and a better view of the answer may come later): a `.md` answer
+  file renders with the host's renderer, as agent-ops uses it, with a
+  Formatted/Raw toggle; any other file stays text. One component holds
+  it, so a later view changes one place. Why: support's format judge
+  checks the sections Summary, Steps, Next (`openshift-eval`
+  `eval/support/eval.yaml:129`); smoke's answers are one paragraph. The
+  answer is model text, so a test proves that raw HTML and
+  `javascript:` links in it cannot run.
 
 ### Phase 6: the proof
 
