@@ -1614,6 +1614,17 @@ static handler and answers the page's HTML with 200.
   `b63ce249-faa2-4663-89b4-3f20078b0e0f`), until EvalHub gets a database
   that outlives its pod. Since 2026-11-05 C11's provider is mounted from
   a ConfigMap instead, with the id `agent-eval-harness` (below).
+- The operator writes SQLite's URL as `file::eval_hub:?mode=memory&cache=shared`
+  (`trustyai-service-operator` `controllers/evalhub/configmap.go:214-218`,
+  `flywheel-integration`): the database lives in the server's memory, so
+  any restart of the container empties it, not only a new image. The
+  other choice, `type: postgresql`, reads a Secret named in
+  `spec.database.secret` with the key `db-url`, mounted at
+  `/etc/evalhub/secrets`, driver `pgx` (`controllers/evalhub/constants.go:62-64`).
+  After the cluster's stop of 2026-11-05 16:13 UTC, the flywheel API
+  listed 0 smoke evaluations; MLflow kept all 30 runs of experiment
+  `agent-flywheel-smoke`, the adapter's `<job id>_0` runs among them
+  (V, 2026-11-06).
 
 **Evaluations started by the flywheel API (V, 2026-11-05, cluster-nm8mw).**
 - After a stop of 20 days, every pod with an image from the internal

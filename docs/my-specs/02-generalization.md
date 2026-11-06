@@ -1308,6 +1308,21 @@ branch is not merged into `flywheel-integration`, which is on
   `eval/support/eval.yaml:129`); smoke's answers are one paragraph. The
   answer is model text, so a test proves that raw HTML and
   `javascript:` links in it cannot run.
+  Built with the two layout fixes: five commits, `ddeb2e174` to
+  `e58fd2889`; the subagent's checks pass twice, 226 unit tests. The
+  host's renderer runs `rehype-raw` then `rehype-sanitize` with GitHub's
+  schema (`frontend/src/components/markdown/MarkdownComponent.tsx:144`):
+  scripts, `on*` attributes and `javascript:` URLs are removed; relative
+  URLs and `https:` images stay. Build `agent-flywheel-ui-13` of
+  `e58fd2889` (the image now copies the host's `frontend/src`), as
+  `claude-agent` at 1440 px, no console error: the answer of Claude
+  Code's free run `fc9a5407…` (0.883, passes) renders, and Raw shows
+  the file as written; no name or variable line breaks inside, no card
+  or cell scrolls sideways, the pick cards share one width (agents 224
+  px, models 344 px), and the agent page's models table moves under the
+  runner facts. The cluster's stop emptied EvalHub again (below), so
+  `175ce635…` and `400914b6…` are gone from the module; their MLflow runs
+  stay.
 
 ### Phase 6: the proof
 

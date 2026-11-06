@@ -1389,12 +1389,12 @@ threshold gets a summary with the failed check and `enforced: false`);
 `ci.md` and `thresholds.md` combine both texts. The subagent's runs of the
 merge: 2903 passed twice.
 
-## Phase 5 — odh-dashboard `feat/agent-flywheel-module` (`2998bf6f7`)
+## Phase 5 — odh-dashboard `feat/agent-flywheel-module` (`e58fd2889`)
 
 Not a PR yet: Benchmarks, Training and Brains are still placeholders
 (spec 02 phase 5). From upstream `37dc648`, the commit ODH 3.6.0-ea.2's
 host runs, not from `upstream/main`, and never merged into
-`flywheel-integration`. Forty-six commits: `2ca7b5593` (the module tests lose
+`flywheel-integration`. Fifty-one commits: `2ca7b5593` (the module tests lose
 `dataRegistry`, which #9850 commented out; four tests failed on the base),
 `146f2539a` (the `agentFlywheel` flag), `b428634c2` (the package),
 `89c1ee360` (`modules.go` and the manifests), `e98380b86` (fork-only:
@@ -1426,7 +1426,12 @@ and mocks one task of one evaluation), `37c441c0d` (our tabs open first
 on AI hub's pages), `010aa892c` (a model alias never wraps),
 `158625a58`, `6303ab3bf` and `aa6e8bb74` (the one-task page from the
 board "Evaluation · one ticket", and the links into it) and `2998bf6f7`
-(a model card grows to its alias instead of scrolling). The PR text is written when every page is real, on
+(a model card grows to its alias instead of scrolling), then `ddeb2e174`
+(the host's components through `@odh-dashboard/internal`, as agent-ops
+imports them), `352cb69bc` (a `.md` answer renders as Markdown, with a
+Raw view), `c2e5456c3` (a spec waits for its radio), `de6658a52` (a
+variable name never breaks) and `e58fd2889` (pick cards of one width
+in a wrapping grid). The PR text is written when every page is real, on
 a branch rebased onto the `upstream/main` of that day, without
 `e98380b86`.
 
