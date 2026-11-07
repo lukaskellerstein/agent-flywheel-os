@@ -39,6 +39,8 @@ def test_the_mlflow_records_of_a_training_run(opencode, make_training, mlflow):
     assert parent["metrics"] == {"best/iteration": 1, "best/train/score": 0.8, "best/validation/score": 0.7}
     assert parent["files"] == {"brain/AGENTS.md": "score: 0.8"}
     assert parent["params"]["adjuster_model"] == "enmaas-glm-5-3"
+    # The agent and model the API picked for eval.yaml, as brain v0's evaluation ran them.
+    assert (parent["params"]["agent"], parent["params"]["model"]) == ("codex", "enmaas-glm-5-3")
 
     v0, v1, v2 = (mlflow.by_name(f"tr-1 v{n}") for n in range(3))
     assert all(run["tags"]["mlflow.parentRunId"] == next(i for i, r in mlflow.runs.items() if r is parent) for run in (v0, v1, v2))

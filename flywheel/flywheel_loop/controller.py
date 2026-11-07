@@ -137,6 +137,9 @@ class Training:
         it.train_judges = report.judge_means(results[TRAIN])
         it.validation = results[VALIDATION].get("reward") if VALIDATION in results else None
         self.mlflow.log(run_id, metrics=_score_metrics(results), tags=_job_tags(results))
+        if it.number == 0:  # the agent and model the API picked, now that a job ran them
+            ran = results[TRAIN]
+            self.mlflow.log(self.parent, params={"agent": ran.get("agent") or "", "model": ran.get("model") or ""})
         self.mlflow.end_run(run_id)
         self.iterations.append(it)
         return it
@@ -196,8 +199,6 @@ class Training:
         return {
             "iterations": plan.iterations,
             "patience": plan.patience,
-            "agent": plan.agent or "eval.yaml's runner",
-            "model": plan.model or "eval.yaml's models.skill",
             "adjuster_model": self.adjuster.model,
             "max_skills": self.words.max_skills,
         }

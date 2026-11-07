@@ -194,14 +194,15 @@ PRICING = {
 CODEX_RUNNER = {**CODEX["runner"], "pricing": PRICING}
 
 
-def _service(tmp_path, evalhub, mlflow) -> TestClient:
+def _service(tmp_path, evalhub, mlflow, launcher=None) -> TestClient:
     """The API with Codex and Claude Code in AI hub › Agents."""
     store = FileStore(tmp_path / "store")
     registry = Registry(store)
     agents = Agents(store, Gateway(GATEWAY))
     for agent in (CODEX, CLAUDE):
         agents.add(copy.deepcopy(agent))
-    return TestClient(create_app(registry, Evaluations(registry, agents, evalhub, mlflow, SETTINGS), agents))
+    evaluations = Evaluations(registry, agents, evalhub, mlflow, SETTINGS)
+    return TestClient(create_app(registry, evaluations, agents, launcher=launcher))
 
 
 @pytest.fixture

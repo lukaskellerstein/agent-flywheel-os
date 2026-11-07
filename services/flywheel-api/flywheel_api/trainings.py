@@ -1,8 +1,9 @@
 """Training runs of a use case, as the loop (flywheel/) records them in
 MLflow: a parent run per training run (tag kind=training) and a child run
 per brain (kind=iteration), in the use case's experiment
-`agent-flywheel-<name>`. Nothing about a training run is stored here; every
-call reads MLflow as the caller.
+`agent-flywheel-<name>`. A start creates the loop's Job (launcher.py), and
+a run whose loop has not reached MLflow yet is read from its Job. Nothing
+about a training run is stored here; every call runs as the caller.
 """
 
 from __future__ import annotations
@@ -12,11 +13,17 @@ from collections.abc import Mapping
 from datetime import UTC, datetime
 from typing import Any
 
-from .problems import NotFound
-from .registry import Registry
-from .remote import Remote, RemoteError
+from fastapi import HTTPException
+from pydantic import BaseModel, ConfigDict, Field
+
+from .evaluations import Evaluations
+from .launcher import Launcher, failure, row_of
+from .problems import Invalid, NotFound
+from .remote import RemoteError
 from .runfiles import RunFiles
 
+MAX_ITERATIONS = 10
+DEFAULT_ADJUSTER_MODEL = "enmaas-glm-5-3"  # free on EnMaaS (decision 19)
 TRAINING_ID = re.compile(r"[a-z0-9]([-a-z0-9]{0,38}[a-z0-9])?")
 BRAIN_FOLDER = "brain"
 ADJUSTER_FOLDER = "adjuster"
@@ -25,27 +32,76 @@ PAGE = 1000  # MLflow's largest search page
 ADJUSTER_METRICS = ("steps", "tool_calls", "tokens_in", "tokens_out", "cost_usd", "sessions")
 
 
+class StartTraining(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    version: int | None = Field(default=None, ge=1)  # the current version when left out
+    iterations: int = Field(default=3, ge=1, le=MAX_ITERATIONS)
+    patience: int = Field(default=2, ge=1, le=MAX_ITERATIONS)
+    agent: str | None = Field(default=None, min_length=1)  # eval.yaml's runner when left out
+    model: str | None = Field(default=None, min_length=1)
+    adjuster_model: str = Field(default=DEFAULT_ADJUSTER_MODEL, min_length=1)
+
+
 class Trainings:
-    def __init__(self, registry: Registry, mlflow: Remote):
-        self.registry = registry
-        self.mlflow = mlflow
-        self.files = RunFiles(mlflow)
+    def __init__(self, evaluations: Evaluations, launcher: Launcher | None = None):
+        self.evaluations = evaluations
+        self.registry = evaluations.registry
+        self.mlflow = evaluations.mlflow
+        self.files = RunFiles(self.mlflow)
+        self.launcher = launcher
+
+    def start(self, name: str, request: StartTraining, token: str) -> dict:
+        """A training Job for the loop, after every check a start can fail."""
+        if self.launcher is None:
+            raise HTTPException(501, "starting a training run needs the Job template (FLYWHEEL_TRAINING_JOB)")
+        number = request.version or self.registry.get(name)["current"]
+        version = self.registry.version(name, number)
+        if not version["usecase"].get("adjuster"):
+            raise Invalid(f"version {number} of use case {name!r} has no adjuster: block in usecase.yaml, so it cannot be trained")
+        if "train" not in version["tasks_per_split"]:
+            raise Invalid(f"version {number} of use case {name!r} has no train split to learn from")
+        if request.patience > request.iterations:
+            raise Invalid(f"patience ({request.patience}) is more than the iterations ({request.iterations})")
+        agent, model = self.evaluations.pick(name, number, request.agent, request.model)
+        if request.adjuster_model not in self.evaluations.agents.gateway.names():
+            raise Invalid(f"the gateway does not route the adjuster model {request.adjuster_model!r}")
+        env = {
+            "USECASE": name,
+            "USECASE_VERSION": str(number),
+            "ITERATIONS": str(request.iterations),
+            "PATIENCE": str(request.patience),
+            "AGENT": agent["name"],
+            "MODEL": model,
+            "ADJUSTER_MODEL": request.adjuster_model,
+        }
+        return _public(row_of(self.launcher.start(name, env, token)))
 
     def list(self, name: str, token: str) -> list[dict]:
-        """The use case's training runs, newest first."""
+        """The use case's training runs, newest first, those still starting included."""
         self.registry.get(name)
+        jobs = {job["metadata"]["name"]: job for job in (self.launcher.jobs(name, token) if self.launcher else [])}
         experiment = self._experiment(name, token)
-        if experiment is None:
-            return []
-        parents = self._search(experiment, "tags.kind = 'training'", token)
-        children = self._search(experiment, "tags.kind = 'iteration'", token)
-        rows = [_training(run, [c for c in children if _tag(c, "training") == _tag(run, "training")]) for run in parents]
-        return sorted(rows, key=lambda row: row["started"] or "", reverse=True)
+        rows = []
+        if experiment is not None:
+            parents = self._search(experiment, "tags.kind = 'training'", token)
+            children = self._search(experiment, "tags.kind = 'iteration'", token)
+            for run in parents:
+                row = _training(run, [c for c in children if _tag(c, "training") == _tag(run, "training")])
+                rows.append(_with_job(row, jobs.pop(row["id"], None)))
+        rows += [row_of(job) for job in jobs.values()]
+        rows.sort(key=lambda row: row["started"] or row.get("created") or "", reverse=True)
+        return [_public(row) for row in rows]
 
     def get(self, name: str, training: str, token: str) -> dict:
         """One training run with every brain it made, in order."""
-        parent, children = self._runs(name, training, token)
-        return {**_training(parent, children), "brains": [_brain(run) for run in _ordered(children)]}
+        job = self.launcher.job(name, training, token) if self.launcher and TRAINING_ID.fullmatch(training) else None
+        try:
+            parent, children = self._runs(name, training, token)
+        except NotFound:
+            if job is None:
+                raise
+            return {**_public(row_of(job)), "brains": []}
+        return {**_with_job(_training(parent, children), job), "brains": [_brain(run) for run in _ordered(children)]}
 
     def brain(self, name: str, training: str, number: int, token: str) -> dict:
         """One brain's files and the adjuster's reports of the step that made it."""
@@ -121,6 +177,18 @@ def _training(run: Mapping[str, Any], children: list[Mapping[str, Any]]) -> dict
         "mlflow_run_id": info.get("run_id"),
         "mlflow_experiment_id": info.get("experiment_id"),
     }
+
+
+def _with_job(row: dict, job: Mapping[str, Any] | None) -> dict:
+    """A run MLflow still calls running whose Job failed (a killed pod never ends its run) failed."""
+    error = failure(job) if job else None
+    if error and row["state"] == "running":
+        return {**row, "state": "failed", "error": row["error"] or error}
+    return row
+
+
+def _public(row: dict) -> dict:
+    return {key: value for key, value in row.items() if key != "created"}
 
 
 def _brain(run: Mapping[str, Any]) -> dict:

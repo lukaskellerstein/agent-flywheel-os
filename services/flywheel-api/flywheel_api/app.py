@@ -23,6 +23,8 @@
     GET  /api/usecases/{name}/versions/{n}/tasks/{id}/results
                                                every run of the version that
                                                scored the task, its verdicts
+    POST /api/usecases/{name}/trainings        JSON {"version", "iterations", "patience", "agent",
+                                               "model", "adjuster_model"}, each optional: the loop's Job
     GET  /api/usecases/{name}/trainings        the use case's training runs (trainings.py)
     GET  /api/usecases/{name}/trainings/{id}   one run with every brain it made
     GET  /api/usecases/{name}/trainings/{id}/brains/{n}
@@ -48,9 +50,10 @@ from . import sources
 from .agents import Agents
 from .evaluations import Evaluations, StartRequest
 from .problems import BadRequest, ImportRefused, NotFound, TooLarge, Unauthorized
+from .launcher import Launcher
 from .registry import Registry, check_name
 from .remote import RemoteError
-from .trainings import Trainings
+from .trainings import StartTraining, Trainings
 
 MAX_UPLOAD_BYTES = 100 * 1024 * 1024
 MAX_JSON_BYTES = 64 * 1024
@@ -80,6 +83,7 @@ def create_app(
     evaluations: Evaluations | None = None,
     agents: Agents | None = None,
     *,
+    launcher: Launcher | None = None,
     allow_file_urls: bool = False,
 ) -> FastAPI:
     """*allow_file_urls* lets a git import read a `file://` repository; only the tests set it."""
@@ -90,6 +94,7 @@ def create_app(
         _add_hub_routes(app, agents)
     if evaluations is not None:
         _add_evaluation_routes(app, evaluations)
+        _add_training_routes(app, Trainings(evaluations, launcher))
     return app
 
 
@@ -183,7 +188,12 @@ def _add_evaluation_routes(app: FastAPI, evaluations: Evaluations) -> None:
     def evaluation_logs(name: str, job_id: str, request: Request) -> str:
         return evaluations.logs(name, job_id, _token(request))
 
-    trainings = Trainings(evaluations.registry, evaluations.mlflow)
+
+def _add_training_routes(app: FastAPI, trainings: Trainings) -> None:
+    @app.post("/api/usecases/{name}/trainings", status_code=201)
+    def start_training(name: str, request: Request, body: StartTraining | None = None) -> dict:
+        """A training run: the loop's Job, created as the caller."""
+        return trainings.start(name, body or StartTraining(), _token(request))
 
     @app.get("/api/usecases/{name}/trainings")
     def training_list(name: str, request: Request) -> list[dict]:

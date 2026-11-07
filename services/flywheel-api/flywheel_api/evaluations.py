@@ -266,6 +266,12 @@ class Evaluations:
             self._configs.put(key, cached)
         return cached
 
+    def pick(self, name: str, number: int, agent: str | None, model: str | None) -> tuple[dict, str]:
+        """The agent and model a run of version *number* takes, checked as a start checks them."""
+        config = self._eval_config(name, number)
+        chosen = self._agent(agent, config)
+        return chosen, self._model(chosen, model, config)
+
     def _agent(self, name: str | None, config: Mapping[str, Any]) -> dict:
         """The named agent, or the one that runs eval.yaml's runner.type."""
         if name is not None:

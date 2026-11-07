@@ -92,7 +92,8 @@ class FakeAPI:
     def start(self, usecase, **request):
         job_id = f"job{len(self.starts) + 1}"
         self.starts.append(request)
-        self.jobs[job_id] = {"id": job_id, **self._score(request), "mlflow_run_id": f"ml-{job_id}"}
+        ran = {"agent": request.get("agent") or "codex", "model": request.get("model") or "enmaas-glm-5-3"}
+        self.jobs[job_id] = {"id": job_id, **self._score(request), **ran, "mlflow_run_id": f"ml-{job_id}"}
         return {"id": job_id, "state": "pending"}
 
     def wait(self, usecase, job_id, poll_s, timeout_s):

@@ -3,9 +3,14 @@ writes: a parent run per training run and a child run per brain."""
 
 from __future__ import annotations
 
-import pytest
-from test_evaluations import AUTH, TOKEN, FakeEvalHub, _service, _upload
+import copy
+from pathlib import Path
 
+import pytest
+import yaml
+from test_evaluations import AUTH, EVAL_ADDITIONS, TOKEN, FakeEvalHub, _service, _upload
+
+from flywheel_api.launcher import Launcher, launcher_from_env
 from flywheel_api.remote import RemoteError
 
 EXPERIMENT = "12"
@@ -220,3 +225,163 @@ def test_the_search_reads_every_page(make_client):
 def test_the_training_routes_need_the_callers_token(make_client):
     response = make_client(FakeTrainingMLflow(RUNS)).get("/api/usecases/sample/trainings")
     assert response.status_code == 401
+
+
+# ── Starting a training run: the loop's Job, created as the caller ──────
+
+TEMPLATE = Path(__file__).parents[3] / "deploy" / "flywheel" / "training-job.yaml"
+
+
+class FakeKube:
+    """The Kubernetes API's Jobs in one namespace."""
+
+    def __init__(self, refuse: int | None = None):
+        self.jobs: dict[str, dict] = {}
+        self.calls: list[tuple] = []
+        self.refuse = refuse
+
+    def json(self, method, path, token, *, query=None, body=None):
+        self.calls.append((method, path, token, query))
+        if self.refuse:
+            raise RemoteError(self.refuse, f"Kubernetes answered {self.refuse}: forbidden")
+        base = "/apis/batch/v1/namespaces/agent-flywheel/jobs"
+        if (method, path) == ("POST", base):
+            job = copy.deepcopy(body)
+            job["metadata"]["name"] = job["metadata"].pop("generateName") + f"t{len(self.jobs):04d}"
+            job["metadata"]["creationTimestamp"] = f"2026-11-07T16:0{len(self.jobs)}:00Z"
+            job["status"] = {}
+            self.jobs[job["metadata"]["name"]] = job
+            return job
+        if (method, path) == ("GET", base):
+            key, value = query["labelSelector"].split("=")
+            return {"items": [j for j in self.jobs.values() if j["metadata"]["labels"].get(key) == value]}
+        name = path.removeprefix(base + "/")
+        if method == "GET" and name in self.jobs:
+            return self.jobs[name]
+        raise RemoteError(404, f"Kubernetes answered 404: jobs {name} not found")
+
+    def fail(self, name: str, message: str) -> None:
+        self.jobs[name]["status"] = {"conditions": [{"type": "Failed", "status": "True", "message": message}]}
+
+
+@pytest.fixture
+def kube():
+    return FakeKube()
+
+
+@pytest.fixture
+def trainer(tmp_path, files, kube):
+    """The API with the real Job template; sample's eval.yaml names Codex."""
+
+    def make(mlflow=None):
+        launcher = Launcher(kube, "agent-flywheel", yaml.safe_load(TEMPLATE.read_text()))
+        client = _service(tmp_path, FakeEvalHub(), mlflow or FakeTrainingMLflow([]), launcher)
+        files["eval.yaml"] = files["eval.yaml"] + EVAL_ADDITIONS
+        _upload(client, files)
+        return client
+
+    return make
+
+
+def _env(job: dict) -> dict:
+    return {item["name"]: item.get("value") for item in job["spec"]["template"]["spec"]["containers"][0]["env"]}
+
+
+def test_a_start_creates_the_loops_job_as_the_caller(trainer, kube):
+    response = trainer().post("/api/usecases/sample/trainings", json={"iterations": 2, "patience": 1}, headers=AUTH)
+    assert response.status_code == 201, response.text
+    [(method, path, token, _)] = kube.calls
+    assert (method, path, token) == ("POST", "/apis/batch/v1/namespaces/agent-flywheel/jobs", TOKEN)
+    [job] = kube.jobs.values()
+    env = _env(job)
+    assert {k: env[k] for k in ("USECASE", "USECASE_VERSION", "ITERATIONS", "PATIENCE", "AGENT", "MODEL", "ADJUSTER_MODEL")} == {
+        "USECASE": "sample", "USECASE_VERSION": "1", "ITERATIONS": "2", "PATIENCE": "1",
+        "AGENT": "codex", "MODEL": "enmaas-glm-5-3", "ADJUSTER_MODEL": "enmaas-glm-5-3",
+    }
+    # The template's own wiring stays: the loop's identity, its id from the Job's name, the CA.
+    assert job["spec"]["template"]["spec"]["serviceAccountName"] == "flywheel-loop"
+    assert [e["name"] for e in job["spec"]["template"]["spec"]["containers"][0]["env"]].count("ITERATIONS") == 1
+    assert {"TRAINING_ID", "FLYWHEEL_NAMESPACE", "FLYWHEEL_CA_FILE"} <= set(env)
+    assert job["metadata"]["labels"]["agent-flywheel/usecase"] == "sample"
+    assert response.json() == {
+        "id": "training-t0000", "usecase": "sample", "version": 1, "state": "starting",
+        "started": None, "ended": None, "iterations": 2, "brains_scored": 0, "best": None,
+        "agent": "codex", "model": "enmaas-glm-5-3", "adjuster_model": "enmaas-glm-5-3",
+        "stop_reason": None, "error": None, "mlflow_run_id": None, "mlflow_experiment_id": None,
+    }
+
+
+def test_a_starting_run_is_listed_and_answers_without_brains(trainer, kube):
+    client = trainer(FakeTrainingMLflow(RUNS))
+    started = client.post("/api/usecases/sample/trainings", json={"agent": "claude-code"}, headers=AUTH).json()
+    rows = client.get("/api/usecases/sample/trainings", headers=AUTH).json()
+    assert [(r["id"], r["state"]) for r in rows] == [("training-t0000", "starting"), ("training-new", "running"), ("training-old", "finished")]
+    run = client.get(f"/api/usecases/sample/trainings/{started['id']}", headers=AUTH).json()
+    assert (run["state"], run["agent"], run["brains"]) == ("starting", "claude-code", [])
+
+
+def test_a_job_that_failed_before_mlflow_says_why(trainer, kube):
+    client = trainer()
+    started = client.post("/api/usecases/sample/trainings", headers=AUTH).json()
+    kube.fail(started["id"], "Job has reached the specified backoff limit")
+    run = client.get(f"/api/usecases/sample/trainings/{started['id']}", headers=AUTH).json()
+    assert (run["state"], run["error"]) == ("failed", "Job has reached the specified backoff limit")
+
+
+def test_a_run_mlflow_calls_running_whose_job_failed_has_failed(trainer, kube):
+    job = {"metadata": {"name": "training-new", "labels": {"agent-flywheel/usecase": "sample"}}, "status": {}}
+    kube.jobs["training-new"] = job
+    kube.fail("training-new", "Job was active longer than specified deadline")
+    client = trainer(FakeTrainingMLflow(RUNS))
+    run = client.get("/api/usecases/sample/trainings/training-new", headers=AUTH).json()
+    assert (run["state"], run["error"]) == ("failed", "Job was active longer than specified deadline")
+    assert [b["number"] for b in run["brains"]] == [0, 1]
+
+
+@pytest.mark.parametrize(
+    ("request_body", "detail"),
+    [
+        ({"version": 9}, "no version 9 of use case 'sample'"),
+        ({"patience": 3, "iterations": 2}, "patience (3) is more than the iterations (2)"),
+        ({"agent": "cursor"}, "no agent 'cursor' in AI hub › Agents"),
+        ({"model": "enmaas-gemini"}, "agent 'codex' may not use 'enmaas-gemini'"),
+        ({"adjuster_model": "nowhere"}, "the gateway does not route the adjuster model 'nowhere'"),
+        ({"iterations": 11}, "less than or equal to 10"),
+        ({"brain": "runs:/x/y"}, "Extra inputs are not permitted"),
+    ],
+)
+def test_a_start_that_cannot_run_creates_no_job(trainer, kube, request_body, detail):
+    response = trainer().post("/api/usecases/sample/trainings", json=request_body, headers=AUTH)
+    assert response.status_code in (404, 422)
+    assert detail in response.text
+    assert kube.jobs == {}
+
+
+def test_a_use_case_without_an_adjuster_cannot_be_trained(tmp_path, files, kube):
+    launcher = Launcher(kube, "agent-flywheel", yaml.safe_load(TEMPLATE.read_text()))
+    client = _service(tmp_path, FakeEvalHub(), FakeTrainingMLflow([]), launcher)
+    files["eval.yaml"] = files["eval.yaml"] + EVAL_ADDITIONS
+    files["usecase.yaml"] = files["usecase.yaml"].split(b"adjuster:")[0]
+    _upload(client, files)
+    response = client.post("/api/usecases/sample/trainings", headers=AUTH)
+    assert (response.status_code, response.json()["detail"]) == (422, "version 1 of use case 'sample' has no adjuster: block in usecase.yaml, so it cannot be trained")
+
+
+def test_a_caller_who_may_not_create_jobs_gets_kubernetes_403(trainer, kube):
+    client = trainer()
+    kube.refuse = 403
+    assert client.post("/api/usecases/sample/trainings", headers=AUTH).status_code == 403
+    # Listing still answers MLflow's runs when the caller may not list Jobs.
+    assert client.get("/api/usecases/sample/trainings", headers=AUTH).json() == []
+
+
+def test_without_a_job_template_a_start_answers_501(make_client):
+    response = make_client(FakeTrainingMLflow(RUNS)).post("/api/usecases/sample/trainings", headers=AUTH)
+    assert response.status_code == 501
+
+
+def test_the_launcher_turns_on_with_a_template_file(tmp_path):
+    assert launcher_from_env({}) is None
+    assert launcher_from_env({"FLYWHEEL_TRAINING_JOB": str(tmp_path / "none.yaml")}) is None
+    launcher = launcher_from_env({"FLYWHEEL_TRAINING_JOB": str(TEMPLATE), "FLYWHEEL_NAMESPACE": "ns-1", "KUBERNETES_CA_FILE": ""})
+    assert launcher.namespace == "ns-1" and launcher.template["kind"] == "Job"
