@@ -69,8 +69,10 @@ follow the rule and rewrite the memory in the same turn —
   next step; read it first. `docs/my-specs/01-initial-implementation.md`
   was `PLAN.md` until 2026-10-14; it is closed, with what is done marked,
   and its §0 rules, its §2 decisions 1 to 9 and its reference sections hold
-  where spec 02 does not change them. Decisions 10 on are in spec 02 §2. A
-  fact in a spec that turns out wrong is fixed in the same turn.
+  where spec 02 does not change them. Decisions 10 on are in spec 02 §2.
+  `docs/my-specs/03-standalone.md`, a proposal, describes every feature
+  `openshift-eval` has that this repo lacks, so nothing reads that repo
+  again. A fact in a spec that turns out wrong is fixed in the same turn.
 - **State**: spec 01's phases 0 and 1 are done (the cluster, the agent's
   identity, Open Data Hub with EvalHub, MLflow and the gateway on EnMaaS),
   and its C1 to C4, C6 to C9 and C30 to C34 are merged into `agent-eval-harness`'s
@@ -85,8 +87,10 @@ follow the rule and rewrite the memory in the same turn —
   dashboard (2026-11-05). The loop (`flywheel/`), its runner image and
   support as version 1 run there too: the first free training run kept
   brain v1, and the module's Training pages show it (2026-11-07).
-- **Next step**: spec 02 §0 — "Start training" in the module (the API
-  creates the loop's Job); then phase 3's MLflow traces, and phase 6.
+- **Next step**: spec 02 §0 — spec 03's features in the order of its
+  section 4 (its group A holds phase 3's MLflow traces), each after
+  Lukas's go; then phase 6. Start training runs from the module since
+  2026-11-07.
   C13 is skipped; C5 waits for Lukas to post the PR #90 comment (spec 01
   §13). Status per contribution: spec 02 §5.1.
 - **Evidence**: `docs/research.md` holds every upstream fact behind the specs,
