@@ -72,6 +72,11 @@ spec:
             # aliases, and an evaluation only one of its agent's.
             - name: FLYWHEEL_GATEWAY_CONFIG
               value: /etc/flywheel-api/gateway/litellm.yaml
+            # Start training: the loop's Job template (deploy/flywheel/),
+            # created through the Kubernetes API with the caller's token,
+            # so the pod's own ServiceAccount needs no right for Jobs.
+            - name: FLYWHEEL_TRAINING_JOB
+              value: /etc/flywheel-api/training/training-job.yaml
           ports:
             - name: http
               containerPort: 8080
@@ -112,6 +117,9 @@ spec:
             - name: gateway-models
               mountPath: /etc/flywheel-api/gateway
               readOnly: true
+            - name: training-job
+              mountPath: /etc/flywheel-api/training
+              readOnly: true
       volumes:
         - name: tmp
           emptyDir:
@@ -122,3 +130,6 @@ spec:
         - name: gateway-models
           configMap:
             name: gateway-models
+        - name: training-job
+          configMap:
+            name: flywheel-training-job

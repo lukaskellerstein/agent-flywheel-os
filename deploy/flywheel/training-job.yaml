@@ -1,6 +1,9 @@
-# One training run: `oc create -f deploy/flywheel/training-job.yaml`, after
-# setting USECASE and ITERATIONS below. The Job's generated name is the
-# training run's id, so its MLflow runs and EvalHub jobs carry it.
+# One training run. The flywheel API's Start training creates it from the
+# ConfigMap flywheel-training-job and sets USECASE, USECASE_VERSION,
+# ITERATIONS, PATIENCE, AGENT, MODEL and ADJUSTER_MODEL, plus the label
+# agent-flywheel/usecase it lists runs by. By hand: `oc create -f` this file
+# after setting USECASE and ITERATIONS below. The Job's generated name is
+# the training run's id, so its MLflow runs and EvalHub jobs carry it.
 # This one is the free smoke loop of phase 3's DoD: one adjust step, Codex
 # on GLM 5.3 for the tickets and OpenCode on GLM 5.3 for the adjuster, both
 # 0 USD. Every model call goes through the gateway, which holds the keys.
