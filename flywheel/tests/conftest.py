@@ -60,7 +60,9 @@ class FakeMLflow:
     def log(self, run_id, *, metrics=None, params=None, tags=None):
         run = self.runs[run_id]
         run["metrics"] |= dict(metrics or {})
-        run["params"] |= {k: str(v) for k, v in (params or {}).items()}
+        for key, value in (params or {}).items():  # MLflow refuses to change a param
+            assert run["params"].get(key, str(value)) == str(value), f"param {key} written twice"
+            run["params"][key] = str(value)
         run["tags"] |= dict(tags or {})
 
     def end_run(self, run_id, status="FINISHED"):
@@ -182,10 +184,10 @@ def mlflow():
 
 @pytest.fixture
 def make_training(mlflow):
-    def make(script, *, iterations=2, patience=2, definition=DEFINITION):
+    def make(script, *, iterations=2, patience=2, definition=DEFINITION, agent=None, model=None):
         api = FakeAPI(mlflow, version(definition))
         adjuster = Adjuster("enmaas-glm-5-3", "http://gateway:4000", 30, opencode=str(script))
-        plan = Plan(usecase="support", training="tr-1", iterations=iterations, patience=patience, poll_s=0)
+        plan = Plan(usecase="support", training="tr-1", iterations=iterations, patience=patience, poll_s=0, agent=agent, model=model)
         return Training(plan, api, mlflow, adjuster), api
 
     return make

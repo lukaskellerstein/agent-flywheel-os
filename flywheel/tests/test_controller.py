@@ -87,3 +87,19 @@ def test_a_use_case_without_an_adjuster_cannot_be_trained(opencode, make_trainin
     with pytest.raises(FlywheelError, match="no adjuster: block"):
         training.run()
     assert (mlflow.runs, api.starts) == ({}, [])
+
+
+def test_a_start_that_names_the_agent_logs_it_before_any_score(opencode, make_training, mlflow):
+    training, _ = make_training(opencode({"files": {"AGENTS.md": "x. score: 0.8"}, "change": change("h", "AGENTS.md: x")}), iterations=1, patience=1, agent="claude-code", model="enmaas-gpt-5-mini")
+    seen = []
+    real_start = mlflow.start_run
+
+    def start_run(experiment_id, name, tags):  # brain v0's run starts before anything is scored
+        if tags.get("kind") == "iteration" and not seen:
+            parent = next(r for r in mlflow.runs.values() if r["tags"].get("kind") == "training")
+            seen.append({k: parent["params"].get(k) for k in ("agent", "model")})
+        return real_start(experiment_id, name, tags)
+
+    mlflow.start_run = start_run
+    training.run()
+    assert seen == [{"agent": "claude-code", "model": "enmaas-gpt-5-mini"}]

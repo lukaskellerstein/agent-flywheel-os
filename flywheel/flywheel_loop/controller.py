@@ -137,9 +137,11 @@ class Training:
         it.train_judges = report.judge_means(results[TRAIN])
         it.validation = results[VALIDATION].get("reward") if VALIDATION in results else None
         self.mlflow.log(run_id, metrics=_score_metrics(results), tags=_job_tags(results))
-        if it.number == 0:  # the agent and model the API picked, now that a job ran them
+        if it.number == 0:  # what eval.yaml's defaults resolved to, now that a job ran them
             ran = results[TRAIN]
-            self.mlflow.log(self.parent, params={"agent": ran.get("agent") or "", "model": ran.get("model") or ""})
+            missing = {key: ran.get(key) or "" for key in ("agent", "model") if not getattr(self.plan, key)}
+            if missing:  # an MLflow param is written once, so only the ones the start left out
+                self.mlflow.log(self.parent, params=missing)
         self.mlflow.end_run(run_id)
         self.iterations.append(it)
         return it
@@ -201,6 +203,8 @@ class Training:
             "patience": plan.patience,
             "adjuster_model": self.adjuster.model,
             "max_skills": self.words.max_skills,
+            # The API's start names both; eval.yaml's defaults are logged once brain v0 ran them.
+            **{key: value for key, value in (("agent", plan.agent), ("model", plan.model)) if value},
         }
 
 
