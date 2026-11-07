@@ -12,8 +12,8 @@
     POST /api/usecases/{name}/imports    an upload (multipart, field `file`: one
                                          .tar.gz or .zip of the use case folder)
                                          or JSON {"git": {"url", "ref", "path"}}
-    POST /api/usecases/{name}/evaluations      JSON {"version", "split", "agent", "model"},
-                                               each optional: an EvalHub job
+    POST /api/usecases/{name}/evaluations      JSON {"version", "split", "agent", "model",
+                                               "brain", "training"}, each optional: an EvalHub job
     GET  /api/usecases/{name}/evaluations      the use case's jobs, newest first
     GET  /api/usecases/{name}/evaluations/{id} one job: judges, tasks, threshold verdicts
     DELETE /api/usecases/{name}/evaluations/{id} stop it; ?delete=true removes it
@@ -23,6 +23,10 @@
     GET  /api/usecases/{name}/versions/{n}/tasks/{id}/results
                                                every run of the version that
                                                scored the task, its verdicts
+    GET  /api/usecases/{name}/trainings        the use case's training runs (trainings.py)
+    GET  /api/usecases/{name}/trainings/{id}   one run with every brain it made
+    GET  /api/usecases/{name}/trainings/{id}/brains/{n}
+                                               one brain's files and its adjuster's reports
 
 An import answers 201 with the new version, 200 "unchanged" with the current
 one, or 422 with every problem by file and field. A use case and its versions
@@ -46,6 +50,7 @@ from .evaluations import Evaluations, StartRequest
 from .problems import BadRequest, ImportRefused, NotFound, TooLarge, Unauthorized
 from .registry import Registry, check_name
 from .remote import RemoteError
+from .trainings import Trainings
 
 MAX_UPLOAD_BYTES = 100 * 1024 * 1024
 MAX_JSON_BYTES = 64 * 1024
@@ -177,6 +182,21 @@ def _add_evaluation_routes(app: FastAPI, evaluations: Evaluations) -> None:
     @app.get("/api/usecases/{name}/evaluations/{job_id}/logs", response_class=PlainTextResponse)
     def evaluation_logs(name: str, job_id: str, request: Request) -> str:
         return evaluations.logs(name, job_id, _token(request))
+
+    trainings = Trainings(evaluations.registry, evaluations.mlflow)
+
+    @app.get("/api/usecases/{name}/trainings")
+    def training_list(name: str, request: Request) -> list[dict]:
+        return trainings.list(name, _token(request))
+
+    @app.get("/api/usecases/{name}/trainings/{training}")
+    def training(name: str, training: str, request: Request) -> dict:
+        return trainings.get(name, training, _token(request))
+
+    @app.get("/api/usecases/{name}/trainings/{training}/brains/{number}")
+    def training_brain(name: str, training: str, request: Request, number: int = PathParam(ge=0)) -> dict:
+        """One brain's files and the adjuster's reports of the step that made it."""
+        return trainings.brain(name, training, number, _token(request))
 
 
 def _token(request: Request) -> str:
