@@ -1,0 +1,58 @@
+# One training run: `oc create -f deploy/flywheel/training-job.yaml`, after
+# setting USECASE and ITERATIONS below. The Job's generated name is the
+# training run's id, so its MLflow runs and EvalHub jobs carry it.
+# This one is the free smoke loop of phase 3's DoD: one adjust step, Codex
+# on GLM 5.3 for the tickets and OpenCode on GLM 5.3 for the adjuster, both
+# 0 USD. Every model call goes through the gateway, which holds the keys.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: training-
+  namespace: agent-flywheel
+  labels:
+    app.kubernetes.io/name: flywheel-loop
+    app.kubernetes.io/part-of: agent-flywheel
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 21600
+  ttlSecondsAfterFinished: 604800
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: flywheel-loop
+    spec:
+      serviceAccountName: flywheel-loop
+      restartPolicy: Never
+      containers:
+        - name: loop
+          image: image-registry.openshift-image-registry.svc:5000/agent-flywheel/flywheel-runner:latest
+          imagePullPolicy: Always
+          env:
+            - name: USECASE
+              value: support
+            - name: ITERATIONS
+              value: "1"
+            - name: TRAINING_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['batch.kubernetes.io/job-name']
+            - name: FLYWHEEL_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: FLYWHEEL_CA_FILE
+              value: /etc/flywheel/service-ca/service-ca.crt
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              memory: 2Gi
+          volumeMounts:
+            - name: service-ca
+              mountPath: /etc/flywheel/service-ca
+              readOnly: true
+      volumes:
+        - name: service-ca
+          configMap:
+            name: flywheel-api-service-ca

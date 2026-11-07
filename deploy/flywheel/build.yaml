@@ -1,0 +1,29 @@
+# The runner image of images/runner/: the training loop (flywheel/) and
+# OpenCode on our harness base image. A binary build of this repo's root,
+# so nothing is pushed anywhere:
+#   oc start-build flywheel-runner --from-repo=<this repo> --commit=<sha>
+# A binary build drops --build-arg, so `dockerStrategy.from` sets the base
+# to the ImageStreamTag of deploy/builds/agent-eval-harness.yaml.
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: flywheel-runner
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: flywheel-runner
+spec:
+  source:
+    type: Binary
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: images/runner/Containerfile
+      from:
+        kind: ImageStreamTag
+        name: agent-eval-harness:flywheel-integration
+  output:
+    to:
+      kind: ImageStreamTag
+      name: flywheel-runner:latest
