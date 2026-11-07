@@ -1444,6 +1444,21 @@ branch is not merged into `flywheel-integration`, which is on
   numbers of MLflow. Left: Agent · model reads the loop's words "eval.yaml's
   runner" (the API should name the agent and model), the nav marks Use
   cases on a run's page, and the list has no sparkline or counts.
+- 2026-11-07, Start training (Lukas's `ok`), the module by a subagent
+  (`7aa6f2d8c` to `e0d5b3e3c`, then the agent's `7c275390f`), the API
+  and the loop by the agent (`16429c3` to `9b4431d`). Builds
+  `flywheel-api-16`, `flywheel-runner-3` and `agent-flywheel-ui-15`. As
+  `claude-agent` at 1440 px, 0 console errors: four bad starts answered
+  422 or 404 and made no Job; the form's defaults, Codex on GLM 5.3 and
+  the adjuster on GLM 5.3, showed "Runs free"; with 1 iteration and
+  patience 1 it created the Job `training-5r9lf` (label
+  `agent-flywheel/usecase=support`, the env the form chose) and opened
+  its page, which marks Training in the nav. The run, 11 min 8 s, 0 USD:
+  brain v0 train 0.627, validation 0.660; brain v1 train 0.839,
+  validation 0.828, kept. Its page names Codex and its model; older runs
+  read "the use case's agent". Left: the list has no sparkline or
+  counts, and "Starting" lasts under 5 s, so it was not seen on the
+  cluster (unit tests only).
 
 ### Phase 6: the proof
 

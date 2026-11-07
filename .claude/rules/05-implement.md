@@ -101,9 +101,10 @@ Write clean code from the start. Follow these rules during implementation:
   are serialised in its process.
 - Not here: code an upstream project can hold, and any key. The bucket's
   key reaches the pod as env from the claim's Secret, and git runs with
-  an environment that leaves it out. No identity of its own for EvalHub
-  or MLflow: an evaluation call carries its caller's token, and an
-  evaluation's record stays in EvalHub and MLflow, not in the bucket.
+  an environment that leaves it out. No identity of its own for EvalHub,
+  MLflow or Jobs: an evaluation call and a training start carry their
+  caller's token, and their records stay in EvalHub, MLflow and the
+  training Job, not in the bucket.
 
 ## `usecases/` — use cases in the task format
 
@@ -196,9 +197,12 @@ Write clean code from the start. Follow these rules during implementation:
 - `flywheel/` — the training loop on the cluster: the runner image's
   binary BuildConfig (context: this repo's root), the ServiceAccount
   `flywheel-loop` with only the rights EvalHub and MLflow check, and
-  `training-job.yaml`, one training run, made with `oc create -f`
-  (kustomize does not apply it). A training run beyond the free one is
-  asked for first, with its cost.
+  `training-job.yaml`, one training run. Kustomize applies it only as
+  the ConfigMap `flywheel-training-job`, the template the flywheel API's
+  Start training creates the Job from, as the caller (a change needs a
+  restart of the API); by hand, `oc create -f`. A paid training run is
+  asked for first, with its cost: a run whose agent and adjuster models
+  are free on the gateway (GLM 5.3) costs nothing.
 
 ## Repository structure
 

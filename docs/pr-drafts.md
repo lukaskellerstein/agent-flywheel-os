@@ -1389,12 +1389,12 @@ threshold gets a summary with the failed check and `enforced: false`);
 `ci.md` and `thresholds.md` combine both texts. The subagent's runs of the
 merge: 2903 passed twice.
 
-## Phase 5 — odh-dashboard `feat/agent-flywheel-module` (`5b1aa3e5f`)
+## Phase 5 — odh-dashboard `feat/agent-flywheel-module` (`7c275390f`)
 
 Not a PR yet: Benchmarks and Brains are still placeholders (spec 02
 phase 5). From upstream `37dc648`, the commit ODH 3.6.0-ea.2's
 host runs, not from `upstream/main`, and never merged into
-`flywheel-integration`. Fifty-seven commits: `2ca7b5593` (the module tests lose
+`flywheel-integration`. Sixty-four commits: `2ca7b5593` (the module tests lose
 `dataRegistry`, which #9850 commented out; four tests failed on the base),
 `146f2539a` (the `agentFlywheel` flag), `b428634c2` (the package),
 `89c1ee360` (`modules.go` and the manifests), `e98380b86` (fork-only:
@@ -1435,7 +1435,12 @@ in a wrapping grid), then on 2026-11-07 `5baa7bf06` (the BFF forwards
 and mocks training runs and their brains), `0582292a0` (the frontend
 reads them), `384233782`, `638726040` and `33f96b8b5` (the Training
 list, one training run and one brain, from the Train boards) and
-`5b1aa3e5f` (the README). The PR text is written when every page is real, on
+`5b1aa3e5f` (the README), then `7aa6f2d8c` (the BFF forwards a training
+run's start), `94513a509` (Training marked in the nav on a run's pages,
+which move under `training/`), `0badc6225` (a starting run, and the use
+case's own agent), `04f3cec81` (Start evaluation's agent and model cards
+shared), `fa5497890` (Start training run), `e0d5b3e3c` (the README) and
+`7c275390f` (runs sorted by when they were created). The PR text is written when every page is real, on
 a branch rebased onto the `upstream/main` of that day, without
 `e98380b86`.
 
