@@ -1605,8 +1605,8 @@ static handler and answers the page's HTML with 200.
   `website/reference/config/dataset.md`). The flywheel API's test
   fixture `sample` writes `files: [resources]`, so in a real run its
   knowledge base never reaches the agent.
-- Our EvalHub (`deploy/platform/evalhub/evalhub.yaml`) keeps its data
-  in SQLite in the pod (`spec.database.type: sqlite`). After the
+- Until 2026-11-07 our EvalHub (`deploy/platform/evalhub/evalhub.yaml`)
+  kept its data in SQLite in the pod (`spec.database.type: sqlite`). After the
   cluster's stop and start of 2026-10-16 evening, EvalHub listed 0 jobs
   and only its built-in providers: the registered provider
   `3e9b9bf2…` answered `resource_not_found`. MLflow kept its runs. So a
@@ -1625,6 +1625,12 @@ static handler and answers the page's HTML with 200.
   listed 0 smoke evaluations; MLflow kept all 30 runs of experiment
   `agent-flywheel-smoke`, the adapter's `<job id>_0` runs among them
   (V, 2026-11-06).
+- With `type: postgresql` and `secret: evalhub-db`, the operator wrote
+  `driver: pgx` into `evalhub-config` and rolled the server; EvalHub
+  1.0.3 logged "Ensuring schemas are created" and loaded its built-in
+  collections into PostgreSQL 15 (`registry.redhat.io/rhel9/postgresql-15`).
+  A completed job stayed listed after deleting EvalHub's pod and after
+  deleting PostgreSQL's pod (V, 2026-11-07).
 
 **Evaluations started by the flywheel API (V, 2026-11-05, cluster-nm8mw).**
 - After a stop of 20 days, every pod with an image from the internal

@@ -7,12 +7,14 @@ metadata:
   name: evalhub
 spec:
   tenancy: single
-  # In memory: a restart forgets jobs and API-made providers.
+  # PostgreSQL of postgres.yaml: jobs outlive a restart. The operator's
+  # sqlite lived in the server's memory.
   database:
-    type: sqlite
+    type: postgresql
+    secret: evalhub-db
   # The CRD's default three, the built-in ones phase 1's DoD runs, and C11's
   # agent-eval-harness from provider-agent-eval-harness.yaml in this
-  # namespace, which outlives the in-memory database.
+  # namespace, read from its ConfigMap at every start.
   providers:
     - garak
     - garak-kfp

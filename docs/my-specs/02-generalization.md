@@ -354,6 +354,17 @@ taken there on 2026-10-14 and moved here with this spec, word for word.
       gateway restart and, for a new provider, a key Secret;
     - the agent reaches the job through C11's new `runner` parameter;
     - MCP servers wait for a board (design first); nothing uses them yet.
+21. **EvalHub on PostgreSQL** (2026-11-07, Lukas: `ok`, then "you can
+    create it" for the Secret). The operator's `sqlite` is an in-memory
+    database, so every EvalHub restart, a cluster stop among them, took
+    every job and the module's evaluation pages with it. EvalHub and
+    the operator already support PostgreSQL; the operator runs no
+    database, so `deploy/platform/evalhub/postgres.yaml` does: Red Hat's
+    PostgreSQL 15 for RHEL 9 by digest, 1 Gi on Ceph, reachable only from
+    EvalHub's server. The Secret `evalhub-db` is made on the cluster with
+    a password that never leaves it (the command is in that file). The
+    jobs lost before stay lost; their MLflow runs stay. MLflow as the
+    record of a finished evaluation is the fallback, not built.
 
 ## 3. What changes, and why
 
@@ -1323,6 +1334,13 @@ branch is not merged into `flywheel-integration`, which is on
   runner facts. The cluster's stop emptied EvalHub again (below), so
   `175ce635…` and `400914b6…` are gone from the module; their MLflow runs
   stay.
+- 2026-11-07, EvalHub on PostgreSQL (decision 21), as `claude-agent`:
+  the server read `driver: pgx`, created its tables and logged the URL
+  without its password. Codex's free run `3ddcb872…` (GLM 5.3, 1.0,
+  passes) was still listed after EvalHub's pod was deleted, and again
+  after PostgreSQL's pod was deleted; its one-task route answered with
+  7 steps and `output/answer.md`. Claude Code's free run `e8432358…`
+  (1.0, passes) followed. The module's pages have these two now.
 
 ### Phase 6: the proof
 

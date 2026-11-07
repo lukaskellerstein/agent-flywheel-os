@@ -25,7 +25,7 @@ is built from, is `~/Projects/Github/lukaskellerstein/openshift-eval`.
 | [`scripts/enmaas/models.md`](scripts/enmaas/models.md) | Every model EnMaaS serves, measured: time to the first token, tokens per second, list price. Written by the probe's `speed` stage |
 | [`scripts/agent-kubeconfig.sh`](scripts/agent-kubeconfig.sh) | Mints the agent's own cluster login: applies `deploy/agent-access`, writes `~/.config/agent-kube/agent-flywheel-os.yaml` |
 | [`deploy/agent-access/`](deploy/agent-access/) | The agent's identity: ServiceAccount `claude-agent`, cluster-admin |
-| [`deploy/platform/`](deploy/platform/) | Open Data Hub 3.6.0-ea.2: the operator, the DSC, the dashboard's flags, ODH's MLflow, the EvalHub server |
+| [`deploy/platform/`](deploy/platform/) | Open Data Hub 3.6.0-ea.2: the operator, the DSC, the dashboard's flags, ODH's MLflow, the EvalHub server and its PostgreSQL |
 | [`deploy/builds/`](deploy/builds/) | Our images of the fork clones, built on the cluster with binary BuildConfigs: the TrustyAI operator, the EvalHub server, the harness's base image, the EvalHub adapter (C11), our dashboard module and dashboard-operator; and the rights our newer operator and EvalHub builds need, which ODH's own roles lack |
 | [`services/flywheel-api/`](services/flywheel-api/) | The flywheel API: the registry of use cases in S3, import by upload or from git, fixed versions with their diff, and evaluations as EvalHub jobs with each task's verdicts from MLflow (spec 02 phase 3) |
 | [`deploy/flywheel-api/`](deploy/flywheel-api/) | The API on the cluster: its BuildConfig, Deployment and Service, no Route; the service CA and its way into EvalHub |

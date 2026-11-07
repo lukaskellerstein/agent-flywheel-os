@@ -126,9 +126,11 @@ Write clean code from the start. Follow these rules during implementation:
 - `platform/` — Open Data Hub, spec 01 phase 1: `operator/` (the Subscription),
   `dsc/` (DSCInitialization and DataScienceCluster), `dashboard/` (a partial
   OdhDashboardConfig, server-side apply only), `mlflow/` (ODH's MLflow),
-  `evalhub/` (the EvalHub server, and C11's provider as a tenant
-  ConfigMap that its `spec.providers` names, with our adapter image by
-  digest: a new adapter build changes that digest). Applied in that order;
+  `evalhub/` (the EvalHub server, its PostgreSQL with the claim that
+  holds every job, and C11's provider as a tenant ConfigMap that its
+  `spec.providers` names, with our adapter image by digest: a new
+  adapter build changes that digest; the database's Secret `evalhub-db`
+  is made on the cluster, never here). Applied in that order;
   each needs the one before it. Configuration of ODH's own objects; from
   spec 02 phase 2 the Subscription also points ODH at our operator and
   EvalHub images.
