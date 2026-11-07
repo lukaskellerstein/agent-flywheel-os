@@ -9,7 +9,6 @@
 # with a clear error instead of falling back to Lukas's login.
 #
 # CLAUDE_ENV_FILE is sourced before every Bash command of the session.
-# Ported from openshift-eval, which keeps its own file next to this one.
 # bash 3.2.
 
 [ -n "${CLAUDE_ENV_FILE:-}" ] || exit 0

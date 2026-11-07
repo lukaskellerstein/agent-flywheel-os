@@ -1,0 +1,25 @@
+# Lets the flywheel API reach EvalHub's API port. The TrustyAI operator's
+# own NetworkPolicy on the EvalHub pod admits only the router, the
+# dashboard's eval-hub-ui, EvalHub's job pods and Prometheus (read on
+# cluster-nm8mw, 2026-11-05), and the operator rewrites it; policies add up,
+# so this one adds our pod beside them. MLflow's policy in opendatahub
+# already admits every pod on 8443.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: evalhub-from-flywheel-api
+spec:
+  podSelector:
+    matchLabels:
+      trustyai.opendatahub.io/component: evalhub
+      trustyai.opendatahub.io/role: api
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: flywheel-api
+      ports:
+        - port: 8443
+          protocol: TCP

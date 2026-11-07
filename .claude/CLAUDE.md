@@ -69,25 +69,30 @@ follow the rule and rewrite the memory in the same turn —
   next step; read it first. `docs/my-specs/01-initial-implementation.md`
   was `PLAN.md` until 2026-10-14; it is closed, with what is done marked,
   and its §0 rules, its §2 decisions 1 to 9 and its reference sections hold
-  where spec 02 does not change them. Decisions 10 on are in spec 02 §2. A
-  fact in a spec that turns out wrong is fixed in the same turn.
+  where spec 02 does not change them. Decisions 10 on are in spec 02 §2.
+  `docs/my-specs/03-standalone.md`, a proposal, describes every feature
+  this repo still lacks. A fact in a spec that turns out wrong is fixed in
+  the same turn.
 - **State**: spec 01's phases 0 and 1 are done (the cluster, the agent's
   identity, Open Data Hub with EvalHub, MLflow and the gateway on EnMaaS),
   and its C1 to C4, C6 to C9 and C30 to C34 are merged into `agent-eval-harness`'s
   `flywheel-integration` (2026-10-14), their PR texts in
   `docs/pr-drafts.md`. Spec 02's C29 and C14 (the operator), C10 and C12
   (eval-hub), and C35 to C39 and C19 (the harness) are merged into each
-  fork's `flywheel-integration` (2026-10-15); our operator and EvalHub
-  images run on the cluster (`deploy/builds/`). Nothing of the flywheel
-  loop is built yet.
-- **Next step**: spec 02 §0, "The next step" — Lukas's go 2026-10-16,
-  running: C20 to C26 (the harness, one at a time, C20 and C21 first),
-  C28 (eval-hub), C27 (the dashboard), then C11 (contrib), one subagent
-  per fork clone, by spec 02 §6's procedure; beside it the fast path to
-  our UI (decision 17): the Design canvas, phase 3's flywheel API and
-  registry, then phase 5's module. C13 is skipped; C5 waits for
-  Lukas to post the PR #90 comment (spec 01 §13). Status per
-  contribution: spec 02 §5.1.
+  fork's `flywheel-integration` (2026-10-15), C20 to C28 and C11
+  (2026-10-16); our operator, EvalHub, harness and adapter images run on
+  the cluster (`deploy/builds/`). The flywheel API (registry, imports,
+  evaluations as EvalHub jobs) and our dashboard module (Use cases, Use
+  case, Task, Evaluations) run there too: an evaluation starts from the
+  dashboard (2026-11-05). The loop (`flywheel/`), its runner image and
+  support as version 1 run there too: the first free training run kept
+  brain v1, and the module's Training pages show it (2026-11-07).
+- **Next step**: spec 02 §0 — spec 03's features in the order of its
+  section 4 (its group A holds phase 3's MLflow traces), each after
+  Lukas's go; then phase 6. Start training runs from the module since
+  2026-11-07.
+  C13 is skipped; C5 waits for Lukas to post the PR #90 comment (spec 01
+  §13). Status per contribution: spec 02 §5.1.
 - **Evidence**: `docs/research.md` holds every upstream fact behind the specs,
   with file and line; `README.md` indexes every file.
 - **Other repos** (spec 01 §0): the fork clones in
@@ -100,9 +105,8 @@ follow the rule and rewrite the memory in the same turn —
   with `claude --no-worktree` in this repo's main checkout: a `claude -w`
   session cannot run git in another folder (spec 01 §0). Inside a fork,
   upstream's own `CLAUDE.md`, `AGENTS.md` and contribution rules win
-  (spec 01 §5). The first version
-  `~/Projects/Github/lukaskellerstein/openshift-eval` (the inspiration) and
-  the reference checkouts `~/Projects/Github/redhat/agent-eval-harness` and
+  (spec 01 §5). The reference checkouts
+  `~/Projects/Github/redhat/agent-eval-harness` and
   `~/Projects/Github/eval-hub/eval-hub` stay read-only — never branch there.
   `rules/worktree.md` is about this repo's own checkout, not the fork
   clones. Table:
@@ -188,8 +192,7 @@ restate them here.
   time. The drafts in spec 01 §13 are posted by Lukas, in his own voice.
   Issues come with the PRs in spec 02 phase 7, not before the work
   (spec 02 decision 15).
-- Any edit in `openshift-eval` or the reference checkouts, and a commit on
-  a fork's `main`.
+- Any edit in the reference checkouts, and a commit on a fork's `main`.
 - A top-level folder beyond the layout Lukas agreed for spec 02 phase 3
   (spec 02 decision 16).
 - Creating or reading a model key Secret. `enmaas` is Lukas's (spec 01

@@ -1,0 +1,23 @@
+id: case-022-drain-noversion
+split: validation
+tags:
+- missing-version
+input:
+  ticket: |
+    After we drained a worker node for maintenance, several pods with persistent volumes
+    are stuck in ContainerCreating on their new nodes. What should we do?
+    -- Rita, Lucerne Publishing
+  customer: Lucerne Publishing
+  severity: 3
+expected:
+  expected_kb_ids:
+  - KB-1210
+  - KB-1211
+  must_mention:
+  - which version|what version|exact version|confirm the version|your version|version you|version are
+    you|version do you
+  - oc get clusterversion|oc version
+  must_not:
+  - oc delete volumeattachment
+  needs_version_question: true
+  needs_escalation: false

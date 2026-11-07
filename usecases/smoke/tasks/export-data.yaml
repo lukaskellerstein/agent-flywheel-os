@@ -5,5 +5,5 @@ input:
   question: The export button in the attached screen does nothing. Why?
   product: Reports
 expected:
-  must_mention: [CSV, 10000 rows]
+  must_mention: [CSV, ["10000 rows", "10,000 rows", "10000-row", "10,000-row"]]
 files: [screen.txt]

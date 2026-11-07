@@ -1,0 +1,25 @@
+id: case-020-two-dnf-podman
+split: train
+tags:
+- two-article
+input:
+  ticket: |
+    Two problems on our RHEL 9.4 build host, which we cloned from a VM template last week.
+    1) dnf update fails with a 403 for the appstream repository. 2) Our podman container
+    cannot write to the bind mount -v /srv/builds:/builds, it gets Permission denied. We
+    are tempted to run the container with --privileged.
+    -- Aiko, VanArsdel
+  customer: VanArsdel
+  severity: 3
+expected:
+  expected_kb_ids:
+  - KB-2300
+  - KB-2501
+  must_mention:
+  - subscription-manager clean
+  - :z
+  must_not:
+  - use --privileged|with --privileged|add --privileged|run --privileged
+  - setenforce 0|disable selinux|label=disable
+  needs_version_question: false
+  needs_escalation: false

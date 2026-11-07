@@ -1,0 +1,140 @@
+# The support evaluation: Codex answers each ticket from the knowledge
+# base in resources/, and deterministic judges make the reward. Its checks
+# are the harness's builtins (C22), its gate is thresholds (C20), and its
+# runner is smoke's: Codex on enmaas-glm-5-3 through the cluster's gateway,
+# free.
+#
+# Version 1 has no LLM judge (`quality`, spec 03 section 3.2): inside the
+# EvalHub job pod a judge model has no route to the gateway yet. Its weight
+# (0.20) is spread over the others. `format` is now two judges, the
+# sections and the length, so each verdict names one rule.
+name: support
+description: A Red Hat customer support agent answering tickets over resources/
+
+execution:
+  mode: case
+  prompt: |
+    You answer customer support tickets. The knowledge base is the resources
+    folder of the working directory: list it with ls resources, then read
+    the articles that fit the ticket. Cite the ids of the articles you used.
+
+    Ticket from {customer}, severity {severity}:
+
+    {ticket}
+
+    Write your answer to the customer to output/answer.md.
+  # GLM 5.3 takes about 26 s to its first token and reasons at length.
+  timeout: 900
+  parallelism: 4
+
+models:
+  skill: enmaas-glm-5-3
+
+runner:
+  type: codex
+  # The pod is the boundary: Codex's own workspace-write sandbox needs
+  # kernel features a restricted OpenShift pod does not always give.
+  permission_mode: bypassPermissions
+  settings:
+    model_provider: gateway
+    model_providers:
+      gateway:
+        name: gateway
+        base_url: http://gateway.agent-flywheel.svc:4000/v1
+        env_key: OPENAI_API_KEY
+        wire_api: responses
+    # Codex has no metadata for a gateway alias.
+    model_context_window: 128000
+  env:
+    # The gateway takes no key inside the cluster; Codex still wants the
+    # variable its provider names to be set.
+    OPENAI_API_KEY: gateway-takes-no-key
+
+dataset:
+  path: tasks
+  schema: |
+    One task per file in tasks/: input.ticket (the customer's message),
+    input.customer, input.severity. expected.expected_kb_ids (the articles
+    to cite), must_mention (facts; "a|b" means any of), must_not (forbidden
+    advice; "a|b" means any of, a negated clause does not count),
+    needs_version_question and needs_escalation. The tag is the ticket's
+    kind: plain-fix, missing-version, sev1, trap-eta, trap-selinux,
+    trap-reinstall, two-article, out-of-scope.
+  workspace:
+    files:
+      - dest: resources
+        source: resources
+
+outputs:
+  - path: output
+    schema: output/answer.md holds the answer to the customer, in markdown
+
+judges:
+  - name: exit_success
+    description: The agent exited with code 0
+    check: |
+      ec = outputs.get("exit_code", -1)
+      return (ec == 0), f"exit code {ec}"
+  - name: kb_citation
+    description: Cites every expected knowledge base article
+    builtin: cites
+    arguments:
+      file: output/answer.md
+      items_from: expected_kb_ids
+  - name: must_mention
+    description: The share of the required facts the answer names
+    builtin: contains
+    score_range: [0, 1]
+    arguments:
+      file: output/answer.md
+      items_from: must_mention
+      separator: "|"
+      partial: true
+  - name: policy
+    description: No forbidden advice (promised dates, disabled security, a reinstall), negation-aware
+    builtin: forbidden
+    arguments:
+      file: output/answer.md
+      items_from: must_not
+      separator: "|"
+  - name: format
+    description: Has the sections Summary, Steps and Next
+    builtin: sections
+    score_range: [0, 1]
+    arguments:
+      file: output/answer.md
+      sections: [Summary, Steps, Next]
+      partial: true
+  - name: short
+    description: Stays under 250 words
+    builtin: length
+    arguments:
+      file: output/answer.md
+      min_words: 1
+      max_words: 250
+
+reward:
+  weights:
+    kb_citation: 0.30
+    must_mention: 0.30
+    policy: 0.15
+    format: 0.15
+    short: 0.10
+  gate: false
+
+# The release gate: the mean score at least 0.90, every
+# ticket at least 0.70, and each judge at its threshold.
+thresholds:
+  reward:
+    min_mean: 0.9
+    min_per_case: 0.7
+  kb_citation:
+    min_pass_rate: 0.9
+  must_mention:
+    min_mean: 0.9
+  policy:
+    min_pass_rate: 1.0
+  format:
+    min_mean: 0.8
+  exit_success:
+    min_pass_rate: 1.0

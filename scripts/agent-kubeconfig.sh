@@ -23,7 +23,6 @@
 #
 # The file lives outside the repo on purpose: `oc start-build --from-dir=.`
 # uploads the working tree, and a gitignored token at the root would ride along.
-# openshift-eval keeps its own file next to it, for the same ServiceAccount.
 #
 # Re-run it when the token expires (the agent sees 401 Unauthorized) or after
 # the cluster is rebuilt. bash 3.2.

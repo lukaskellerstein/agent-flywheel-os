@@ -1,0 +1,42 @@
+{
+  "name": "codex",
+  "title": "Codex",
+  "description": "OpenAI's coding agent, run headless with codex exec.",
+  "framework": "Codex",
+  "version": "0.147.0",
+  "image": "image-registry.openshift-image-registry.svc:5000/agent-flywheel/agent-eval-harness:flywheel-integration",
+  "repository": "https://github.com/openai/codex",
+  "environment": [
+    {
+      "name": "OPENAI_API_KEY",
+      "required": true,
+      "description": "Codex wants the variable its provider names. The gateway takes no key inside the cluster, so it holds a placeholder."
+    }
+  ],
+  "runner": {
+    "type": "codex",
+    "permission_mode": "bypassPermissions",
+    "settings": {
+      "model_provider": "gateway",
+      "model_providers": {
+        "gateway": {
+          "name": "gateway",
+          "base_url": "http://gateway.agent-flywheel.svc:4000/v1",
+          "env_key": "OPENAI_API_KEY",
+          "wire_api": "responses"
+        }
+      },
+      "model_context_window": 128000
+    },
+    "env": {
+      "OPENAI_API_KEY": "gateway-takes-no-key"
+    }
+  },
+  "brain": {
+    "instructions_file": "AGENTS.md",
+    "skills_folder": ".agents/skills/",
+    "trainable": true
+  },
+  "models": ["enmaas-glm-5-3", "enmaas-gpt-5-mini", "enmaas-gpt-6-luna"],
+  "default_model": "enmaas-glm-5-3"
+}

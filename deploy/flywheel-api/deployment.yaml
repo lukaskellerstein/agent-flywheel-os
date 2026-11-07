@@ -53,6 +53,30 @@ spec:
             # service CA), which the claim's ConfigMap gives.
             - name: S3_ENDPOINT_URL
               value: http://s3.openshift-storage.svc:80
+            # Evaluations (services/flywheel-api, evaluations.py): EvalHub
+            # jobs with C11's provider, the per-task verdicts from MLflow.
+            # Both are called with the caller's own token, never the pod's.
+            - name: EVALHUB_URL
+              value: https://evalhub.agent-flywheel.svc:8443
+            - name: MLFLOW_URL
+              value: https://mlflow.opendatahub.svc:8443/mlflow
+            - name: FLYWHEEL_CA_FILE
+              value: /etc/flywheel-api/service-ca/service-ca.crt
+            # EvalHub's tenant and MLflow's workspace.
+            - name: FLYWHEEL_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            # AI hub › Models: the gateway's own config, the ConfigMap
+            # gateway-models of deploy/gateway/. An agent may use only these
+            # aliases, and an evaluation only one of its agent's.
+            - name: FLYWHEEL_GATEWAY_CONFIG
+              value: /etc/flywheel-api/gateway/litellm.yaml
+            # Start training: the loop's Job template (deploy/flywheel/),
+            # created through the Kubernetes API with the caller's token,
+            # so the pod's own ServiceAccount needs no right for Jobs.
+            - name: FLYWHEEL_TRAINING_JOB
+              value: /etc/flywheel-api/training/training-job.yaml
           ports:
             - name: http
               containerPort: 8080
@@ -86,7 +110,26 @@ spec:
             # Uploads spool here, and a git import clones here.
             - name: tmp
               mountPath: /tmp
+            - name: service-ca
+              mountPath: /etc/flywheel-api/service-ca
+              readOnly: true
+            # A whole folder, not a subPath, so a changed ConfigMap reaches it.
+            - name: gateway-models
+              mountPath: /etc/flywheel-api/gateway
+              readOnly: true
+            - name: training-job
+              mountPath: /etc/flywheel-api/training
+              readOnly: true
       volumes:
         - name: tmp
           emptyDir:
             sizeLimit: 2Gi
+        - name: service-ca
+          configMap:
+            name: flywheel-api-service-ca
+        - name: gateway-models
+          configMap:
+            name: gateway-models
+        - name: training-job
+          configMap:
+            name: flywheel-training-job

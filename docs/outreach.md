@@ -75,22 +75,21 @@ matches my design, and I would like to help there.`
 
 ## 4. Fact-check
 
-Every claim was checked on 2026-10-13. The numbers come from
-`openshift-eval` (`CLUSTER.md`, `PLAN.md`, the blog posts).
+Every claim was checked on 2026-10-13.
 
 | Claim | Source |
 |:--|:--|
-| 0.649 → 0.910 on held-out tickets | `openshift-eval` `CLUSTER.md`, run `flywheel-8l25r`, 10 validation tickets |
-| Training never used them | Keep or revert uses the train score only (`controller.py` `decide()`) |
+| 0.649 → 0.910 on held-out tickets | Run `flywheel-8l25r`, 10 validation tickets |
+| Training never used them | Keep or revert uses the train score only |
 | Under 20 minutes | 19 min 48 s, 6 CPU, 6 GiB |
 | No GPU in the cluster | The plain RHDP OpenShift item; no GPU request in any template; the model ran on Cerebras |
-| 6 judges | `eval/support/eval.yaml` |
+| 6 judges | |
 | 3 × 4 × 5 grid, 21 min, 5.39 USD | `bench-4j9l7`, 21 min 21 s; 59 evaluations ran, 1 was reused; agents only, the judge is not priced |
 | 2 to 6 USD per training run | 1.69 (`flywheel-ctpt6`), 1.92 (`phase6-cerebras-full-1`), 6.10 (`flywheel-8l25r`), judge not counted |
 | Three agents, one LiteLLM gateway | `deploy/gateway/config/litellm.yaml` |
 | Local models, free | The Unsloth routes with `EVAL_JUDGE=local` |
-| Not generic yet | `eval/support` is hard-coded (`run_eval.py:173`, `:202`, `adjust.py:163`) |
-| Sandboxing is a design only | `docs/my-specs/XX-sandboxing.md`, status "proposal" |
+| Not generic yet | |
+| Sandboxing is a design only | |
 | EvalHub GA in Red Hat AI 3.5, agents included | The 3.5 press release; the IBM CLEAR article |
 | OpenShift AI fine-tunes models | Kubeflow Trainer and Training Hub, from 3.3 |
 | Training Hub has GEPA, no GPU | Its `gepa.py` (added 2026-06-05), its docs: "no local GPU" |
@@ -134,17 +133,13 @@ The post links to `https://www.kellerstein.org/blog/projects/agent-flywheel/`.
 Two sentences there need a fix before the post goes out:
 
 1. "Nothing here is special": "no operator release ships EvalHub yet" →
-   "no upstream operator release". (`openshift-eval`
-   `docs/my-specs/01-new-design.md` line 7 has the same wording.)
+   "no upstream operator release".
 2. "Closer than the spread is a tie": "Sixty evaluations … ran in 21 minutes
    for 5.39 USD" → 59 ran and 1 was reused, and the cost does not include the
    judge.
 
 ## 6. Notes
 
-- The repo `lukaskellerstein/openshift-eval` is private, so the drafts do not
-  link it. People will ask for the code: decide the answer first ("happy to
-  give access, DM me").
 - Slack can show `*bold*` as plain stars after a paste. Turn on Preferences →
   Advanced → "Format messages with markup", or set bold by hand.
 - Why the text is built this way: the result first, the technology second;

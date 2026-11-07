@@ -58,14 +58,21 @@ class Registry:
         return entry
 
     def version(self, name: str, number: int) -> dict:
-        """version.json with the version's definition, tasks, judges and file list."""
-        record = self._record(name, number)
+        """version.json with the version's definition, tasks, judges, file list,
+        and what eval.yaml says about a run: the agent, its model, the reward
+        and the thresholds (C20), each null when eval.yaml leaves it out."""
+        record = self.record(name, number)
         files = self._files(name, number)
         usecase = load(files)
+        config = usecase.eval
         return {
             **record,
             "usecase": usecase.definition.model_dump(),
             "judges": usecase.judges,
+            "agent": (config.get("runner") or {}).get("type"),
+            "model": (config.get("models") or {}).get("skill"),
+            "reward": config.get("reward"),
+            "thresholds": config.get("thresholds"),
             "tasks": [task.data for task in usecase.tasks],
             "files": sorted(files),
         }
@@ -78,7 +85,7 @@ class Registry:
         with self._lock(name):
             entry = self._entry(name)
             if entry is not None:
-                current = self._record(name, entry["current"])
+                current = self.record(name, entry["current"])
                 if current["hash"] == digest:
                     return ImportResult("unchanged", current)
             record = self._new_record(name, entry, usecase, files, digest, source)
@@ -104,8 +111,31 @@ class Registry:
             "diff": diff(previous, (usecase, files), entry["current"] if entry else None),
         }
 
+    def records(self, name: str) -> list[dict]:
+        """Every version's version.json, newest first: source, time, tasks per split, diff."""
+        entry = self.get(name)
+        return [self.record(name, summary["number"]) for summary in reversed(entry["versions"])]
+
+    def record(self, name: str, number: int) -> dict:
+        """A version's version.json."""
+        data = self.store.get(self.version_prefix(name, number) + VERSION_FILE) if NAME.fullmatch(name) else None
+        if data is None:
+            raise NotFound(f"no version {number} of use case {name!r}")
+        return json.loads(data)
+
+    def file(self, name: str, number: int, path: str) -> bytes:
+        """One file of a version, as imported."""
+        data = self.store.get(self.version_prefix(name, number) + path) if path != VERSION_FILE else None
+        if data is None:
+            raise NotFound(f"no file {path!r} in version {number} of use case {name!r}")
+        return data
+
+    def version_prefix(self, name: str, number: int) -> str:
+        """The key prefix of a version's files, which EvalHub's init container copies to /test_data."""
+        return f"{ROOT}{name}/versions/{number}/"
+
     def _write(self, name: str, files: Files, record: dict, usecase: UseCase, entry: dict | None) -> None:
-        prefix = self._version_prefix(name, record["number"])
+        prefix = self.version_prefix(name, record["number"])
         self._clear_unfinished(prefix)
         for path in sorted(files):
             self.store.put(prefix + path, files[path])
@@ -126,14 +156,8 @@ class Registry:
         data = self.store.get(f"{ROOT}{name}/{ENTRY_FILE}")
         return json.loads(data) if data is not None else None
 
-    def _record(self, name: str, number: int) -> dict:
-        data = self.store.get(self._version_prefix(name, number) + VERSION_FILE) if NAME.fullmatch(name) else None
-        if data is None:
-            raise NotFound(f"no version {number} of use case {name!r}")
-        return json.loads(data)
-
     def _files(self, name: str, number: int) -> Files:
-        prefix = self._version_prefix(name, number)
+        prefix = self.version_prefix(name, number)
         files: Files = {}
         for key in self.store.keys(prefix):
             if key == prefix + VERSION_FILE:
@@ -143,9 +167,6 @@ class Registry:
                 raise RuntimeError(f"{key} was listed but cannot be read")
             files[key[len(prefix) :]] = data
         return files
-
-    def _version_prefix(self, name: str, number: int) -> str:
-        return f"{ROOT}{name}/versions/{number}/"
 
     def _lock(self, name: str) -> threading.Lock:
         with self._locks_guard:

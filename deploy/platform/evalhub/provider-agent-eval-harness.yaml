@@ -1,0 +1,118 @@
+# C11's provider (eval-hub-contrib `adapters/agent-eval-harness/provider.yaml`
+# at `flywheel-integration` 6d352b8), with our adapter image by digest: build
+# agent-eval-harness-adapter-4 of contrib 6d352b8 on our harness base
+# agent-eval-harness-2 of harness 23f7690 (deploy/builds/). A new adapter
+# build changes the digest here.
+#
+# EvalHub's API-registered providers live in its database, which our
+# EvalHub keeps in the pod (evalhub.yaml), so every restart lost them. A
+# provider named in the EvalHub's spec.providers is mounted from a
+# ConfigMap instead: in single tenancy the operator takes a `tenant` one
+# from this namespace (trustyai-service-operator,
+# controllers/evalhub/configmap.go, reconcileProviderConfigMaps), so its id,
+# agent-eval-harness, survives every restart. The flywheel API starts its
+# jobs with that id. The operator copies it to `evalhub-provider-<name>`, the
+# copy the server mounts, so this source must not take that name.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: flywheel-provider-agent-eval-harness
+  labels:
+    trustyai.opendatahub.io/evalhub-provider-type: tenant
+    trustyai.opendatahub.io/evalhub-provider-name: agent-eval-harness
+data:
+  agent-eval-harness.yaml: |
+    id: agent-eval-harness
+    name: agent-eval-harness
+    description: >
+      Evaluate CLI agents (Claude Code, Codex, OpenCode) on any agent-eval-harness
+      eval: the eval folder staged as the benchmark's test data, the eval's own
+      judges, its reward mean as the score, and every task's reasons in MLflow.
+      Reference: https://github.com/opendatahub-io/agent-eval-harness
+    type: community
+
+    agent:
+      evaluates:
+        - agent-task-completion
+        - agent-skills
+        - coding-agents
+      recommended_when:
+        - "User wants to score a CLI agent (Claude Code, Codex, OpenCode) with its instructions and skills on their own tasks"
+        - "User already has an agent-eval-harness eval.yaml and wants its runs inside EvalHub"
+      target_type: agent
+      summary: >-
+        Run an agent-eval-harness eval (tasks, agent, judges) from the benchmark's
+        test data and report its reward mean.
+      hints:
+        - "Stage the eval folder (eval.yaml and its dataset) as the benchmark's test_data_ref"
+        - "eval.yaml must declare a reward block: its mean is the primary score"
+        - "Set the job's experiment_name to keep each task's verdicts and reasons in MLflow"
+      result_interpretation:
+        - "reward is the mean over the tasks of each task's reward, the eval's combined judge score in [0, 1]"
+        - "<judge>_mean and <judge>_pass_rate are each judge's aggregates over the tasks"
+        - "reward_scored_cases below the number of tasks means some tasks got no judge value"
+
+    runtime:
+      k8s:
+        image: image-registry.openshift-image-registry.svc:5000/agent-flywheel/agent-eval-harness-adapter@sha256:2924f5f861dea986d347d1a975efb6359e88aa8c3a5e9a3d954fb17257b85024
+        entrypoint:
+          - python
+          - main.py
+        cpu_request: "1"
+        memory_request: 2Gi
+        cpu_limit: "4"
+        memory_limit: 8Gi
+      local: null
+
+    benchmarks:
+      - id: eval-run
+        name: agent-eval-harness eval run
+        description: >
+          Runs the agent eval.yaml names on every task of the staged eval (or of
+          one split), scores the tasks with the eval's judges, and reports the
+          reward mean, each judge's mean and pass rate, and the agents' cost.
+        category: agentic
+        metrics:
+          - reward
+          - reward_scored_cases
+          - cost_usd
+        tags:
+          - agent
+          - agent-eval-harness
+          - claude-code
+          - codex
+          - opencode
+        evaluation_targets:
+          - agent
+        primary_score:
+          metric: reward
+          lower_is_better: false
+        pass_criteria:
+          threshold: 0.5
+        agent:
+          result_interpretation: >-
+            reward is the eval's combined judge score per task (its reward block),
+            averaged over the tasks. HIGHER is better. Each judge's mean and pass
+            rate come as <judge>_mean and <judge>_pass_rate.
+
+    parameters:
+      - name: eval_dir
+        type: string
+        default: /test_data
+        description: Folder holding eval.yaml and its dataset; EvalHub stages the benchmark's test_data_ref here.
+      - name: split
+        type: string
+        description: Run only the tasks of this split (a task's split field); every task when unset.
+      - name: brain
+        type: string
+        description: >-
+          MLflow artifact URI runs:/<run_id>/<path> of a folder (for example an
+          AGENTS.md and skills) laid over the eval folder's root and linked into
+          each task's workspace; none when unset.
+      - name: runner
+        type: object
+        description: >-
+          A runner block (agent-eval-harness runner.md) that runs another agent on
+          the same eval. Its type, permission_mode, settings and env replace
+          eval.yaml's, which wire the eval's own agent; the eval's other runner
+          keys stay. eval.yaml's runner when unset.

@@ -47,6 +47,19 @@ def test_the_reads(client, files):
     assert [j["name"] for j in version["judges"]] == ["must_mention", "style"]
     assert version["diff"]["tasks"]["added"] == ["export-data", "pricing", "reset-password"]
     assert version["usecase"]["task"]["label"] == "question"
+    assert [version[key] for key in ("agent", "model", "reward", "thresholds")] == [None, None, None, None]
+
+
+def test_the_versions_newest_first_with_source_and_diff(client, files):
+    upload(client, tar_gz(files))
+    files["usecase.yaml"] = files["usecase.yaml"].replace(b"Product questions", b"Product questions, again")
+    upload(client, tar_gz(files))
+    versions = client.get("/api/usecases/sample/versions").json()
+    assert [v["number"] for v in versions] == [2, 1]
+    assert versions[0]["diff"]["from"] == 1
+    assert [v["source"]["type"] for v in versions] == ["upload", "upload"]
+    assert versions[0]["tasks_per_split"] == {"train": 1, "validation": 1}
+    assert client.get("/api/usecases/nothing/versions").status_code == 404
 
 
 def test_a_git_import_of_the_same_content_is_unchanged(client, files, tmp_path):

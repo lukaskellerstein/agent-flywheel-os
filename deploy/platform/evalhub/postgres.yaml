@@ -1,0 +1,120 @@
+# EvalHub's database (2026-11-07, Lukas's ok): the operator's sqlite lives in
+# the server's memory, so every restart, a cluster stop among them, forgot
+# every job. EvalHub creates its tables on start; the operator mounts only the
+# `db-url` key of the Secret evalhub.yaml names.
+#
+# The Secret is made on the cluster, never in a file; its password never
+# leaves it:
+#
+#   pw=$(openssl rand -hex 24)
+#   printf 'POSTGRESQL_USER=evalhub\nPOSTGRESQL_PASSWORD=%s\nPOSTGRESQL_DATABASE=evalhub\ndb-url=postgres://evalhub:%s@evalhub-postgres.agent-flywheel.svc:5432/evalhub?sslmode=disable\n' "$pw" "$pw" \
+#     | oc create secret generic evalhub-db -n agent-flywheel --from-env-file=/dev/stdin
+#   unset pw
+#
+# PostgreSQL 15 for RHEL 9, the newest the cluster's `openshift/postgresql`
+# ImageStream carries, by digest. Deleting the claim deletes every job.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: evalhub-postgres
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: evalhub-postgres
+spec:
+  replicas: 1
+  # One pod at a time on a ReadWriteOnce volume.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: evalhub-postgres
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: evalhub-postgres
+    spec:
+      containers:
+        - name: postgresql
+          image: registry.redhat.io/rhel9/postgresql-15@sha256:36173a28765b4fc892b3c113455239fc1b68dd72d017d8e7dea7ab459537c545
+          ports:
+            - name: postgresql
+              containerPort: 5432
+          env:
+            - name: POSTGRESQL_USER
+              valueFrom:
+                secretKeyRef: {name: evalhub-db, key: POSTGRESQL_USER}
+            - name: POSTGRESQL_PASSWORD
+              valueFrom:
+                secretKeyRef: {name: evalhub-db, key: POSTGRESQL_PASSWORD}
+            - name: POSTGRESQL_DATABASE
+              valueFrom:
+                secretKeyRef: {name: evalhub-db, key: POSTGRESQL_DATABASE}
+          # The image's own checks, as in OpenShift's postgresql templates.
+          readinessProbe:
+            exec:
+              command: [/usr/libexec/check-container]
+            initialDelaySeconds: 5
+            timeoutSeconds: 1
+          livenessProbe:
+            exec:
+              command: [/usr/libexec/check-container, --live]
+            initialDelaySeconds: 120
+            timeoutSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop: [ALL]
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/pgsql/data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: evalhub-postgres
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: evalhub-postgres
+spec:
+  selector:
+    app.kubernetes.io/name: evalhub-postgres
+  ports:
+    - name: postgresql
+      port: 5432
+      targetPort: postgresql
+---
+# Only the EvalHub server reaches it.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: evalhub-postgres-from-evalhub
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: evalhub-postgres
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              trustyai.opendatahub.io/component: evalhub
+              trustyai.opendatahub.io/role: api
+      ports:
+        - port: postgresql

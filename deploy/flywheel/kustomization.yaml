@@ -1,0 +1,25 @@
+# The training loop on the cluster (spec 02 phase 3 steps 3 and 4): the
+# runner image's build and the loop's ServiceAccount. A training run is a
+# Job made from training-job.yaml, which this kustomization does not apply
+# as a Job: the dashboard's Start training has the flywheel API create it
+# from the ConfigMap flywheel-training-job below, as the caller; by hand,
+#   oc create -f deploy/flywheel/training-job.yaml
+# The service CA ConfigMap of deploy/flywheel-api/ verifies MLflow.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: agent-flywheel
+resources:
+  - build.yaml
+  - rbac.yaml
+# The template the flywheel API mounts (services/flywheel-api, launcher.py).
+# No hash: the API's Deployment names it, and the API reads it at start, so
+# a changed template needs `oc rollout restart deploy/flywheel-api`.
+configMapGenerator:
+  - name: flywheel-training-job
+    files:
+      - training-job.yaml
+    options:
+      disableNameSuffixHash: true
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: agent-flywheel

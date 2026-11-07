@@ -1,0 +1,27 @@
+# The runner image (spec 02 phase 3 step 4): the training loop of
+# flywheel/ and OpenCode for its adjuster, on our harness base image
+# (deploy/builds/agent-eval-harness.yaml: the harness of the fork's
+# `flywheel-integration`, with Claude Code and Codex). The loop scores no
+# brain itself: each score is an EvalHub job with C11's adapter, started
+# through the flywheel API. Built on the cluster from this repo's root
+# (deploy/flywheel/build.yaml); `dockerStrategy.from` replaces the FROM.
+FROM image-registry.openshift-image-registry.svc:5000/agent-flywheel/agent-eval-harness:flywheel-integration
+
+USER 0
+
+# The version the adjuster ran on in the first training run (2026-11-07).
+# On first use OpenCode installs its provider package,
+# @ai-sdk/openai-compatible, into XDG_CACHE_HOME, which the loop sets.
+ARG OPENCODE_VERSION=1.18.30
+RUN npm install -g opencode-ai@${OPENCODE_VERSION} && opencode --version
+
+COPY flywheel/flywheel_loop /opt/flywheel/flywheel_loop
+
+ENV PYTHONPATH=/opt/flywheel:/opt/agent-eval-harness
+
+RUN chgrp -R 0 /opt/flywheel && chmod -R g=u /opt/flywheel \
+    && python -c "import flywheel_loop.controller"
+
+WORKDIR /workspace
+USER 1001
+ENTRYPOINT ["python", "-m", "flywheel_loop"]

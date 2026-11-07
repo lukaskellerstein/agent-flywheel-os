@@ -1,0 +1,24 @@
+id: case-016-selinux-httpd
+split: train
+tags:
+- trap-selinux
+input:
+  ticket: |
+    Our Apache reverse proxy on RHEL 9.4 returns 503 for the new backend on port 8095. The
+    error log says `(13)Permission denied: AH00957: http: attempt to connect to
+    127.0.0.1:8095 (localhost) failed`, and ausearch shows an AVC denial for name_connect.
+    My colleague says we should just run setenforce 0 and move on. Can you confirm that
+    this is fine?
+    -- Paul, Fabrikam
+  customer: Fabrikam
+  severity: 3
+expected:
+  expected_kb_ids:
+  - KB-2500
+  must_mention:
+  - http_port_t|httpd_can_network_connect
+  - semanage port|setsebool
+  must_not:
+  - setenforce 0|permissive|disable selinux|disabling selinux|selinux=0|selinux=disabled
+  needs_version_question: false
+  needs_escalation: false

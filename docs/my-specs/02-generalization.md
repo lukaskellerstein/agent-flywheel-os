@@ -1,6 +1,6 @@
 # Spec 02: Generalization, one flywheel for any use case
 
-Status: the active plan, written 2026-10-14. Decisions 10 to 16 are Lukas's
+Status: the active plan, written 2026-10-14. Decisions 10 to 22 are Lukas's
 (section 2); decision 16 (2026-10-15) answers the open questions of
 section 9 and takes C19's design. What is still marked **proposal** is not
 decided yet. This spec carries every open step of spec 01
@@ -23,9 +23,9 @@ again for that (decision 14).
 |:--|:--|
 | This spec, the active plan | `docs/my-specs/02-generalization.md` |
 | Spec 01, closed | [`01-initial-implementation.md`](01-initial-implementation.md): what is done (phases 0, 1 and 2), decisions 1 to 9, the rules for every agent (its section 0), the lineup, the target architecture, repos and branches, the contribution catalogue C1 to C18 and C30 to C34, sandboxing, costs, the opening comments. All of it still holds unless this spec changes it |
-| The evidence | [`../research.md`](../research.md). For this spec: section 4, "What the harness models for any use case"; section 5, "Use cases, data and gates in EvalHub"; section 7, the agent catalog's artifacts; section 8, the `openshift-eval` branch `generalization` |
+| The evidence | [`../research.md`](../research.md). For this spec: section 4, "What the harness models for any use case"; section 5, "Use cases, data and gates in EvalHub"; section 7, the agent catalog's artifacts |
 | PR texts | [`../pr-drafts.md`](../pr-drafts.md) |
-| The first version's generalization | `~/Projects/Github/lukaskellerstein/openshift-eval`, branch `generalization`, worktree `.worktrees/generalization`: its spec `docs/my-specs/03-generalization.md` and its phase 1 (`tasks/support/`, `flywheel/task.py`), built and checked on the laptop. Its "task" is our use case, its "case" our task. Not committed on 2026-10-14 |
+| What this repo still lacks | [`03-standalone.md`](03-standalone.md), spec 03, a proposal: every such feature as behaviour, rules and numbers, so no step depends on anything outside this repo; built in a session of its own (Lukas, 2026-11-07) |
 | Forks, clones, the cluster | Spec 01, sections 0 and 5 |
 
 **Done, in spec 01.** Phase 0, the agent's own identity, cluster-admin on
@@ -50,11 +50,9 @@ section 7).
 2. Read this section, the status table (section 5.1), the procedure and
    the phase you work on (section 6), and spec 01 sections 0 and 5 (the
    rules, the repos and branches). `.claude/CLAUDE.md` is loaded already.
-3. Lukas answered section 9 on 2026-10-15 (decision 16), and the step
-   he approved then is done. He gave his go for the next step below on
-   2026-10-16 ("you can continue with the work"). Before cluster work
-   that takes hours, ask him whether the auto-stop is far enough (below,
-   "The cluster").
+3. Everything above "The next step" below is done; the next step is
+   there. Before cluster work that takes hours, ask Lukas whether the
+   auto-stop is far enough (below, "The cluster").
 4. Build each contribution by the procedure of section 6, "How a
    contribution is built".
 5. After each contribution, write its state into the status table
@@ -68,7 +66,6 @@ section 7).
    - a paid model run beyond one smoke call, with its cost (spec 01
      section 10);
    - creating or reading a Secret, the bucket's access key included;
-   - an edit in `openshift-eval` (risk 2);
    - a top-level folder beyond the layout of decision 16, or a sixth fork
      (spec 01 section 5);
    - every other step marked "waits for" below.
@@ -87,7 +84,7 @@ afternoon, one subagent per clone (spec 01 section 5):
 
 Each row is in section 5.1, each PR text in `docs/pr-drafts.md`.
 
-**The next step** (Lukas's go, 2026-10-16; started 15:30 CEST with C20,
+**The step after it, done** (Lukas's go, 2026-10-16; started 15:30 CEST with C20,
 C28 and C27). Side by side, one subagent per clone, by section 6's
 procedure; each new branch starts from the newest `upstream/main`, and
 the harness's `flywheel-integration` first merges `upstream/main`
@@ -107,10 +104,9 @@ All of it is merged, 2026-10-16 by 23:00 CEST: the harness's C20, C21,
 C26, C22, C23, C24 and C25 (`flywheel-integration` `23f7690`, 3347
 passed twice), eval-hub's C28, odh-dashboard's C27, and C11 with its
 adapter image on the cluster. Each row is in section 5.1, each PR text
-in `docs/pr-drafts.md`. The harness image on the cluster is older
-(`flywheel-integration` `2137cdd`, the C21 merge; build
-`agent-eval-harness-1`): a run that needs C22 to C25 in a pod needs the
-base image and the adapter built again.
+in `docs/pr-drafts.md`. The harness image on the cluster has them all
+since 2026-11-05 (build `agent-eval-harness-2` of `23f7690`, and the
+adapter on it, build `agent-eval-harness-adapter-3`).
 
 Not next:
 
@@ -127,8 +123,7 @@ Not next:
 step 1, the new boards on the Design canvas for Lukas's review; phase 3
 in this repo, the flywheel API with the registry, the bucket and support
 as version 1; then phase 5's module in the odh-dashboard clone after
-C27, built on the cluster. Phase 3's port of the loop reads
-`openshift-eval`'s `generalization` once Lukas has committed it. Where
+C27, built on the cluster. Where
 it stands (2026-10-16 18:35 CEST): our module runs in the dashboard on
 the cluster, Develop & train › Agent flywheel with five placeholder
 pages (phase 5's DoD item 1); the flywheel API runs on the cluster
@@ -137,17 +132,48 @@ boards are approved (decision 18), and the module's subagent builds
 the Use cases, Use case and Task pages from them. At 22:56 CEST the
 first evaluation with answers ran (decision 19): `smoke` version 2,
 Codex on GLM 5.3 through EvalHub and our adapter, `reward` 0.667, each
-task's reason in MLflow (phase 3 status). Next on this path: a run
-route in the API, then "Start evaluation" on the Use case page.
+task's reason in MLflow (phase 3 status). On 2026-11-05 (Lukas's go)
+the API got its evaluation routes and the module its Evaluations, Start
+evaluation and Evaluation pages: an evaluation now starts from the
+dashboard and shows each task's verdict, the same numbers as MLflow.
+The same day the three pages were brought up to their Evaluate boards:
+the release gate's three rules from the version's thresholds (C20),
+the scorecard by judge, every task, and Stop, Delete, View log and the
+links to MLflow and EvalHub (phases 3 and 5 status). Later that day the
+Use cases, Use case and Task pages followed their boards too, with each
+task's results from MLflow; and AI hub's Agents and Models became ours
+(decision 20): the API keeps the agents and reads the gateway's models,
+an evaluation picks an agent and one of its models, and C11's `runner`
+parameter runs it, so Codex and Claude Code now run on the same version
+(phase 3 status). The module's AI hub pages followed on 2026-11-05 and
+2026-11-06 (phase 5).
+On 2026-11-07 phase 3's loop, runner image
+and support as version 1 landed (decision 22): the first free training
+run, `training-jhqlf`,
+kept brain v1 (train 0.630 to 0.769), and the module's Training pages
+show it (phases 3 and 5 status). The same day a training run started
+from the module: the API creates the loop's Job as the caller
+(`16429c3`, `0dae3af`, `79a32ad`; build `flywheel-api-16`), and the
+Training pages have Start training (`fa5497890`).
+
+**The next step** (2026-11-07): spec 03's features
+([`03-standalone.md`](03-standalone.md)) in the order of its section 4,
+built in a session of their own (Lukas), each after his go; then phase 6.
+Spec 03's group A holds phase 3's open DoD item 4, the MLflow traces.
 
 **The cluster.** `cluster-nm8mw` auto-destroys on 2026-11-12. RHDP also
-auto-stops it; the auto-stop read last was Thu 2026-10-15 02:23 CEST, and
-only Lukas can move it (spec 01 section 0). It stopped after 2026-10-15
-and ran again on 2026-10-16 (Lukas); the agent's token had expired and
-was renewed at 15:15 CEST, until 2026-10-17 15:15 CEST. It stopped again
-on 2026-10-16 about 21:15 CEST and ran again by 22:38 CEST. The new
-auto-stop time is not read. A stop erases EvalHub's providers and jobs
-(SQLite in the pod). Before cluster work that
+auto-stops it, at a time only Lukas can move (spec 01 section 0); the
+time is not read. It stopped after 2026-10-15 and ran again on
+2026-10-16; stopped that evening about 21:15 CEST and ran again by 22:38;
+stopped that night until Lukas started it on 2026-11-05 (node Ready
+11:13 CET); and stopped on 2026-11-05 at 16:13 UTC until 2026-11-06.
+Each stop let the agent's token expire: after Lukas's `oc login`,
+`scripts/agent-kubeconfig.sh` mints a new one (last on 2026-11-07, until
+2026-11-08 15:16 CET). Until
+2026-11-07 a stop erased EvalHub's jobs (in-memory SQLite in the pod);
+since then they are in PostgreSQL and survive it (decision 21). C11's
+provider is mounted from a ConfigMap since 2026-11-05 and stays. After a long stop, pods with our
+images wait about 7 minutes for their pull secrets (`docs/research.md`). Before cluster work that
 takes hours, ask him whether the auto-stop is far enough. If the API times
 out, ask him whether the cluster stopped before you debug anything.
 
@@ -182,12 +208,11 @@ taken there on 2026-10-14 and moved here with this spec, word for word.
     given use case. We want to provide the platform for it so we have to be
     general." The support agent stays the first use case. The proof (phase
     6) includes a use case of another kind, after support runs end to end:
-    the coding use case `pyfix` of `openshift-eval`'s generalization spec
-    (section 0, "Where things are"), 12 small Python repositories with one
-    bug each and hidden tests. If time runs short before the cluster's end
-    (2026-11-12), that spec's text-only use case `copywriter` is the proof
-    instead (Lukas, `ok`, 2026-10-14). Where use cases live and how they
-    come in: decisions 11 and 13.
+    the coding use case `pyfix` (spec 03 section 3.10), 12 small Python
+    repositories with one bug each and hidden tests. If time runs short
+    before the cluster's end (2026-11-12), the text-only use case
+    `copywriter` is the proof instead (Lukas, `ok`, 2026-10-14). Where
+    use cases live and how they come in: decisions 11 and 13.
 11. **Our own registry, the files in S3, import first** (2026-10-14). The
     flywheel API keeps the registry of use cases: "I would have our own
     API: the task register." Not a Kubernetes resource per use case ("there
@@ -210,8 +235,7 @@ taken there on 2026-10-14 and moved here with this spec, word for word.
     one item of the dataset: one support ticket, one contract clause, one
     bug to fix. The harness calls a task a "case" and keeps its own names
     (`cases/`, `per_case`, `annotations.yaml`). In this plan "ticket" stays
-    for the tasks of the support use case. `openshift-eval`'s generalization spec says
-    "task" for our use case and "case" for our task.
+    for the tasks of the support use case.
 13. **One format for a task, and fixed versions** (2026-10-14, Lukas,
     `yes` and `A`). A use case is defined once: its judges, what its agent
     can read, its gate. Its tasks come in bulk: one YAML file per task, or
@@ -281,8 +305,7 @@ taken there on 2026-10-14 and moved here with this spec, word for word.
       API with the registry and support as version 1 in this repo; the
       module in the odh-dashboard clone after C27, built on the cluster;
       Evaluate and Train from the UI once C11 and the runner image land;
-    - Lukas commits `openshift-eval`'s branch `generalization` himself
-      (risk 2); the agent only reads it;
+    - replaced by decision 22 (risk 2);
     - the agent creates the ObjectBucketClaim `flywheel-usecases` in
       `agent-flywheel`; the API pod reads its access key Secret as env,
       and the key is never printed and never enters a file;
@@ -309,8 +332,8 @@ taken there on 2026-10-14 and moved here with this spec, word for word.
 19. **The first evaluation, before support** (2026-10-16 evening, Lukas,
     `ok`): the first EvalHub job runs on a small smoke use case,
     `usecases/smoke/` (the API's test fixture with a `reward:` block and
-    deterministic judges only), not on support, which waits for Lukas's
-    commit of `openshift-eval`'s `generalization`. The agent is Codex on
+    deterministic judges only), not on support (support is version 1
+    since 2026-11-07, decision 22). The agent is Codex on
     `enmaas-gpt-5-mini`, decision 9's agent model, about 0.04 USD for its
     three tasks; Lukas asked for "some cheap openai model" rather than
     GLM 5.3, which is free but slow. Changed the same night (Lukas, `ok`,
@@ -318,21 +341,57 @@ taken there on 2026-10-14 and moved here with this spec, word for word.
     Claude and Gemini only, `docs/research.md`), so the agent is Codex on
     `enmaas-glm-5-3`, 0 USD, with a 900 s timeout per task; `smoke`
     version 2.
+20. **AI hub's Agents and Models are ours** (2026-11-05, Lukas: "These
+    are our pages. We are adding them there. No one else, no other
+    module."; then `ok` to every pick of the agent's plan). Our module
+    adds AI hub › Agents and AI hub › Models, with their data in the
+    flywheel API, not in the agent catalog (ODH's, behind the flag
+    `agentsCatalog`, off) or MaaS (not installed). An evaluation picks
+    only an agent listed there, and that agent only one of its models
+    from AI hub › Models. The picks:
+    - an agent is a record in the bucket: its harness runner block, its
+      brain's place, the gateway models it may use with a default; the
+      first two are Codex and Claude Code, the CLIs the harness image
+      carries; OpenCode comes with phase 3's runner image (2026-11-07:
+      that image runs OpenCode as the adjuster only; as the agent under
+      test it needs OpenCode in the harness image and C5, spec 03
+      section 3.7);
+    - a model is a route of the cluster's gateway, read from its own
+      config; Models is read-only: a model is added in
+      `deploy/gateway/config/`, since adding one from the page means a
+      gateway restart and, for a new provider, a key Secret;
+    - the agent reaches the job through C11's new `runner` parameter;
+    - MCP servers wait for a board (design first); nothing uses them yet.
+21. **EvalHub on PostgreSQL** (2026-11-07, Lukas: `ok`, then "you can
+    create it" for the Secret). The operator's `sqlite` is an in-memory
+    database, so every EvalHub restart, a cluster stop among them, took
+    every job and the module's evaluation pages with it. EvalHub and
+    the operator already support PostgreSQL; the operator runs no
+    database, so `deploy/platform/evalhub/postgres.yaml` does: Red Hat's
+    PostgreSQL 15 for RHEL 9 by digest, 1 Gi on Ceph, reachable only from
+    EvalHub's server. The Secret `evalhub-db` is made on the cluster with
+    a password that never leaves it (the command is in that file). The
+    jobs lost before stay lost; their MLflow runs stay. MLflow as the
+    record of a finished evaluation is the fallback, not built.
+22. **This repo stands alone** (2026-11-07, Lukas: this repo must not
+    rely on another project in any way, nor be blocked by one). Nothing
+    here reads or waits for a repo beyond this one and the fork clones
+    (spec 01 section 5). The loop, the runner image and support's tasks
+    were written into this repo on 2026-11-07, and this repo is their
+    source from then on; phase 6 writes `pyfix` or `copywriter` from
+    spec 03 section 3.10. This replaces decision 17's second point.
 
 ## 3. What changes, and why
 
 What spec 01 planned around the support agent, and the facts that shape
-the change (`docs/research.md`, sections 4, 5 and 8):
+the change (`docs/research.md`, sections 4 and 5):
 
-- Spec 01 phase 4 ported `datasets/support/` from `openshift-eval` `main`,
-  where the use case is hard-coded in every layer: the judges' weights in
-  `run_eval.py`, the failure report in `adjust.py`, the adjuster's prompt,
-  three backends, the release gate, the console's labels, the image's
-  `COPY eval` (the table in section 2 of `openshift-eval`'s generalization
-  spec). Its branch `generalization` moved most of it into a pack its code
-  reads, but in its own code.
-- Spec 01 planned C11 as `openshift-eval`'s provider: one EvalHub
-  benchmark, `support`, with the dataset baked into the image. Every new use
+- Spec 01 phase 4 planned `datasets/support/` with the use case
+  hard-coded in every layer: the judges' weights, the failure report, the
+  adjuster's prompt, three backends, the release gate, the console's
+  labels, the image's `COPY eval`.
+- Spec 01 planned C11 as a provider of one EvalHub benchmark, `support`,
+  with the dataset baked into the image. Every new use
   case would need a new image.
 - Spec 01 phase 5's Dataset and One ticket boards show tickets, a knowledge
   base and policies.
@@ -402,8 +461,7 @@ s3://<bucket>/usecases/<name>/
   written.
 - **Versions** (decision 13): a new version only when the content hash
   changes; never deleted in the first build. Runs carry the MLflow tags
-  `usecase`, `usecase_version`, `usecase_hash` (proposal; `openshift-eval`
-  tags `task`, `task_version`, `task_hash` the same way). Benchmark reuse
+  `usecase`, `usecase_version`, `usecase_hash` (proposal). Benchmark reuse
   counts a run only for the same hash.
 - **Projections**: one EvalHub collection per use case (proposal): per
   split one entry of the harness provider, each with a benchmark id of
@@ -437,6 +495,12 @@ s3://<bucket>/usecases/<name>/
 6. EvalHub sets `test.pass` from the use case's `pass_criteria`; our UI
    shows the per-judge and per-task rules beside it.
 
+As built (2026-11-07): the loop asks the flywheel API for one evaluation
+per split, and the API creates one EvalHub job for each, with
+`parameters.split`, `parameters.brain` and the job's own `pass_criteria`;
+no collection is written (phase 3 status). One job per split settles step
+1's question.
+
 ### 4.5 Where each part lives (decision 1's rule)
 
 | Part | Home | Contribution | State |
@@ -458,9 +522,12 @@ s3://<bucket>/usecases/<name>/
 
 ### 4.6 The environment of a use case
 
-The planned runner image (spec 01 section 4) holds the harness, the three
-agent CLIs, git, Python and make: enough for support, `copywriter` and
-`pyfix`. A use case with its
+The runner image (`images/runner/`) is the training loop and OpenCode
+1.18.30 on our harness image, which carries Claude Code, Codex and git;
+an evaluation runs in EvalHub's job pod on the harness image, which has
+no OpenCode (`deploy/builds/agent-eval-harness.yaml`). That is enough for
+support and `copywriter`; what `pyfix`'s tests need in the job pod is not
+checked yet (spec 03 section 3.10). A use case with its
 own toolchain registers its own tenant provider with its own image
 (EvalHub's "Bring Your Own Provider") and asks for CPU and memory per
 benchmark entry (`BenchmarkHardwareConfig`, or an ODH `HardwareProfile`);
@@ -518,8 +585,9 @@ The design, point by point, as Lukas took it on 2026-10-15:
 ## 5. Contribution catalogue
 
 C1 to C18 and C30 to C34 are in spec 01 section 7. Done there: C1 to C4, C6 to C9 and C30 to C34.
-Still open from there, unchanged unless this section says so: C5, C10,
-C12 to C18. The rows below are new or changed; the notes after the table
+Still open from there: C5. C10, C12 and C14 are merged, C13 is skipped,
+C15 is in progress and C16 to C18 are replaced by decision 20 (section
+5.1). The rows below are new or changed; the notes after the table
 update spec 01's open rows, and section 5.1 holds the status of all of
 them.
 C35 to C39 are the second round of spec 01's C30 to C34: the gaps their
@@ -533,7 +601,7 @@ and C20 to C28 since 2026-10-15 (decision 16).
 
 | Id | Repo | Gap today (source) | Change | Replaces |
 |:--|:--|:--|:--|:--|
-| C11 (changed) | eval-hub-contrib | Spec 01 planned one benchmark per use case, its dataset in the image | One benchmark of the harness provider for any use case: the version from `/test_data`, `parameters.split`, `parameters.brain`; the combined score as `primary_score`, each judge as a metric, a reason per task to MLflow | A new image per use case |
+| C11 (changed) | eval-hub-contrib | Spec 01 planned one benchmark per use case, its dataset in the image | One benchmark of the harness provider for any use case: the version from `/test_data`, `parameters.split`, `parameters.brain`, and `parameters.runner` for another agent on the same eval (decision 20); the combined score as `primary_score`, each judge as a metric, a reason per task to MLflow | A new image per use case |
 | C19 | harness | A dataset is a folder of case folders only: no reader for one file per task, JSONL or Hugging Face (`docs/research.md` section 4) | A reader for the task format of decision 13: one YAML file per task or one JSONL line per task, with `id`, `split`, `tags`, `input`, `expected`, `files`; the case folders keep working | Our own import writing case folders |
 | C20 | harness | `reward:` exists but `summary.yaml` gets only `judges`, `per_case`, `judge_usage`; `thresholds` exit 1 and none targets the combined score (`score.py:3841-3910, 4066-4072`) | Write the combined score and the threshold verdicts into `summary.yaml`; a threshold on the combined score and a per-task minimum; a report-only mode | The weights and the release gate in our code |
 | C21 | harness | No splits: `--cases` takes exact ids (`workspace.py:46, 69-71`); PR #73's `--split` is not merged and writes to `tmp/` | Named splits from the task's `split`, `--split <name>`, a summary per split; agreed with PR #73's authors | Our split loader |
@@ -644,7 +712,7 @@ section 7.
 | C14 | trustyai-service-operator | `fix/evalhub-adapter-exit` | `24e6886`; `flywheel-integration` `e4ddb1a` | ✅ 2026-10-15: 256 Go tests, 255 Ginkgo specs (agent's run); reads the job before it posts (section 5 note); on the cluster since 03:38 CEST | — |
 | C13 | eval-hub | — | — | skipped | ODH's MLflow refusing the header |
 | C5 | agent-eval-harness | — | — | ⬜ | Lukas's comment on PR #90, then astefanutti |
-| C11 | eval-hub-contrib | `feat/agent-eval-harness-adapter` | `ef0fb5c` (4 commits on `78f01e4`); `flywheel-integration` `98d7683` (new, from `upstream/main` `78f01e4`) | ✅ 2026-10-16: 29 tests twice, the offline smoke test, ruff clean (agent's run of the merge, on the harness's `flywheel-integration` `2137cdd`); `make test-atif` 132 as on `main` (subagent's run); one benchmark `eval-run` for any use case version at `/test_data`, `parameters.split` and `parameters.brain` (`runs:/<run_id>/<path>`), `reward.mean` as the primary score, each judge's mean and pass rate as metrics, the run folder to MLflow; its image built on the cluster, smoke test passed (build `agent-eval-harness-adapter-2`) | — |
+| C11 | eval-hub-contrib | `feat/agent-eval-harness-adapter` | `220cb46` (5 commits on `78f01e4`); `flywheel-integration` `6d352b8` (from `upstream/main` `78f01e4`) | ✅ 2026-11-05, `parameters.runner` (decision 20): 36 tests twice on the harness's `flywheel-integration` `23f7690`, ruff 0.16.9 clean; image build `agent-eval-harness-adapter-4`; Codex and Claude Code on `smoke` version 3 through it (phase 3 status). ✅ 2026-10-16: 29 tests twice, the offline smoke test, ruff clean (agent's run of the merge, on the harness's `flywheel-integration` `2137cdd`); `make test-atif` 132 as on `main` (subagent's run); one benchmark `eval-run` for any use case version at `/test_data`, `parameters.split` and `parameters.brain` (`runs:/<run_id>/<path>`), `reward.mean` as the primary score, each judge's mean and pass rate as metrics, the run folder to MLflow; its image built on the cluster, smoke test passed (build `agent-eval-harness-adapter-2`) | — |
 | C20 | agent-eval-harness | `feat/summary-reward-verdicts` | `f2ca79e` (9 commits on `b306e63`); `flywheel-integration` `2293963` (after `1bf99ae` merged `upstream/main` `b306e63`) | ✅ 2026-10-16: 2903 passed twice (agent's run; `1bf99ae` 2857 twice, subagent's run), 2381 on the branch; skillsaw, mkdocs clean; the reward per case and its mean, every threshold verdict, `thresholds.reward`, `--no-fail-on-regression` | — |
 | C21 | agent-eval-harness | `feat/named-splits` | `39a2bcd` (12 commits on C19's `f1cea07`); `flywheel-integration` `2137cdd` | ✅ 2026-10-16: 2953 passed twice (agent's run), 2386 on the branch; skillsaw, mkdocs clean; `--split <name>`, `split` and `splits` in `summary.yaml`, the EvalHub adapter's `parameters.split`, the MLflow tag | — |
 | C26 | agent-eval-harness | `feat/task-json-schema` | `5f3fbb0` (11 commits on C19's `f1cea07`); `flywheel-integration` `2c2173d` (after `2137cdd`) | ✅ 2026-10-16: 3089 passed twice, `mkdocs build --strict` exit 0, skillsaw 0 warnings (agent's run of the merge); 2464 on the branch (subagent's run); `dataset.json_schema` for a task's `input` and `expected`, checked by `validate_eval.py` and before any agent starts, every problem with its file, line and JSON path; `agent_eval.task_schema` (`check`, `validate`, `load_schemas`, `check_task`) for our registry; an `UnknownKeyWarning` on a key of `eval.yaml` no reader reads; `jsonschema>=4.18` a new extra | — |
@@ -654,7 +722,8 @@ section 7.
 | C25 | agent-eval-harness | `feat/sealed-workspace-diff` | `06e5815` (4 commits on C38's `fix/evalhub-pod` `a44eb8b`); `flywheel-integration` `23f7690` (merge after `1fcae5a`) | ✅ 2026-10-16: 3347 passed twice, `mkdocs build --strict` exit 0, skillsaw 0 warnings (agent's run of the merge); 2349 on the branch, 2341 on its base (subagent's runs); on `flywheel-integration` a sealed workspace and the pod already gave the local diff, but all three paths counted more than the agent's change: the harness's own `output/stdout.log` when no output is declared, files a `before_each` or `after_each` hook writes, and nothing at all for an agent that commits. Now the snapshot is the ref `refs/agent-eval/snapshot`, taken again after `before_each`, and `execute.py` records `_modified/` when the agent is done, where the pod already did. Stacked on C38, which creates `workspace_changes.py`; its PR opens after C38's. Not changed: the pod runs no lifecycle hooks, and files the agent's tools create (`__pycache__/`) count unless the case ships a `.gitignore`, so `pyfix` needs one | — |
 | C27 | odh-dashboard | `feat/eval-hub-test-data-sources` | `2676e771e` (2 commits on `b4e406cb5`); `flywheel-integration` `7983bd799` (new, from `upstream/main` `b4e406cb5`) | ✅ 2026-10-16, narrowed to what upstream's open draft #10012 leaves out (decision 17): `packages/eval-hub` frontend 1475 tests in 88 suites, lint and type check clean, the BFF's Go tests green (agent's run of the merge; 1435 on `b4e406cb5`, subagent's run); git, PVC and Hugging Face sources, `resolved_sha` shown, a collection entry's `test_data_ref` kept, a source picker | — |
 | C28 | eval-hub | `feat/evalcard-test-data-ref` | `69fe00d`; `flywheel-integration` `4315523` | ✅ 2026-10-16: 1503 Go tests twice in the sandbox (agent's run; 1484 on `upstream/main` `eec7581`), the same 23 `/tmp`-bound failures; each result on the card names its test data and `resolved_sha`, never a `secret_ref`; on the cluster since 15:52 CEST (build `eval-hub-2`) | — |
-| C15 to C18 | odh-dashboard | — | — | ⬜ | phase 5; C16 to C18 as spec 01 phase 5 step 2 places them |
+| C15 | odh-dashboard | `feat/agent-flywheel-module` | `7c275390f` (2026-11-07) | ▶️ the `agent-flywheel` module, phase 5 status; not merged into `flywheel-integration`, on purpose (it runs on the commit ODH's host was built from) | phase 5 |
+| C16 to C18 | odh-dashboard | — | — | replaced by decision 20: AI hub's Agents and Models are our module's tabs, their data in the flywheel API, not ODH's agent catalog or MaaS (2026-11-07, Lukas left the call to the agent) | — |
 
 ## 6. Phases
 
@@ -835,7 +904,8 @@ and C12 are merged (section 5.1). On the cluster (`deploy/builds/`,
   minutes and the EvalHub pod 62, both with 0 restarts, and
   `/api/v1/health` answered `healthy` at every check (every 10 minutes
   from 11:43): the DoD's second item holds. EvalHub's database is in memory
-  (`deploy/platform/evalhub/`): each new image forgets its jobs.
+  (`deploy/platform/evalhub/`): each new image forgets its jobs (since
+  2026-11-07 it is PostgreSQL, decision 21).
 - 2026-10-16: the EvalHub image of `4315523` (C10, C12, C28, and
   upstream up to `eec7581`; build `eval-hub-2`) was applied at 15:50 CEST.
   By 15:52 the server and its job pods' init and sidecar images had it,
@@ -851,30 +921,28 @@ and C12 are merged (section 5.1). On the cluster (`deploy/builds/`,
 ### Phase 3: the registry and the glue
 
 Spec 01 phase 4, on the registry of decision 11. The layout of this repo is
-agreed (decision 16, question 6). The port reads `openshift-eval`'s
-branch `generalization`, which is not committed (risk 2): ask Lukas to
-commit it there before the port starts; an edit in `openshift-eval` is
-his.
+agreed (decision 16, question 6). Steps 3 to 5 were written into this
+repo on 2026-11-07, and this repo is their source from then on
+(decision 22).
 
 1. The S3 bucket: verify first (section 8); its access key Secret is asked
    for before it is created.
-2. The flywheel API (`services/flywheel-api/`, ported from `openshift-eval`
-   `ui/server/`): the registry, import by upload and from git, versions,
-   the EvalHub collection; then the API the dashboard module forwards to
-   (spec 01 decision 6).
-3. The loop (`flywheel/`), ported from `openshift-eval`: the controller,
-   the Adjust backends, keep or revert in code; the generic parts from its
-   branch `generalization` (the failure report, the adjuster's slots, the
-   brain's limits); one Score backend, EvalHub with C11.
+2. The flywheel API (`services/flywheel-api/`): the registry, import by
+   upload and from git, versions, the EvalHub collection; then the API
+   the dashboard module forwards to (spec 01 decision 6).
+3. The loop (`flywheel/`): the controller, the Adjust backends, keep or
+   revert in code; the generic parts (the failure report, the adjuster's
+   slots, the brain's limits); one Score backend, EvalHub with C11.
 4. The runner image (`images/runner/`), the harness from the fork's
    `flywheel-integration` branch.
-5. Support as the first use case: `openshift-eval`'s `tasks/support/` in
-   the task format, imported from git.
+5. Support as the first use case, in the task format, imported
+   (2026-11-07: by upload through the dashboard).
 
 DoD:
 
-- [ ] support imported as version 1; the same import again makes no
-      version 2
+- [x] support imported as version 1; the same import again makes no
+      version 2 (2026-11-07: 201 created, hash `7250c9109170`, 20 train
+      and 10 validation; the same upload 200 unchanged)
 - [x] a changed import makes version 2, and version 1 stays readable
       (on `smoke`, decision 19, 2026-10-16; support checks it again)
 - [x] on the cluster, an EvalHub job with our adapter runs the harness on
@@ -882,7 +950,9 @@ DoD:
       `smoke` version 2, decision 19, 2026-10-16 22:55 CEST)
 - [ ] a free smoke loop on the cluster through EvalHub on version 1; its
       MLflow records have the shape spec 01 phase 4 asked for, plus the
-      version tags
+      version tags (2026-11-07: the loop ran, `training-jhqlf`, with runs,
+      params, metrics and the version tags; open: a trace per ticket and
+      the adjuster's trace as MLflow traces, which are artifacts now)
 
 Status: started 2026-10-16 (decision 17). Step 1: the bucket claim
 `flywheel-usecases` (`deploy/bucket/`) is Bound on NooBaa, bucket
@@ -897,7 +967,7 @@ problem refused at once with its file, field and line (422), a version
 only when the content hash changes, nothing overwritten. 127 tests pass
 twice (the agent's run, offline: S3 through `moto`). It runs on the
 cluster since 2026-10-16 18:30 CEST (decision 18): commits `4befbc5` and
-`637c9af` on this repo's `main`, not pushed; build `flywheel-api-1` of
+`637c9af` on this repo's `main`, on `origin/main` by 2026-11-05; build `flywheel-api-1` of
 `637c9af`; `c62e9bb` turns off the pod's service links, since the
 Service `flywheel-api` injected `FLYWHEEL_API_PORT=tcp://…` and the pod
 crashed. Through the dashboard (host, our module's BFF, the API, with
@@ -915,8 +985,8 @@ changed outside the tasks, so a judge-only change shows. Open: decision
 13's "else the import picks one, balanced by tags" is not built (stored
 files stay as imported, so the hash matches the source); a task without
 a split counts in no split. `version.json` sits in the version's folder,
-so EvalHub copies it into `/test_data` too. Step 5 waits for Lukas's
-commit of `openshift-eval`'s `generalization`.
+so EvalHub copies it into `/test_data` too. Steps 3 to 5 wait for
+nothing since decision 22 (2026-11-07).
 
 The first evaluation (decision 19, 2026-10-16 19:35 to 19:47 CEST):
 `usecases/smoke/` imported as `smoke` version 1 (hash `3c1a68745e78`, 3
@@ -949,6 +1019,161 @@ limit and the fix, not the format), so validation scores 0.0 and train
 1.0. Tokens: 24,680 input, 90,112 cache read, 1,880 output, 3 turns;
 cost 0 USD, GLM 5.3 is free. DoD items 2 and 3 are checked on `smoke`;
 items 1 and 4 wait for support.
+
+Evaluations from the API (Lukas's go, 2026-11-05; commits `8cc5553`,
+`153e859`, `5c2e58e` on this repo's `main`): `POST
+/api/usecases/{name}/evaluations` (`version`, `split`, `model`, each
+optional: the current version, every task, `eval.yaml`'s
+`models.skill`) starts one EvalHub job with C11's `eval-run` on the
+version's folder in the bucket; `GET` lists a use case's jobs by the tag
+`usecase:<name>`; `GET …/evaluations/{id}` adds each task's reward and
+verdicts from the adapter's MLflow run (`run/summary.yaml`). The API
+holds no identity there: it forwards the caller's token, so EvalHub
+names the caller as the job's owner, and nothing about an evaluation is
+stored in the bucket. 154 tests pass twice (the agent's run, offline;
+EvalHub and MLflow faked in the shapes read on the cluster). On the
+cluster:
+
+- C11's provider is no longer registered through EvalHub's API, which
+  lost it at every restart: `deploy/platform/evalhub/` mounts it from a
+  tenant ConfigMap that `spec.providers` names, id `agent-eval-harness`,
+  with the adapter by digest (`docs/research.md`, "Evaluations started
+  by the flywheel API").
+- New images: build `agent-eval-harness-2` of harness `23f7690` (C22 to
+  C25 now in the pod) and `agent-eval-harness-adapter-3` of contrib
+  `98d7683` on it, its smoke test passed in the build; build
+  `flywheel-api-2` of `5c2e58e`.
+- `deploy/flywheel-api/` adds the service CA and a NetworkPolicy: the
+  operator's own policy admits only its known clients to EvalHub.
+- Job `17c3edb5…` from the API, `smoke` version 2, every task: completed
+  in 76 s, `reward` 0.667, pass against 0.5, the three verdicts of
+  2026-10-16 again, read back through the API from MLflow run
+  `3811f847…`. Cost 0 USD.
+
+The release gate's data (Lukas's go, 2026-11-05; commits `87ca728`,
+`1d6c48b`, `b6a99fe`, `1f4ff17`, `b02110f`, `36dc7ad`), for the
+module's Evaluation pages as their boards:
+
+- A job row carries the agent (`runner.type`), its task count, its
+  MLflow experiment and, once it has ended, the harness's threshold
+  verdicts (C20) from `summary.yaml`, never judged again here; one job
+  adds each judge's description, weight and aggregates in `eval.yaml`'s
+  order. A version answers its agent, model, reward and thresholds.
+  `DELETE …/evaluations/{id}` stops a job (`?delete=true` removes it)
+  and `…/{id}/logs` passes on EvalHub's pod logs, both as the caller.
+  The job's `pass_criteria` is the version's `thresholds.reward.min_mean`,
+  so EvalHub's own verdict uses the same limit as the gate's first rule.
+  168 tests pass twice.
+- `smoke` version 3: C22's `contains` (a share) and `length` (pass or
+  fail) in place of the inline check, a weighted reward, and thresholds
+  for the gate's three rules (the mean reward, every judge, every task).
+  The harness's `validate_eval.py` and config loader take it; imported
+  as version 3, hash `fac9a2a356e2`.
+- On the cluster, build `flywheel-api-7` of `36dc7ad`. Jobs `cef912d8…`
+  (every task, 57 s), `6d66c08c…` (validation) and `0f4d36e2…` (train)
+  on version 3: reward 1.0, every check passed, cost 0 USD. Stopping an
+  ended job answers EvalHub's 409; the logs of a running job hold the
+  harness's output, those of an ended one only a header
+  (`docs/research.md`).
+
+AI hub's agents and models (decision 20, Lukas's `ok`, 2026-11-05;
+commits `847f6c3`, `9305114` and `33c9d9c` on this repo's `main`):
+
+- `GET /api/models` reads the gateway's `litellm.yaml` (the ConfigMap
+  `gateway-models`, mounted with no hash): alias, provider, API format,
+  model id, endpoint or "set by the gateway's environment", the price per
+  million tokens, and the agents that use it; never a key. `GET`/`POST
+  /api/agents` keep each agent as `agents/<name>.json` in the bucket: its
+  runner block, its brain's place, the models it may use and a default.
+  An agent is never changed (409), names only routed models, and a
+  variable that names a key holds the gateway's placeholder.
+- A start takes `agent`: the one named, or the one that runs
+  `eval.yaml`'s `runner.type`; its model must be one of the agent's and
+  still routed. The job carries the agent's runner block as C11's
+  `parameters.runner`, with `pricing` from the gateway's prices, and the
+  tag `agent:<name>`. 190 tests pass twice.
+- On the cluster: adapter build `agent-eval-harness-adapter-4` of contrib
+  `6d352b8`; build `flywheel-api-10` of `33c9d9c`; `deploy/flywheel-api/agents/`'s
+  Codex and Claude Code posted through the API. `smoke` version 3, every
+  task, GLM 5.3: Codex `d052347a…` 0.883 and Claude Code `d753970c…` 1.0,
+  both passed, each adapter log naming its runner. Claude Code's cost
+  showed 0.64 USD at Anthropic's rates and Codex's none; with
+  `runner.pricing`, the reruns `400914b6…` (Codex, 1.0) and `175ce635…`
+  (Claude Code, 0.883) show 0.00 USD, the true price. Cost 0 USD, plus
+  one 25-token `gpt-5-mini` call to check that EnMaaS serves GPT again.
+- One task of one evaluation, for the module's one-task page (Lukas's
+  `ok`, 2026-11-05; commits `17744e2` and `063c25a`): `GET
+  …/evaluations/{id}/tasks/{task_id}` answers the task's reward and
+  verdicts, the files the agent left in `eval.yaml`'s outputs paths,
+  its `run_result.json` (turns, tokens, cost, duration) and its steps
+  from `events.json` (each message and tool call, the pod's workspace
+  path removed), all from the job's run folder in MLflow, as the caller.
+  199 tests pass twice. Build `flywheel-api-12`: Claude Code's
+  `export-data` in `175ce635…` (0.65, six steps, `find . -type f`,
+  three reads, the write) and Codex's in `400914b6…` (1.0, four shell
+  calls and five messages), each with its answer and 0.00 USD.
+
+Steps 3 to 5, offline (decision 22, Lukas's `ok`, 2026-11-07; committed
+the same day as `f971f6e`, `4db7e31`, `75a437d` and `2c32ec0`):
+
+- Step 5: `usecases/support/`, support's 30 tickets in the task format,
+  its 32 articles in `resources/`, the two policies in `hidden/`, and
+  `usecase.yaml` with the adjuster's slots. `eval.yaml` takes C22's
+  builtins (`cites`, `contains` and `forbidden` with `separator: "|"`,
+  `sections`, `length`), its gate as C20's thresholds, and smoke's
+  runner, Codex on GLM 5.3. Left out of version 1: the LLM judge
+  `quality`, since a judge model in the EvalHub pod has no route to the
+  gateway yet. The harness's
+  `validate_eval.py` and `workspace.py` take it (20 train workspaces, the
+  articles in each, no answer key), and so does the API's import check.
+- Step 2 again: a start takes `brain` (C11's `runs:/<run>/<path>`) and
+  `training` (a tag on the job and its MLflow run). 203 tests pass twice.
+- Step 3: `flywheel/`, the loop. Brain v0 is empty, the agent bare. Each
+  brain is scored on train and validation through the API, with the brain
+  as an MLflow artifact folder of its own run; the OpenCode adjuster
+  changes the best brain from its train failures and the history; keep
+  when the train score is at least the best one's. MLflow: a parent run
+  per training run, a child run per brain with its scores per split and
+  judge, the evaluations' ids, the decision, the brain and the adjuster's
+  reports and transcript. 22 offline tests pass twice.
+- Step 4: `images/runner/` (the loop and OpenCode 1.18.30 on our harness
+  base image) and `deploy/flywheel/` (its build, the ServiceAccount
+  `flywheel-loop`, one training Job), on the cluster the same day
+  (below).
+- Not built: GEPA and `/eval-optimize` as Adjust backends; an MLflow
+  trace per ticket (the adapter logs each ticket's run folder, not a
+  trace).
+
+On the cluster (2026-11-07, Lukas's `oc login`, then the agent's token
+until 2026-11-08 15:16 CET; commits `f971f6e` to `4905f7c` on `main`,
+not pushed):
+
+- `deploy/flywheel/` applied; build `flywheel-runner-1` of `d913e96`
+  (62 s, OpenCode 1.18.30); build `flywheel-api-13`, then `-14` of
+  `4905f7c`.
+- `support` imported as version 1 through the dashboard: 201 created,
+  hash `7250c9109170`; the same upload 200 unchanged (DoD item 1).
+- Job `training-jhqlf` (one adjust step, Codex and OpenCode on GLM 5.3,
+  0 USD), 14:20:47 to 14:32:43 UTC. EvalHub ran its four evaluations
+  with `flywheel-loop` as their owner, so the loop's own rights hold.
+  Brain v0, the agent bare: train 0.630, validation 0.680; `format` 0.00
+  on train, since no answer had the sections Summary, Steps and Next.
+  The adjuster (167K tokens in, 645 out, 9 steps, 11 tool calls) wrote
+  `AGENTS.md` with that structure. Brain v1: train 0.769, validation
+  0.783, `format` 0.98; kept. `must_mention` fell from 0.825 to 0.738 and
+  `short` from 0.60 to 0.55, so the next step has a cause to work on.
+- The training routes (`GET …/trainings`, `…/trainings/{id}`,
+  `…/trainings/{id}/brains/{n}`) read the run back from MLflow: 213
+  tests pass twice, and on the cluster they answered the run, both
+  brains and brain v1's `AGENTS.md` and four reports.
+- Start a training run (`16429c3`, `0dae3af`, `79a32ad`): `POST
+  …/trainings` checks the use case (an `adjuster` block, a train split),
+  the iterations (at most 10, patience at most the iterations) and that
+  the agent's, its model's and the adjuster's models are routed, then
+  creates the loop's Job from `deploy/flywheel/training-job.yaml` as the
+  caller; every training row says when it was created. 228 tests pass
+  (2026-11-07, the agent's run); on the cluster as build
+  `flywheel-api-16` of `79a32ad`.
 
 ### Phase 4: Hugging Face import
 
@@ -988,9 +1213,8 @@ Task (input, expected, results across runs) are on the Design canvas,
 version 23, in the Dataset row, with a note beside Dataset and Ticket
 that they replace them once Lukas agrees; the menu item reads "Use
 cases" on the new boards only. Support's tickets, judges, gate,
-articles and policies are measured from `openshift-eval`'s
-`tasks/support`; versions, hashes, the diff and the pyfix and
-copywriter rows are illustrative. They wait for Lukas's review.
+articles and policies are the real ones; versions, hashes, the diff and
+the pyfix and copywriter rows are illustrative. They wait for Lukas's review.
 Steps 2 to 6, the plumbing, started 2026-10-16 in the odh-dashboard clone
 on `feat/agent-flywheel-module`, from upstream commit `37dc648`, the one
 ODH 3.6.0-ea.2's host and dashboard-operator run (`docs/research.md`
@@ -1039,19 +1263,210 @@ branch is not merged into `flywheel-integration`, which is on
   opened all three pages on the cluster as `claude-agent` (18:25 CEST):
   `sample`'s version 1, its three questions by split, `reset-password`'s
   input and expected, 0 console errors. Start evaluation and Start
-  training are disabled until the API has runs. The API gaps the pages
+  training are disabled until the API has runs (enabled since 2026-11-05
+  and 2026-11-07). The API gaps the pages
   show as one plain sentence each: no `reward` or `thresholds` (the
   gate), no runs or per-task results (MLflow), no source or diff per
   version in the list, no file contents or sizes, no EvalHub
   collection; a ref is a branch or a tag, and an upload is one archive.
+- 2026-11-05, evaluations (Lukas's go): `20d50c5ac` (the BFF forwards
+  the API's three evaluation routes), `c630dd4d5` (the mock serves
+  support's evaluations), `db0fe66b6` and `989e25606` (the Evaluations,
+  Start evaluation and Evaluation pages, from the Evaluate boards of
+  spec 01 phase 5 step 1, with what the API lacks as one sentence each:
+  agent, brain, log, stop, a per-question answer). The subagent's runs,
+  twice: type check and lint clean, 72 unit tests (35 before), the BFF's
+  Go tests under `-race`, golangci-lint 0, the production bundle; the
+  agent's runs of the 72 tests and the Go tests once more. Build
+  `agent-flywheel-ui-4` of `989e25606`. As `claude-agent`, with
+  Playwright on the cluster: Use case `smoke` › Start evaluation ›
+  Validation · 1 started job `47a662e6…`; its page read it every 10 s
+  until it completed, 0 console errors: Blocked, `reward` 0.000 against
+  0.50, `export-data` Fail "missing: CSV", and MLflow run `a611f2cc…`
+  holds the same numbers and verdict. The Evaluations list shows both of
+  the day's jobs (0.000 Blocked, 0.667 Passes). DoD item 3 holds for
+  evaluations; Benchmarks, Training and Brains are still placeholders
+  (Training built 2026-11-07).
+  Item 2 waits for Lukas and for training. Duration shows "—": EvalHub
+  drops a completed benchmark's `started_at` (`docs/research.md`).
+- 2026-11-05, the Evaluate boards (Lukas's go, after he found that the
+  pages showed about a third of the Evaluation board): eleven commits,
+  `8af9eb56d` to `f2a056c49`. The BFF forwards stop, delete and the logs
+  and answers the jobs' namespace (`GET /api/v1/config`); the gate's
+  rules come from the version's thresholds in one module with its tests;
+  the Evaluation page has the board's header, gate box (n of m rules
+  fail, three rule cards, why it is blocked), 1 · Score, 2 · Scorecard by
+  judge and 3 · Every task; the list has the board's columns with
+  Version in place of Brain, a score bar with the rule's tick and the
+  verdict with its rule count; Start evaluation has the agent fixed by
+  `eval.yaml`, the model, the version, the task sets and the rules that
+  will gate. Left out, with no data or feature behind them: Brain, the
+  Online tab, the estimate, model cards with prices, the per-task answer
+  text. Duration is now `completed` minus `created`. The subagents'
+  runs at `f2a056c49`: type check and lint clean, 118 unit tests, the
+  BFF's `go vet` and Go tests, golangci-lint 0, the production bundle;
+  the agent ran the type check and the tests again at `0d58191a2`. Build
+  `agent-flywheel-ui-7` of `f2a056c49`. As `claude-agent` with Playwright
+  on the cluster, each page beside its board at 1440 px, 0 console
+  errors in the module: the list fits without a sideways scroll; `smoke`
+  job `cef912d8…` Passed, all 3 rules; the Blocked state with support's
+  mock served to the page (2 of 3 rules fail, `policy` below 1.00,
+  `case-030` under the floor); a job started with Evaluate again,
+  stopped (EvalHub `cancelled`, the page "Canceled", "Stopped before it
+  had a verdict.") and deleted (EvalHub 404); View log; the MLflow run
+  and EvalHub results pages behind the two links. The board differences
+  that stay: the gate box has no warm tint, "why it is blocked" is
+  PatternFly's gold warning, the breadcrumbs keep the module's own
+  pattern, Stop and Delete sit in a kebab.
+- 2026-11-05, the Use cases, Use case and Task boards again (Lukas's
+  list: the page icon, the tasks bar, the space under the tabs, the
+  input's dark box, Expected's tint and chips, a task's results from
+  MLflow, and the other differences): seven commits, `6e3e18e88` to
+  `dcf4dbf53`, on the API's versions list and task results. The
+  subagent's runs, twice: type check and lint clean, 137 unit tests, the
+  BFF's `go vet`, Go tests and golangci-lint 0, the production bundle.
+  Build `agent-flywheel-ui-8` of `dcf4dbf53`. As `claude-agent` with
+  Playwright on the cluster, each page beside its board at 1440 px, 0
+  console errors in the module: the list with the page icon and each
+  use case's split bar; `smoke`'s page with its facts box, three
+  versions with their diffs and run counts, the version-to-version diff,
+  and the tabs clear of the filters; `export-data` with the question in
+  the dark box, Expected tinted with `must_mention`'s chips and
+  alternatives, and six runs on version 3 from MLflow (Codex and Claude
+  Code). Left: narrow table headers cut to "Judg…" and "Quest…", sent
+  back to the subagent. Left out with no data: the Project selector, the
+  registry line, the EvalHub collection, "by lukas", Brain, a task's
+  "To pass" sentence and its file contents.
+- 2026-11-05, AI hub › Agents and Models (decision 20): nine commits,
+  `38382cd04` to `b73a080c8`. ODH's AI hub already has the tab pages
+  "Agents" and "Models", so the module adds a tab "Agent flywheel" to
+  each, with no second nav item and no change to ODH's pages or flags:
+  the Agents catalog, one agent's page, Add agent (only the runners the
+  harness knows; a variable that names a key is fixed to the gateway's
+  placeholder), and the Models table (price, the agents that use it,
+  "Routed" or "Laptop only"; adding a model is disabled). Start
+  evaluation's agent cards come from AI hub › Agents and its model cards
+  from that agent's models with their prices; every page names the
+  agent by its title. The subagent's runs, twice: type check and lint
+  clean, 187 unit tests, the BFF's `go vet`, Go tests under `-race` and
+  golangci-lint 0, the production bundle. Build `agent-flywheel-ui-9`
+  of `b73a080c8`. As `claude-agent` with Playwright on the cluster: AI
+  hub lists Agents and Models once each; Codex and Claude Code as cards
+  and on their pages with their models and prices; the seven gateway
+  models; Add agent prefilled from Claude Code, and the name `codex`
+  refused inline with the API's 409 (nothing stored); Start evaluation
+  with Claude Code sent `agent` and `model`, and job `220f3225…` names
+  "Claude Code · enmaas-glm-5-3" (validation, 28 s, 0.650, Blocked:
+  `must_mention` under 0.80). Sent back: AI hub › Models opens ODH's
+  Deployments tab ("No model serving platform selected") before ours,
+  and model aliases wrap inside a name.
+- 2026-11-05, one task of one evaluation (Lukas's `ok`), from the board
+  "Evaluation · one ticket", and the two defects: six commits,
+  `c8bb96a44` to `aa6e8bb74`. Our tab now sorts first on both AI hub
+  pages (the host orders tabs by `group`), and an alias stays on one
+  line everywhere. The page: the task's verdict on a bar with the
+  per-task floor, how the score adds up (value × weight, as the harness
+  computes the reward), the exchange (steps, tool calls, tokens, cost,
+  time), the input, the answer files, the answer key, each judge with
+  the evaluation's threshold and its reason, and the steps as chips;
+  the Evaluation page's task tiles and the Task page's results link to
+  it. Left out: Brain, online evaluation, "No Adjust step saw this
+  ticket", the judge model's samples; the answer's Markdown shows as
+  text (the host's renderer is a new dependency). The subagent's runs,
+  twice: type check and lint clean, 218 unit tests, the BFF's `go vet`,
+  Go tests under `-race` and golangci-lint 0, the production bundle.
+  Build `agent-flywheel-ui-10` of `aa6e8bb74`. As `claude-agent` on the
+  cluster: AI hub › Models opens `/ai-hub/models/flywheel`, Agents
+  `/ai-hub/agents/flywheel`; `export-data` of Claude Code's `175ce635…`
+  (0.65 = 0.50 × 0.70 + 1 × 0.30, Passes; `must_mention` below 0.80,
+  "Misses 1 of 2 required items: 'CSV'"; 6 steps, 5 tool calls, free,
+  21 s) and of Codex's `400914b6…` (1.00, 9 steps, 4 tool calls, free,
+  28 s), each with its answer. Sent back: the model cards on Start
+  evaluation scroll sideways when the alias is wider than the card.
+  Fixed in `2998bf6f7` (a card is at least as wide as its alias; the
+  agent page's models move to their own line rather than overflow);
+  the subagent's checks pass twice, 218 unit tests. The cluster stopped
+  at 16:13 UTC (RHDP's auto-stop) and ran again on 2026-11-06; the
+  agent's token had expired with it, so Lukas's `oc login` and
+  `scripts/agent-kubeconfig.sh` minted a new one. Build
+  `agent-flywheel-ui-12` of `2998bf6f7` (`-11` died with the node), as
+  `claude-agent` at 1440 px: no card or cell scrolls sideways on Start
+  evaluation or on Claude Code's page, whose models card lost the
+  scrollbar it had in `aa6e8bb74`. At 390 px ODH's own Projects page is
+  696 px wide, so phone width is the host's limit, not the module's.
+  Sent back: variable names on an agent's page break inside a name,
+  and the third model card stretches to the full row.
+- 2026-11-06, the answer as Markdown (Lukas: "Feel free to use it
+  now", and a better view of the answer may come later): a `.md` answer
+  file renders with the host's renderer, as agent-ops uses it, with a
+  Formatted/Raw toggle; any other file stays text. One component holds
+  it, so a later view changes one place. Why: support's format judge
+  checks the sections Summary, Steps, Next; smoke's answers are one
+  paragraph. The
+  answer is model text, so a test proves that raw HTML and
+  `javascript:` links in it cannot run.
+  Built with the two layout fixes: five commits, `ddeb2e174` to
+  `e58fd2889`; the subagent's checks pass twice, 226 unit tests. The
+  host's renderer runs `rehype-raw` then `rehype-sanitize` with GitHub's
+  schema (`frontend/src/components/markdown/MarkdownComponent.tsx:144`):
+  scripts, `on*` attributes and `javascript:` URLs are removed; relative
+  URLs and `https:` images stay. Build `agent-flywheel-ui-13` of
+  `e58fd2889` (the image now copies the host's `frontend/src`), as
+  `claude-agent` at 1440 px, no console error: the answer of Claude
+  Code's free run `fc9a5407…` (0.883, passes) renders, and Raw shows
+  the file as written; no name or variable line breaks inside, no card
+  or cell scrolls sideways, the pick cards share one width (agents 224
+  px, models 344 px), and the agent page's models table moves under the
+  runner facts. The cluster's stop emptied EvalHub again (below), so
+  `175ce635…` and `400914b6…` are gone from the module; their MLflow runs
+  stay.
+- 2026-11-07, EvalHub on PostgreSQL (decision 21), as `claude-agent`:
+  the server read `driver: pgx`, created its tables and logged the URL
+  without its password. Codex's free run `3ddcb872…` (GLM 5.3, 1.0,
+  passes) was still listed after EvalHub's pod was deleted, and again
+  after PostgreSQL's pod was deleted; its one-task route answered with
+  7 steps and `output/answer.md`. Claude Code's free run `e8432358…`
+  (1.0, passes) followed. The module's pages have these two now.
+- 2026-11-07, the Training pages (Lukas's `ok`), built by a subagent in
+  the clone while the agent built the API's training routes: six
+  commits, `5baa7bf06` to `5b1aa3e5f`, from the Train boards. The BFF
+  forwards and mocks the three training routes; the Training list (every
+  use case's runs, Start training disabled, enabled later that day by
+  `fa5497890`), one run (its numbers, the
+  training curve, one band per brain, the scorecard) and one brain (its
+  lineage, scores, the adjuster's reports and the brain's files as
+  Markdown). The subagent's runs, twice: type check and lint clean, 276
+  unit tests, the BFF's `go vet`, Go tests under `-race` and
+  golangci-lint 0, the production bundle; the agent's run of the type
+  check, the unit tests and the Go tests once more. Build
+  `agent-flywheel-ui-14` of `5b1aa3e5f`. As `claude-agent` at 1440 px, 0
+  console errors: the list, `training-jhqlf` and its brain v1 with the
+  numbers of MLflow. Left: Agent · model reads the loop's words "eval.yaml's
+  runner" (the API should name the agent and model), the nav marks Use
+  cases on a run's page, and the list has no sparkline or counts.
+- 2026-11-07, Start training (Lukas's `ok`), the module by a subagent
+  (`7aa6f2d8c` to `e0d5b3e3c`, then the agent's `7c275390f`), the API
+  and the loop by the agent (`16429c3` to `9b4431d`). Builds
+  `flywheel-api-16`, `flywheel-runner-3` and `agent-flywheel-ui-15`. As
+  `claude-agent` at 1440 px, 0 console errors: four bad starts answered
+  422 or 404 and made no Job; the form's defaults, Codex on GLM 5.3 and
+  the adjuster on GLM 5.3, showed "Runs free"; with 1 iteration and
+  patience 1 it created the Job `training-5r9lf` (label
+  `agent-flywheel/usecase=support`, the env the form chose) and opened
+  its page, which marks Training in the nav. The run, 11 min 8 s, 0 USD:
+  brain v0 train 0.627, validation 0.660; brain v1 train 0.839,
+  validation 0.828, kept. Its page names Codex and its model; older runs
+  read "the use case's agent". Left: the list has no sparkline or
+  counts, and "Starting" lasts under 5 s, so it was not seen on the
+  cluster (unit tests only).
 
 ### Phase 6: the proof
 
 Spec 01 phase 6, on the `flywheel-integration` branches of every fork:
 
-1. A record comparison like `openshift-eval`'s phase tests, with fakes for
-   the agents and the gateway.
-2. One free loop on the local Gemma with the local judge (laptop).
+1. A record comparison with fakes for the agents and the gateway.
+2. One free loop on the local Gemma with the local judge (laptop); spec
+   03 section 3.11 proposes a free run on GLM 5.3 on the cluster instead.
 3. One paid smoke run on the OpenAI model of decision 9, through EnMaaS
    (asked for first, with its cost).
 4. The same smoke run on the cluster, started from the dashboard module.
@@ -1059,14 +1474,12 @@ Spec 01 phase 6, on the `flywheel-integration` branches of every fork:
    support: a smoke training run of `pyfix` on the cluster, started from
    the dashboard module. `pyfix` needs C23 to C25; without them, or if time
    runs short, `copywriter`. A paid run is asked for first, with its cost.
-   Neither use case exists yet: `openshift-eval`'s generalization spec
-   describes them (its phases 2 and 3), and its `tasks/` holds only
-   `support` (2026-10-14). This step writes the chosen one in the task
-   format, next to support's source (question 6), and imports it.
+   Neither use case exists yet as data; spec 03 section 3.10 describes
+   both. This step writes the chosen one in the task format, in
+   `usecases/`, and imports it.
 
-Step 1's tests lived in `openshift-eval`'s gitignored `tmp/tests/`; they
-are written again here, from what its `PLAN.md` section 0 says they
-checked (spec 01 phase 6).
+Step 1's tests are written here, from spec 03's rules and numbers
+(sections 3.1 to 3.3 and 5).
 
 DoD:
 
@@ -1095,18 +1508,19 @@ Spec 01 phase 8, unchanged.
    run a shell) and how it is judged (hidden tests, a diff), and the
    cluster is deleted on 2026-11-12. `copywriter` is the smaller fallback
    (decision 10).
-2. **The port's source is not committed.** `openshift-eval`'s branch
-   `generalization` exists only in its worktree. Commit it there before
-   phase 3 ports from it.
+2. **Phase 3's code was not in this repo.** Closed 2026-11-07
+   (decision 22).
 3. **The bucket dies with the cluster.** The git sources survive; a
    re-import rebuilds every version but its number. A lasting setup points
    the API at an S3 outside the cluster.
-4. **EvalHub's default gate is 0.5.** Every collection the API writes sets
-   its `pass_criteria`.
+4. **EvalHub's default gate is 0.5.** Every EvalHub job the API creates
+   sets its own `pass_criteria` from the use case's gate (the API writes no
+   collection, phase 3 status).
 5. **The harness ignores unknown keys.** A typo in `eval.yaml` is silent
    until C26.
 6. **The TrustyAI operator restarts every few minutes** on this cluster
-   (C29; 204 restarts by 2026-10-14 21:55 CEST). It reconciles the
+   (C29; 204 restarts by 2026-10-14 21:55 CEST). Closed 2026-10-15: C29
+   fixed it, with 0 restarts since (phase 2 status). It reconciles the
    `EvalHub` only between restarts, so a change to the `EvalHub` resource
    (phase 2: our server image) can take minutes to land, and `default-dsc`
    flips between Ready and `Not Ready`. Check the operator before reading a
@@ -1125,8 +1539,8 @@ Spec 01 phase 8, unchanged.
   `spec.config.env` reach `trustyai-operator-module-controller-manager`'s
   env, and from there the operator and the `evalhub` pod
   (`docs/research.md` section 5, "What C29 can reuse"). Checked for the
-  operator on 2026-10-15 (phase 2 status); the `evalhub` pod waits for
-  our EvalHub image. The sources are
+  operator on 2026-10-15 (phase 2 status), and the `evalhub` pod runs
+  our EvalHub image since 2026-10-15 11:41 CEST. The sources are
   compared (2026-10-15, `docs/research.md` section 5, "Versions"): both
   ODH images are upstream code at a merge base plus CI files only, so a
   build from upstream `main` carries ODH's code and upstream's newer
@@ -1139,16 +1553,17 @@ Spec 01 phase 8, unchanged.
   needs four keys, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`,
   `AWS_DEFAULT_REGION` and `AWS_S3_ENDPOINT`, each non-empty; the bucket
   claim's Secret holds only the first two (`docs/research.md` section 5).
-  So the job's Secret is still to settle, and asked for before it is
-  created or changed.
+  The job's Secret was settled by decision 18.
 - Checked 2026-10-16: an `ObjectBucketClaim` works on `cluster-nm8mw`;
   `flywheel-usecases` (`deploy/bucket/`) was Bound within 6 seconds.
 - Whether ODH's MLflow, with workspaces on, serves MLflow evaluation
   datasets.
 - Whether the cluster reaches Hugging Face (phase 4).
 - Whether the real agents run clean through the gateway on EnMaaS (spec 01
-  decision 9). Each agent's request shape is checked; a full run of Claude
-  Code, Codex and OpenCode is not. Phase 6 step 3 is the first.
+  decision 9). Each agent's request shape is checked. Codex and Claude
+  Code ran full evaluations on GLM 5.3 (2026-11-05, phase 3 status), and
+  OpenCode ran as the adjuster (2026-11-07); OpenCode as the agent under
+  test has not run (spec 03 section 3.7).
 - Spec 01 section 12 holds as well.
 
 ## 9. Open questions
@@ -1175,11 +1590,8 @@ stay here as the text he said `ok` to.
 
 ## 10. Sources
 
-- `docs/research.md` sections 4, 5, 7 and 8, with file and line, read on
+- `docs/research.md` sections 4, 5 and 7, with file and line, read on
   2026-10-14 at agent-eval-harness `upstream/main` `175eed5`, eval-hub
   `540676f`, odh-dashboard `7140a4f`, trustyai-service-operator `4fa5c74`.
-- `openshift-eval` branch `generalization`: `docs/my-specs/03-generalization.md`,
-  `tasks/support/task.yaml`, `flywheel/task.py`, its `PLAN.md` row
-  "Generalization, phase 1".
 - The session of 2026-10-14 in this repo, where Lukas took decisions 10 to
   14.

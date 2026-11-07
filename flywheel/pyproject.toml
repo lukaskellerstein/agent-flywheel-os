@@ -1,0 +1,25 @@
+[project]
+name = "flywheel-loop"
+version = "0.1.0"
+description = "The flywheel's training loop: score a brain, adjust it, keep or revert (spec 02 phase 3)"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "pyyaml==6.0.3",
+]
+
+[dependency-groups]
+dev = [
+    "pytest==9.1.1",
+]
+
+# An application, not a library, as services/flywheel-api: uv installs its
+# dependencies only, and the code runs from this folder
+# (`python -m flywheel_loop`). The lock takes no release newer than
+# exclude-newer; move the date forward to upgrade.
+[tool.uv]
+package = false
+exclude-newer = "2026-10-01T00:00:00Z"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

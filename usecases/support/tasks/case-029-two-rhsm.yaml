@@ -1,0 +1,26 @@
+id: case-029-two-rhsm
+split: validation
+tags:
+- two-article
+input:
+  ticket: |
+    On RHEL 9.5, subscription-manager register first hung for about five minutes and then
+    said it could not reach subscription.rhsm.redhat.com. We found out that it ignores
+    https_proxy, so we set the proxy in rhsm.conf. Now it fails right away with
+    `certificate verify failed: self-signed certificate in certificate chain`. Our proxy
+    inspects TLS.
+    -- Jonas, Fabrikam
+  customer: Fabrikam
+  severity: 3
+expected:
+  expected_kb_ids:
+  - KB-2210
+  - KB-2211
+  must_mention:
+  - /etc/rhsm/ca
+  - update-ca-trust
+  - subscription-manager identity
+  must_not:
+  - insecure = 1|insecure=1
+  needs_version_question: false
+  needs_escalation: false

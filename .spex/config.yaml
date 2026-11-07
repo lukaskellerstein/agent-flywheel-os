@@ -1,0 +1,20 @@
+# .spex/config.yaml — written by spex init. Edit what the scan got wrong. Commit this file.
+format: 2                           # the shape of specs/ and .spex/; spex update changes it, nothing else does
+acceptance_dir: tests/acceptance
+# the default driver: {ids} becomes the test names joined by | (a regex); {ids_k} the "A or B" form (pytest -k)
+acceptance_cmd: 'PYTHONPATH=services/flywheel-api:flywheel UV_PROJECT_ENVIRONMENT="$TMPDIR/flywheel-api-venv" uv run --frozen --project services/flywheel-api python -m pytest tests/acceptance -q -p no:cacheprovider -k "{ids_k}"'
+# more ways to run script tests, by name; a test record picks one with driver:. shell is built in (the steps run as commands)
+drivers: {}                         # playwright: {cmd: 'npx playwright test --grep "{ids}"', dir: tests/e2e}
+fast_checks: ['uv lock --check --project services/flywheel-api', 'uv lock --check --project flywheel', 'python3 -m compileall -q services/flywheel-api/flywheel_api flywheel/flywheel_loop']
+source_dirs: [services/flywheel-api/flywheel_api, flywheel/flywheel_loop]              # the test developer and the tester never read these
+protected: [specs/, .spex/, tests/acceptance/, .github/]   # no task may write these; every test folder is protected too
+scopes: [registry, imports, evaluations, trainings, agents, gateway, loop, adjuster]                          # known capabilities; a record with a new scope gets a warning
+banned_words: []                    # added to the built-in list
+live: []                            # real systems a test may write (github:org/repo, gitlab:group/project, cluster:laptop): the one-time yes
+people: [Lukas]                          # names that never appear as an actor in a task or a test step
+limits: {task_files: 12, instructions_bytes: 1500, approach_bytes: 1200, context_kb: 24, diff_kb: 120, file_kb: 40, tests_scenarios: 12, verify_minutes: 20}
+review_rounds: 3
+verify_rounds: 3                    # whole-feature verify rounds before a person reads it
+approvals: [tasks]                  # stages past gate 1 a person approves with /spex:approve: tasks, tests. The spec and the records always need one
+auto: false                         # true: nobody is asked; the decider agent answers every question with evidence, and you read the answers at the gates
+ship: {commit: false, cmd: ""}      # commit: commit the tree first; cmd: push, open the request, merge it (gh pr create --fill && gh pr merge --squash --delete-branch). Empty cmd: a person merges, then spex ship --merged

@@ -1,0 +1,26 @@
+# A LiteLLM config in the shape of deploy/gateway/config/litellm.yaml.
+model_list:
+  - model_name: enmaas-glm-5-3
+    litellm_params:
+      model: openai/rits/zai-org/glm-5-3
+      api_base: https://api.enmaas.devshift.net/v1
+      api_key: os.environ/ENMAAS_KEY
+      input_cost_per_token: 0
+      output_cost_per_token: 0
+    model_info:
+      max_input_tokens: 983040
+      max_output_tokens: 65536
+  - model_name: enmaas-gpt-5-mini
+    litellm_params:
+      model: openai/gpt-5-mini
+      api_base: https://api.enmaas.devshift.net/v1
+      api_key: os.environ/ENMAAS_KEY
+      input_cost_per_token: 0.00000025
+      output_cost_per_token: 0.000002
+  - model_name: unsloth-gemma4-26b-fast
+    litellm_params:
+      model: openai/unsloth/gemma-4-26B-A4B-it-qat-GGUF
+      api_base: os.environ/UNSLOTH_API_BASE
+      api_key: os.environ/UNSLOTH_API_KEY
+litellm_settings:
+  drop_params: true

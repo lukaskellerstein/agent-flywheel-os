@@ -1,0 +1,26 @@
+id: case-002-sev1-outage
+split: train
+tags:
+- sev1
+input:
+  ticket: |
+    URGENT: our production OpenShift cluster is down. All nodes show NotReady
+    since 09:40 UTC and the customer checkout is offline. Cluster version 4.20.5,
+    Premium contract. Please help now.
+    -- Ahmed, NorthWind Retail
+  customer: NorthWind Retail
+  severity: 1
+expected:
+  expected_kb_ids:
+  - POLICY-001
+  must_mention:
+  - on-call|on call|escalat
+  - must-gather
+  - severity 1|sev1|sev 1|sev-1|severity one
+  - 1 hour|one hour|60 minutes|within an hour
+  must_not:
+  - reinstall
+  - disable selinux|disable the firewall
+  - will be fixed by|guarantee|ETA
+  needs_version_question: false
+  needs_escalation: true

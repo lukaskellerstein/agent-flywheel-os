@@ -61,8 +61,6 @@ Write clean code from the start. Follow these rules during implementation:
 - `pr-drafts.md` — the PR texts for the fork branches of every repo, one
   section per branch with its repo and head commit. Lukas opens each PR, in his own voice, after
   his go; a branch that changes gets its section rewritten.
-- `archive/` — history, copied word for word. Never edit an archived file;
-  the specs win where they differ.
 - Decisions and status belong in the specs, not in the other files here.
 
 ## `scripts/` — what Lukas runs from his own terminal
@@ -93,14 +91,20 @@ Write clean code from the start. Follow these rules during implementation:
   Python project with its own `pyproject.toml`, `uv.lock` and
   `Containerfile`; the code in `flywheel_api/`, small modules (the task
   format and its checks, the use case's files, versions and their diff,
-  the store, the import sources, the routes); the offline tests in
-  `tests/`. It joins S3, EvalHub and MLflow, which is why it is ours
-  (spec 02 section 4.5); a check the harness can hold goes upstream
-  instead (C26). One replica: the writes to a use case are serialised in
-  its process.
+  the store, the import sources, the evaluations, their results as the
+  module reads them, the agents of AI hub and the gateway's models, the
+  client for EvalHub and MLflow, the routes); the
+  offline tests in `tests/`, with EvalHub
+  and MLflow faked in their real shapes. It joins S3, EvalHub and MLflow,
+  which is why it is ours (spec 02 section 4.5); a check the harness can
+  hold goes upstream instead (C26). One replica: the writes to a use case
+  are serialised in its process.
 - Not here: code an upstream project can hold, and any key. The bucket's
   key reaches the pod as env from the claim's Secret, and git runs with
-  an environment that leaves it out.
+  an environment that leaves it out. No identity of its own for EvalHub,
+  MLflow or Jobs: an evaluation call and a training start carry their
+  caller's token, and their records stay in EvalHub, MLflow and the
+  training Job, not in the bucket.
 
 ## `usecases/` — use cases in the task format
 
@@ -110,8 +114,31 @@ Write clean code from the start. Follow these rules during implementation:
   A use case reaches the cluster only through the flywheel API's import,
   which makes it a fixed version in the bucket. Check one offline first
   with the harness's `validate_eval.py config` and `workspace.py`.
+- `support/` (phase 3 step 5): 30 tickets, the knowledge base in
+  `resources/`, the policy in `hidden/`, deterministic judges and the
+  adjuster's slots in `usecase.yaml`; this folder is its source
+  (decision 22).
 - Not here: the API's test fixtures (`services/flywheel-api/tests/`), and
   any key: a model key never enters `eval.yaml`.
+
+## `flywheel/` — the training loop
+
+- One Python project, as `services/flywheel-api/`: `pyproject.toml`,
+  `uv.lock`, the code in `flywheel_loop/` (HTTP, the API client, MLflow,
+  the brain, the adjuster's reports, the adjuster, the controller), the
+  adjuster's agent prompt `flywheel_loop/adjuster.md`, the offline tests
+  in `tests/` with the API, MLflow and OpenCode faked.
+- It scores nothing itself: every score is an evaluation of the flywheel
+  API with the brain as C11's `parameters.brain`. Keep or revert stays in
+  code, on the train score only.
+- Not here: a judge, a Score backend of its own, any key. The adjuster
+  reaches its model through the gateway.
+
+## `images/` — our own images
+
+- `runner/`: the loop and OpenCode on our harness base image, built from
+  this repo's root by `deploy/flywheel/build.yaml`.
+- Not here: the images of the forks (`deploy/builds/`).
 
 ## `deploy/` — kustomize for the cluster
 
@@ -121,12 +148,20 @@ Write clean code from the start. Follow these rules during implementation:
 - `platform/` — Open Data Hub, spec 01 phase 1: `operator/` (the Subscription),
   `dsc/` (DSCInitialization and DataScienceCluster), `dashboard/` (a partial
   OdhDashboardConfig, server-side apply only), `mlflow/` (ODH's MLflow),
-  `evalhub/` (the EvalHub server). Applied in that order; each needs the one
-  before it. Configuration of ODH's own objects; from spec 02 phase 2 the
-  Subscription also points ODH at our operator and EvalHub images.
-- `gateway/` — LiteLLM, spec 01 phase 1 step 6, ported from `openshift-eval`;
+  `evalhub/` (the EvalHub server, its PostgreSQL with the claim that
+  holds every job, and C11's provider as a tenant ConfigMap that its
+  `spec.providers` names, with our adapter image by digest: a new
+  adapter build changes that digest; the database's Secret `evalhub-db`
+  is made on the cluster, never here). Applied in that order;
+  each needs the one before it. Configuration of ODH's own objects; from
+  spec 02 phase 2 the Subscription also points ODH at our operator and
+  EvalHub images.
+- `gateway/` — LiteLLM, spec 01 phase 1 step 6;
   every route is EnMaaS since 2026-10-14 (decision 9). Every model
-  alias and price lives in `config/`, never a key. A GPT or Claude alias
+  alias and price lives in `config/`, never a key. `litellm.yaml` also
+  goes out as the ConfigMap `gateway-models`, with no hash, for the
+  flywheel API's AI hub › Models: an alias added here is a model an agent
+  may use after the next apply. A GPT or Claude alias
   must pass the hook untouched: `cerebras_hook.py` acts only on the
   prefixes in its `CHAT_ONLY`. After a change, run
   `scripts/enmaas/agent_shapes.py` against the gateway.
@@ -151,8 +186,23 @@ Write clean code from the start. Follow these rules during implementation:
   (`oc start-build flywheel-api --from-repo=<this repo> --commit=<sha>`),
   a Deployment with an image trigger that takes the bucket claim's
   ConfigMap and Secret with `envFrom`, and a ClusterIP Service on 8080. No
-  Route: the dashboard module's BFF calls it inside the cluster.
-- Not here yet: the flywheel Jobs. They land with spec 02 phase 3.
+  Route: the dashboard module's BFF calls it inside the cluster. For
+  evaluations: the service CA (both EvalHub and MLflow serve with it) and
+  a NetworkPolicy that adds the API pod to those EvalHub admits.
+  `agents/` holds the AI hub › Agents records the cluster starts with,
+  one JSON per agent, posted to `POST /api/agents` (kustomize does not
+  apply them); an agent is never changed, so a new wiring is a new
+  name. A value for a variable that names a key is the gateway's
+  placeholder, never a key.
+- `flywheel/` — the training loop on the cluster: the runner image's
+  binary BuildConfig (context: this repo's root), the ServiceAccount
+  `flywheel-loop` with only the rights EvalHub and MLflow check, and
+  `training-job.yaml`, one training run. Kustomize applies it only as
+  the ConfigMap `flywheel-training-job`, the template the flywheel API's
+  Start training creates the Job from, as the caller (a change needs a
+  restart of the API); by hand, `oc create -f`. A paid training run is
+  asked for first, with its cost: a run whose agent and adjuster models
+  are free on the gateway (GLM 5.3) costs nothing.
 
 ## Repository structure
 
@@ -167,13 +217,19 @@ agent-flywheel-os/
 │   ├── builds/       our images of the forks, built on the cluster
 │   ├── bucket/       the registry's S3 bucket claim
 │   ├── flywheel-api/ the API's build, Deployment and Service
+│   ├── flywheel/     the runner image's build, the loop's identity, a training Job
 │   └── gateway/      LiteLLM, every model alias and price
 ├── docs/
 │   ├── my-specs/     the plan: 01 closed, 02 active — read its section 0 first
 │   ├── research.md   the evidence behind the specs
 │   ├── outreach.md   the Slack post drafts
-│   ├── pr-drafts.md  the PR texts for the fork branches
-│   └── archive/      the first spec, as history
+│   └── pr-drafts.md  the PR texts for the fork branches
+├── flywheel/         the training loop
+├── images/
+│   └── runner/       the loop and OpenCode on our harness image
+├── usecases/
+│   ├── smoke/        three questions, the first evaluation's data
+│   └── support/      30 support tickets, the first use case trained
 ├── services/
 │   └── flywheel-api/ the registry of use cases and its API (FastAPI, S3)
 └── scripts/

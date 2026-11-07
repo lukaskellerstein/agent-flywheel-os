@@ -1389,19 +1389,60 @@ threshold gets a summary with the failed check and `enforced: false`);
 `ci.md` and `thresholds.md` combine both texts. The subagent's runs of the
 merge: 2903 passed twice.
 
-## Phase 5 — odh-dashboard `feat/agent-flywheel-module` (`0d8575068`)
+## Phase 5 — odh-dashboard `feat/agent-flywheel-module` (`7c275390f`)
 
-Not a PR yet: every page is a placeholder until Lukas has reviewed the
-boards (spec 02 phase 5). From upstream `37dc648`, the commit ODH
-3.6.0-ea.2's host runs, not from `upstream/main`, and never merged into
-`flywheel-integration`. Six commits: `2ca7b5593` (the module tests lose
+Not a PR yet: Benchmarks and Brains are still placeholders (spec 02
+phase 5). From upstream `37dc648`, the commit ODH 3.6.0-ea.2's
+host runs, not from `upstream/main`, and never merged into
+`flywheel-integration`. Sixty-four commits: `2ca7b5593` (the module tests lose
 `dataRegistry`, which #9850 commented out; four tests failed on the base),
 `146f2539a` (the `agentFlywheel` flag), `b428634c2` (the package),
 `89c1ee360` (`modules.go` and the manifests), `e98380b86` (fork-only:
 `params.env` points at our cluster's ImageStream, so it never goes
-upstream), `0d8575068` (the BFF builds as root in its builder stage). The
-PR text is written when the pages are real, on a branch rebased onto the
-`upstream/main` of that day, without `e98380b86`.
+upstream), `0d8575068` (the BFF builds as root in its builder stage),
+`bae799cf6` and `3fbdc402a` (the Use cases, Use case and Task pages and
+the BFF's mock, 2026-10-16), and on 2026-11-05 `20d50c5ac` (the BFF
+forwards the evaluation routes), `c630dd4d5` (the mock serves support's
+evaluations), `db0fe66b6` (the frontend's evaluation calls) and
+`989e25606` (the Evaluations, Start evaluation and Evaluation pages, from
+the Evaluate boards), then the same day `8af9eb56d` (the BFF forwards
+stop, delete and the logs), `e41a81f5f` (the BFF answers the jobs'
+namespace), `fc3b187c1` (the release gate's rules from the version's
+thresholds), `02a988f1d`, `874c0f3b0`, `0d58191a2`, `b6077e769`,
+`74945e939`, `b24171c33`, `e2542cef2` and `f2a056c49` (the three pages
+and the Use case page's judges as their boards), then `6e3e18e88` (the
+BFF forwards and mocks every version's record and a task's results),
+`65dc2861a` (the frontend reads them), `d3d88edf5`, `72cdf7bb4`,
+`f311598bb`, `d34b3ebff` and `dcf4dbf53` (the Use cases, Use case and
+Task pages as their boards, and Start evaluation in the list's kebab),
+then `38382cd04` (the BFF forwards and mocks AI hub's agents and
+models), `dcd4475e6` (table headers never cut), `dbbd50c4d` (the
+frontend's calls), `6011affae` (the Models tab), `84a2fee9d` (the Agents
+catalog and one agent's page), `b6ce39e52` (Add agent), `d56e06b9f` (the
+two tabs on ODH's AI hub pages), `4afe25938` (Start evaluation picks an
+agent and one of its models) and `b73a080c8` (every page names the
+agent by its title; decision 20), then `c8bb96a44` (the BFF forwards
+and mocks one task of one evaluation), `37c441c0d` (our tabs open first
+on AI hub's pages), `010aa892c` (a model alias never wraps),
+`158625a58`, `6303ab3bf` and `aa6e8bb74` (the one-task page from the
+board "Evaluation · one ticket", and the links into it) and `2998bf6f7`
+(a model card grows to its alias instead of scrolling), then `ddeb2e174`
+(the host's components through `@odh-dashboard/internal`, as agent-ops
+imports them), `352cb69bc` (a `.md` answer renders as Markdown, with a
+Raw view), `c2e5456c3` (a spec waits for its radio), `de6658a52` (a
+variable name never breaks) and `e58fd2889` (pick cards of one width
+in a wrapping grid), then on 2026-11-07 `5baa7bf06` (the BFF forwards
+and mocks training runs and their brains), `0582292a0` (the frontend
+reads them), `384233782`, `638726040` and `33f96b8b5` (the Training
+list, one training run and one brain, from the Train boards) and
+`5b1aa3e5f` (the README), then `7aa6f2d8c` (the BFF forwards a training
+run's start), `94513a509` (Training marked in the nav on a run's pages,
+which move under `training/`), `0badc6225` (a starting run, and the use
+case's own agent), `04f3cec81` (Start evaluation's agent and model cards
+shared), `fa5497890` (Start training run), `e0d5b3e3c` (the README) and
+`7c275390f` (runs sorted by when they were created). The PR text is written when every page is real, on
+a branch rebased onto the `upstream/main` of that day, without
+`e98380b86`.
 
 ## C27 — odh-dashboard `feat/eval-hub-test-data-sources` (`2676e771e`)
 
@@ -1938,14 +1979,15 @@ the `splits` row of `runs-directory.md`, and 6 tests in
 `tests/test_named_splits.py`. The subagent's runs of the merge: 2953
 passed twice.
 
-## C11 — eval-hub-contrib `feat/agent-eval-harness-adapter` (`ef0fb5c`)
+## C11 — eval-hub-contrib `feat/agent-eval-harness-adapter` (`220cb46`)
 
 Repo `eval-hub/eval-hub-contrib`, clone
 `~/Projects/Github/lukaskellerstein/forks/eval-hub-contrib`, made from
-`upstream/main` `78f01e4` (2026-10-16), four commits: the adapter
+`upstream/main` `78f01e4` (2026-10-16), five commits: the adapter
 (`044712e`), its make targets (`77c6b5f`), a CI workflow (`5c2de66`), the
-README row (`ef0fb5c`); merged into the new `flywheel-integration`
-`98d7683`. Signed off, `Co-Authored-By: Claude Opus 5.5`; `cz check`
+README row (`ef0fb5c`), and the `runner` parameter (`220cb46`,
+2026-11-05); merged into the new `flywheel-integration` `98d7683`, then
+`6d352b8`. Signed off, `Co-Authored-By: Claude Opus 5.5`; `cz check`
 passes. It needs a harness release with C19 to C21 (the task format,
 `--split`, the reward block): against harness `main` `b306e63`, 11 of its
 29 tests fail. Its CI workflow pins `lukaskellerstein/agent-eval-harness@2137cdd`,
@@ -1976,6 +2018,16 @@ no job, no pass criteria, no MLflow record.
   folder) is laid over the project root and only its top-level entries
   are linked into each workspace; a brain entry that would replace an
   eval file is an error, and a sealed workspace refuses a brain.
+- `runner` (an object) is a harness runner block that runs another agent
+  on the same eval, so one eval compares Claude Code and Codex on the
+  same tasks. Its `type`, `permission_mode`, `settings` and `env` replace
+  `eval.yaml`'s, because those keys mean something different for each
+  runner type (`settings` is `.claude/settings.json` for Claude Code and
+  `-c` overrides for Codex); the eval's own keys (`system_prompt`,
+  `workspace_mode`, `permissions` and others) stay. The type must be one
+  of `agent_eval.agent.RUNNERS`, the staged `eval.yaml` must still load,
+  and an `eval.yaml` with `extends` is refused, as its base's runner keys
+  would merge into the block. Each fails the job before any script runs.
 - `summary.yaml`'s `reward.mean` is the primary score; each judge's mean
   and pass rate and the agents' cost are metrics. The run folder (every
   task's verdicts and reasons) goes to the job's MLflow experiment and to
@@ -1990,14 +2042,21 @@ MLflow: run/summary.yaml, run/run_result.json, run/console.log, run/collection.j
   run/cases/<task>/{input.yaml, output/answer.txt, run_result.json, events.json}
 ```
 
-**Tests.** 29 offline tests run a fake agent on a three-task eval with no
+**Tests.** 36 offline tests run a fake agent on a three-task eval with no
 model and no network: the score with and without the brain (1.0 and
 0.25), split selection, MLflow and OCI output, that the agent never sees
 the answer key (`annotations.yaml`, `task.yaml`, `eval.yaml`, `hidden/`),
 failing agents, invalid input, the MLflow download, and stopping on
-SIGTERM. Before `main.py` existed the suite failed on its import. The
-agent's runs of the merge: 29 passed twice, the smoke test passed, ruff
-0.16.9 check and format clean; `make test-atif` 132, as on `main`.
+SIGTERM. For `runner`: another agent (the fake agent with `--calculate`,
+which needs no brain) scores 1.0 where the eval's own scores 0.25; the
+wiring keys go and the eval's keys stay; and a non-object, a missing or
+unknown type, a block the loader refuses and an `eval.yaml` with
+`extends` each fail the job. Before `main.py` existed the suite failed on
+its import. The agent's runs of the merge `6d352b8`: 36 passed twice on
+the harness's `flywheel-integration` `23f7690`, ruff 0.16.9 check and
+format clean. On the cluster: one job with Codex and one with Claude
+Code on the same eval, both through this parameter (spec 02 phase 5
+status).
 
 **Points a reviewer can raise:** it needs a harness release, and CI pins
 a commit until then; the default base image

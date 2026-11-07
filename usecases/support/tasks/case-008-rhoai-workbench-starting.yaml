@@ -1,0 +1,23 @@
+id: case-008-rhoai-workbench-starting
+split: train
+tags:
+- plain-fix
+input:
+  ticket: |
+    Our data scientists stopped their workbenches for the weekend. Since Monday three of
+    them are stuck in Starting, and no pod gets created. We run OpenShift AI 2.22.1 on
+    OpenShift 4.19. Should we delete these workbenches and their storage and create them
+    again?
+    -- Priya, Lamna Healthcare
+  customer: Lamna Healthcare
+  severity: 3
+expected:
+  expected_kb_ids:
+  - KB-4100
+  must_mention:
+  - kubeflow-resource-stopped
+  - 2.22.2
+  must_not:
+  - delete the pvc|delete their storage|delete the storage|delete the workbenches
+  needs_version_question: false
+  needs_escalation: false

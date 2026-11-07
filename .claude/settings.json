@@ -80,7 +80,8 @@
     ]
   },
   "enabledPlugins": {
-    "dev-tools-plugin@claude-my-marketplace": true
+    "dev-tools-plugin@claude-my-marketplace": true,
+    "spex@claude-my-marketplace": true
   },
   "hooks": {
     "WorktreeCreate": [

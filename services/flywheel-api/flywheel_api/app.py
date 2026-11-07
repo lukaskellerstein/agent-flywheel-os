@@ -3,27 +3,57 @@
     GET  /healthz
     GET  /api/usecases
     GET  /api/usecases/{name}
+    GET  /api/models                         the models the gateway routes
+    GET  /api/agents                         AI hub › Agents
+    GET  /api/agents/{name}
+    POST /api/agents                         JSON, one agent (agents.py)
+    GET  /api/usecases/{name}/versions       every version's record, newest first
     GET  /api/usecases/{name}/versions/{n}
     POST /api/usecases/{name}/imports    an upload (multipart, field `file`: one
                                          .tar.gz or .zip of the use case folder)
                                          or JSON {"git": {"url", "ref", "path"}}
+    POST /api/usecases/{name}/evaluations      JSON {"version", "split", "agent", "model",
+                                               "brain", "training"}, each optional: an EvalHub job
+    GET  /api/usecases/{name}/evaluations      the use case's jobs, newest first
+    GET  /api/usecases/{name}/evaluations/{id} one job: judges, tasks, threshold verdicts
+    DELETE /api/usecases/{name}/evaluations/{id} stop it; ?delete=true removes it
+    GET  /api/usecases/{name}/evaluations/{id}/logs its pod logs, as text
+    GET  /api/usecases/{name}/evaluations/{id}/tasks/{task_id}
+                                             one task: its answer, steps and cost (exchange.py)
+    GET  /api/usecases/{name}/versions/{n}/tasks/{id}/results
+                                               every run of the version that
+                                               scored the task, its verdicts
+    POST /api/usecases/{name}/trainings        JSON {"version", "iterations", "patience", "agent",
+                                               "model", "adjuster_model"}, each optional: the loop's Job
+    GET  /api/usecases/{name}/trainings        the use case's training runs (trainings.py)
+    GET  /api/usecases/{name}/trainings/{id}   one run with every brain it made
+    GET  /api/usecases/{name}/trainings/{id}/brains/{n}
+                                               one brain's files and its adjuster's reports
 
 An import answers 201 with the new version, 200 "unchanged" with the current
-one, or 422 with every problem by file and field. No delete.
+one, or 422 with every problem by file and field. A use case and its versions
+have no delete. The evaluation
+routes exist when EvalHub is configured (evaluations.py), and run as their
+caller: they need its Bearer token, which the dashboard module's BFF sends.
 """
 
 from __future__ import annotations
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import Body, FastAPI, HTTPException, Request
 from fastapi import Path as PathParam
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel, ConfigDict, ValidationError, model_validator
 from starlette.concurrency import run_in_threadpool
 from starlette.datastructures import UploadFile
 
 from . import sources
-from .problems import BadRequest, ImportRefused, NotFound, TooLarge
+from .agents import Agents
+from .evaluations import Evaluations, StartRequest
+from .problems import BadRequest, ImportRefused, NotFound, TooLarge, Unauthorized
+from .launcher import Launcher
 from .registry import Registry, check_name
+from .remote import RemoteError
+from .trainings import StartTraining, Trainings
 
 MAX_UPLOAD_BYTES = 100 * 1024 * 1024
 MAX_JSON_BYTES = 64 * 1024
@@ -48,10 +78,27 @@ class ImportRequest(BaseModel):
         return self
 
 
-def create_app(registry: Registry, *, allow_file_urls: bool = False) -> FastAPI:
+def create_app(
+    registry: Registry,
+    evaluations: Evaluations | None = None,
+    agents: Agents | None = None,
+    *,
+    launcher: Launcher | None = None,
+    allow_file_urls: bool = False,
+) -> FastAPI:
     """*allow_file_urls* lets a git import read a `file://` repository; only the tests set it."""
     app = FastAPI(title="Agent Flywheel API")
     _add_error_handlers(app)
+    _add_registry_routes(app, registry, allow_file_urls)
+    if agents is not None:
+        _add_hub_routes(app, agents)
+    if evaluations is not None:
+        _add_evaluation_routes(app, evaluations)
+        _add_training_routes(app, Trainings(evaluations, launcher))
+    return app
+
+
+def _add_registry_routes(app: FastAPI, registry: Registry, allow_file_urls: bool) -> None:
 
     @app.get("/healthz")
     def healthz() -> dict:
@@ -64,6 +111,11 @@ def create_app(registry: Registry, *, allow_file_urls: bool = False) -> FastAPI:
     @app.get("/api/usecases/{name}")
     def usecase(name: str) -> dict:
         return registry.get(name)
+
+    @app.get("/api/usecases/{name}/versions")
+    def version_list(name: str) -> list[dict]:
+        """Every version's record, newest first: hash, source, time, tasks per split, diff."""
+        return registry.records(name)
 
     @app.get("/api/usecases/{name}/versions/{number}")
     def version(name: str, number: int = PathParam(ge=1)) -> dict:
@@ -78,7 +130,90 @@ def create_app(registry: Registry, *, allow_file_urls: bool = False) -> FastAPI:
         status = 201 if result.status == "created" else 200
         return JSONResponse({"status": result.status, "version": result.version}, status_code=status)
 
-    return app
+
+def _add_hub_routes(app: FastAPI, agents: Agents) -> None:
+    """AI hub › Agents and Models: the agents in the store, the models the gateway routes."""
+
+    @app.get("/api/models")
+    def model_list() -> list[dict]:
+        used_by: dict[str, list[str]] = {}
+        for agent in agents.list():
+            for model in agent["models"]:
+                used_by.setdefault(model, []).append(agent["name"])
+        return [{**model, "used_by": used_by.get(model["name"], [])} for model in agents.gateway.models()]
+
+    @app.get("/api/agents")
+    def agent_list() -> list[dict]:
+        return agents.list()
+
+    @app.get("/api/agents/{name}")
+    def agent(name: str) -> dict:
+        return agents.get(name)
+
+    @app.post("/api/agents", status_code=201)
+    def add_agent(body: dict = Body()) -> dict:
+        return agents.add(body)
+
+
+def _add_evaluation_routes(app: FastAPI, evaluations: Evaluations) -> None:
+    # Plain functions: FastAPI runs them in its thread pool, where the calls to EvalHub block.
+    @app.post("/api/usecases/{name}/evaluations", status_code=201)
+    def start_evaluation(name: str, request: Request, body: StartRequest | None = None) -> dict:
+        return evaluations.start(name, body or StartRequest(), _token(request))
+
+    @app.get("/api/usecases/{name}/evaluations")
+    def evaluation_list(name: str, request: Request) -> list[dict]:
+        return evaluations.list(name, _token(request))
+
+    @app.get("/api/usecases/{name}/evaluations/{job_id}")
+    def evaluation(name: str, job_id: str, request: Request) -> dict:
+        return evaluations.get(name, job_id, _token(request))
+
+    @app.get("/api/usecases/{name}/versions/{number}/tasks/{task_id}/results")
+    def task_results(name: str, task_id: str, request: Request, number: int = PathParam(ge=1)) -> list[dict]:
+        """Every run of the version that scored the task, with the task's reward and verdicts."""
+        return evaluations.task_results(name, number, task_id, _token(request))
+
+    @app.delete("/api/usecases/{name}/evaluations/{job_id}", status_code=204)
+    def stop_evaluation(name: str, job_id: str, request: Request, delete: bool = False) -> None:
+        """Stop the job; with ?delete=true remove it from EvalHub too."""
+        evaluations.stop(name, job_id, _token(request), delete=delete)
+
+    @app.get("/api/usecases/{name}/evaluations/{job_id}/tasks/{task_id}")
+    def evaluation_task(name: str, job_id: str, task_id: str, request: Request) -> dict:
+        """One task of the job: verdicts, the agent's answer, its steps and its cost."""
+        return evaluations.task(name, job_id, task_id, _token(request))
+
+    @app.get("/api/usecases/{name}/evaluations/{job_id}/logs", response_class=PlainTextResponse)
+    def evaluation_logs(name: str, job_id: str, request: Request) -> str:
+        return evaluations.logs(name, job_id, _token(request))
+
+
+def _add_training_routes(app: FastAPI, trainings: Trainings) -> None:
+    @app.post("/api/usecases/{name}/trainings", status_code=201)
+    def start_training(name: str, request: Request, body: StartTraining | None = None) -> dict:
+        """A training run: the loop's Job, created as the caller."""
+        return trainings.start(name, body or StartTraining(), _token(request))
+
+    @app.get("/api/usecases/{name}/trainings")
+    def training_list(name: str, request: Request) -> list[dict]:
+        return trainings.list(name, _token(request))
+
+    @app.get("/api/usecases/{name}/trainings/{training}")
+    def training(name: str, training: str, request: Request) -> dict:
+        return trainings.get(name, training, _token(request))
+
+    @app.get("/api/usecases/{name}/trainings/{training}/brains/{number}")
+    def training_brain(name: str, training: str, request: Request, number: int = PathParam(ge=0)) -> dict:
+        """One brain's files and the adjuster's reports of the step that made it."""
+        return trainings.brain(name, training, number, _token(request))
+
+
+def _token(request: Request) -> str:
+    scheme, _, token = request.headers.get("authorization", "").partition(" ")
+    if scheme.lower() != "bearer" or not token.strip():
+        raise Unauthorized("an evaluation runs as its caller: send its Bearer token")
+    return token.strip()
 
 
 async def _fetch(request: Request, allow_file_urls: bool) -> sources.Fetched:
@@ -130,3 +265,7 @@ def _add_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(NotFound)
     def not_found(_: Request, exc: NotFound) -> JSONResponse:
         return JSONResponse({"detail": str(exc.args[0])}, status_code=404)
+
+    @app.exception_handler(RemoteError)
+    def remote(_: Request, exc: RemoteError) -> JSONResponse:
+        return JSONResponse({"detail": str(exc)}, status_code=exc.status)

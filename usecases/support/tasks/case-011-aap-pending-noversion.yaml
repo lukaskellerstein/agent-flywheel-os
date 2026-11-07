@@ -1,0 +1,24 @@
+id: case-011-aap-pending-noversion
+split: train
+tags:
+- missing-version
+input:
+  ticket: |
+    Since we upgraded Ansible Automation Platform last weekend, every job stays in Pending
+    and nothing runs. It is only our test environment so far, production is still on the
+    old version. What should we change?
+    -- Emil, Proseware
+  customer: Proseware
+  severity: 3
+expected:
+  expected_kb_ids:
+  - KB-3100
+  - KB-3101
+  must_mention:
+  - which version|what version|exact version|confirm the version|your version|version you|version are
+    you|version do you
+  - 2.5.3|2.5.4
+  must_not:
+  - register_queue
+  needs_version_question: true
+  needs_escalation: false
