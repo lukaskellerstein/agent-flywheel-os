@@ -8,8 +8,7 @@
 
 `usecase.yaml` holds the words of the UI, the brain's limits and the
 adjuster's slots: our loop's and our UI's, nothing the harness can hold
-(decision 1). Its keys follow `openshift-eval`'s `task.yaml` on its branch
-`generalization`, in this repo's words (decision 12: its "case" is our task).
+(decision 1).
 """
 
 from __future__ import annotations

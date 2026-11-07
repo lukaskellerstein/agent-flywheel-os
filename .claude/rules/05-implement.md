@@ -61,8 +61,6 @@ Write clean code from the start. Follow these rules during implementation:
 - `pr-drafts.md` — the PR texts for the fork branches of every repo, one
   section per branch with its repo and head commit. Lukas opens each PR, in his own voice, after
   his go; a branch that changes gets its section rewritten.
-- `archive/` — history, copied word for word. Never edit an archived file;
-  the specs win where they differ.
 - Decisions and status belong in the specs, not in the other files here.
 
 ## `scripts/` — what Lukas runs from his own terminal
@@ -117,8 +115,8 @@ Write clean code from the start. Follow these rules during implementation:
   with the harness's `validate_eval.py config` and `workspace.py`.
 - `support/` (phase 3 step 5): 30 tickets, the knowledge base in
   `resources/`, the policy in `hidden/`, deterministic judges and the
-  adjuster's slots in `usecase.yaml`; copied once from `openshift-eval`
-  `d0dd4e1` (decision 22), its source from then on.
+  adjuster's slots in `usecase.yaml`; this folder is its source
+  (decision 22).
 - Not here: the API's test fixtures (`services/flywheel-api/tests/`), and
   any key: a model key never enters `eval.yaml`.
 
@@ -128,8 +126,7 @@ Write clean code from the start. Follow these rules during implementation:
   `uv.lock`, the code in `flywheel_loop/` (HTTP, the API client, MLflow,
   the brain, the adjuster's reports, the adjuster, the controller), the
   adjuster's agent prompt `flywheel_loop/adjuster.md`, the offline tests
-  in `tests/` with the API, MLflow and OpenCode faked. Ported once from
-  `openshift-eval` `d0dd4e1` (decision 22).
+  in `tests/` with the API, MLflow and OpenCode faked.
 - It scores nothing itself: every score is an evaluation of the flywheel
   API with the brain as C11's `parameters.brain`. Keep or revert stays in
   code, on the train score only.
@@ -158,7 +155,7 @@ Write clean code from the start. Follow these rules during implementation:
   each needs the one before it. Configuration of ODH's own objects; from
   spec 02 phase 2 the Subscription also points ODH at our operator and
   EvalHub images.
-- `gateway/` — LiteLLM, spec 01 phase 1 step 6, ported from `openshift-eval`;
+- `gateway/` — LiteLLM, spec 01 phase 1 step 6;
   every route is EnMaaS since 2026-10-14 (decision 9). Every model
   alias and price lives in `config/`, never a key. `litellm.yaml` also
   goes out as the ConfigMap `gateway-models`, with no hash, for the
@@ -222,8 +219,7 @@ agent-flywheel-os/
 │   ├── my-specs/     the plan: 01 closed, 02 active — read its section 0 first
 │   ├── research.md   the evidence behind the specs
 │   ├── outreach.md   the Slack post drafts
-│   ├── pr-drafts.md  the PR texts for the fork branches
-│   └── archive/      the first spec, as history
+│   └── pr-drafts.md  the PR texts for the fork branches
 ├── flywheel/         the training loop
 ├── images/
 │   └── runner/       the loop and OpenCode on our harness image

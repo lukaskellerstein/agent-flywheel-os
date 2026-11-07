@@ -1,4 +1,4 @@
-# One server for agent-flywheel only (single tenancy, as in openshift-eval):
+# One server for agent-flywheel only (single tenancy):
 # its job pods run here. The dashboard's eval-hub page finds it as the EvalHub
 # of the selected project.
 apiVersion: trustyai.opendatahub.io/v1

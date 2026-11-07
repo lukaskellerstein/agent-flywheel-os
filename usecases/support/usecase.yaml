@@ -1,6 +1,5 @@
 # The support use case (spec 02 phase 3 step 5), the first one the
-# flywheel trains on. Copied once from openshift-eval `d0dd4e1`
-# (tasks/support/task.yaml, decision 22); this folder is its source now.
+# flywheel trains on. This folder is its source (decision 22).
 title: Red Hat customer support
 description: >-
   Answers customer tickets over a local knowledge base, under a support policy

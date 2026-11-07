@@ -9,8 +9,8 @@ FROM image-registry.openshift-image-registry.svc:5000/agent-flywheel/agent-eval-
 
 USER 0
 
-# The version openshift-eval's adjuster ran on (its deploy/build/Containerfile
-# at d0dd4e1). On first use OpenCode installs its provider package,
+# The version the adjuster ran on in the first training run (2026-11-07).
+# On first use OpenCode installs its provider package,
 # @ai-sdk/openai-compatible, into XDG_CACHE_HOME, which the loop sets.
 ARG OPENCODE_VERSION=1.18.30
 RUN npm install -g opencode-ai@${OPENCODE_VERSION} && opencode --version

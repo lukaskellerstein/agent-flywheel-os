@@ -1,10 +1,8 @@
 # Research behind the plan
 
-Gathered on 2026-10-13 by a Claude session in
-`~/Projects/Github/lukaskellerstein/openshift-eval` (branch
-`redesign-redhat-upstream`, discarded afterwards: everything it found is
-here), with nine research agents reading upstream code through `gh` and the
-local clones, and direct checks. **V** = verified in code, an API or a doc;
+Gathered on 2026-10-13 by a Claude session with nine research agents
+reading upstream code through `gh` and the local clones, and direct
+checks. **V** = verified in code, an API or a doc;
 **I** = inferred, not run. Line numbers are of upstream `main` on that day
 unless a version is named. The specs in `docs/my-specs/` are the plan; this file is the evidence.
 
@@ -38,15 +36,7 @@ that is not public, and that is a good answer to get.
 (picked); B, a separate product on top (reads as a duplicate of EvalHub); C,
 merge everything and keep nothing (the loop and the grid have no home).
 
-**What stays ours, measured in `openshift-eval` on 2026-10-13:** with an
-upstream home: the runner scripts `eval/support/scripts/*.sh` 703 lines, our
-EvalHub provider `flywheel/backends/score_evalhub.py` 445, the GEPA call
-`adjust_gepa.py` 190, plus part of `run_eval.py` (1,271). Staying: the loop
-`controller.py` 676, `adjust.py` 654, `benchmark.py` 508 (1,838 together),
-the other backends (`__init__.py` 233, `adjust_adjuster.py` 129,
-`adjust_eval_optimize.py` 299, `score_harbor.py` 339, `score_harness.py`
-75), the console `ui/server` 3,373 and `ui/web/src` 10,253, the gateway
-config 404. If Training Hub or EvalHub later add an agent loop, the
+If Training Hub or EvalHub later add an agent loop, the
 flywheel shrinks to a UI and a quickstart; that still puts the work in the
 product.
 
@@ -85,36 +75,31 @@ product.
   2026-10-13; the facts above came from the press release, developer
   articles and search summaries of the release notes.
 
-## 3. Gap map: what `openshift-eval` built itself, and why
+## 3. Gap map
 
-Paths are in `openshift-eval`. "Why" is that repo's reason (its `PLAN.md`
-and `docs/my-specs/01-new-design.md`).
-
-| Our piece | Why we built it | Upstream today | Contribution (spec 01 section 7) |
-|:--|:--|:--|:--|
-| `stop_with_parent` in `eval/support/scripts/lib.sh:53` | A stop left the agents in flight running | `cli` and Codex runners kill their group only on a timeout; no SIGTERM handler; Claude Code kills the CLI only | C1 |
-| `prices.sh` and the runners' cost code | Gateway aliases have no price | Claude Code prices as Claude; Codex gets `None` for an alias | C2 |
-| `run-claude-code.sh`, `run-codex.sh` | The gateway route; a fresh folder out of reach of `input.yaml` | The gateway works by env; the agent runs next to `input.yaml` | C3 |
-| `run-opencode.sh` | No OpenCode runner | Draft PR #90, stale, with security problems | C5 |
-| Trace building in `flywheel/run_eval.py:760-914` | One trace per ticket for every agent | Traces from Claude Code and Harbor only | C6 |
-| Our EvalHub provider, `score_evalhub.py:335-441` | The harness adapter "returns the judge means without the reasons", "drops our runners (no quota retry, no fresh folder per ticket)", its client "creates ConfigMaps on the kubeconfig's cluster even for a server on the laptop", and it "needed a wrapper image" because its pod ships no OpenCode | Means only, one case at a time, judge errors swallowed, SDK below 1.0 | C7, C11 |
-| `deploy/evalhub/provider/` and `find_provider` | No API to register a provider with its resources | `K8sRuntime` has no json tags | C10 |
-| `export_run_folder` | The run folder back through MLflow | `MLFLOW_WORKSPACE` injected into every job pod | C13 |
-| `benchmark.py` | The grid with reuse | `/eval-anova` has no runner factor and no reuse | C8 |
-| Workarounds in `adjust_eval_optimize.py` | The skill must not start its own eval | `/eval-optimize` always re-runs `/eval-run` | C9 |
-| `decide()` in `controller.py:262` | Keep or revert in code, on the train score; validation never decides | The LLM decides; PR #73 proposes an LLM-enforced gate | A comment, no PR |
-| `adjust_gepa.py` | One GEPA proposal per Adjust step | Training Hub runs GEPA's whole search only | None now (section 6) |
-| `TrialPod` in `score_harbor.py` | Harbor trials as pods, cleaned up with the Score Job | EvalHub ADR 0001 (PR #1059) | A comment |
-| `docs/my-specs/XX-sandboxing.md` | Kata and OpenShell for the agent under test | ADR 0001's P1 and P2 | Help on the ADR |
+| Upstream today | Contribution (spec 01 section 7) |
+|:--|:--|
+| `cli` and Codex runners kill their group only on a timeout; no SIGTERM handler; Claude Code kills the CLI only | C1 |
+| Claude Code prices as Claude; Codex gets `None` for an alias | C2 |
+| The gateway works by env; the agent runs next to `input.yaml` | C3 |
+| Draft PR #90, stale, with security problems | C5 |
+| Traces from Claude Code and Harbor only | C6 |
+| Means only, one case at a time, judge errors swallowed, SDK below 1.0 | C7, C11 |
+| `K8sRuntime` has no json tags | C10 |
+| `MLFLOW_WORKSPACE` injected into every job pod | C13 |
+| `/eval-anova` has no runner factor and no reuse | C8 |
+| `/eval-optimize` always re-runs `/eval-run` | C9 |
+| The LLM decides; PR #73 proposes an LLM-enforced gate | A comment, no PR |
+| Training Hub runs GEPA's whole search only | None now (section 6) |
+| EvalHub ADR 0001 (PR #1059) | A comment |
+| ADR 0001's P1 and P2 | Help on the ADR |
 
 ## 4. agent-eval-harness
 
 **Versions (V).** Upstream latest release v1.56.1 (2026-10-12); `main` at
 `175eed5` (2026-10-13). The reference checkout
 `~/Projects/Github/redhat/agent-eval-harness` was at v1.53.3 (`7ec9078`,
-2026-10-02), 40 commits behind. `openshift-eval`'s image pins
-`HARNESS_REF=v1.53.0` (`deploy/build/Containerfile:34`) while its laptop
-runs the editable checkout, 1.53.3: the two ran different versions.
+2026-10-02), 40 commits behind.
 Changes v1.53.0 → v1.56.1: Claude Code permission and credential fixes
 (1.53.1–1.53.3); `eval-compare` reports wall clock and stops rounding
 per-turn costs (1.53.4); ANOVA statistics (1.54–1.56); judge fencing in
@@ -182,17 +167,13 @@ Constitution principle II names OpenCode as an intended runner.
   case workspace next to `input.yaml`, starts no process group, implements
   the old `run_skill` instead of `execute()`, and takes cost from
   `part.cost`. Neither `events.py` nor `trace_builder.py` on `main` parses
-  OpenCode events. What `openshift-eval`'s runner adds: a fresh folder
-  outside the git workspace, isolated config dirs, a retry on
-  `token_quota_exceeded`, `_ts_ms` event stamping, gateway routing, the stop
-  watchdog.
+  OpenCode events.
 - PR #73 (optimize strategies): open, by astefanutti, 2026-05-27 to
   2026-06-07, +943/−56: `--strategy lite|skillopt|auto`, a 40:20:40
   train/selection/test split, a strict validation gate on the selection split
   (ties rejected), a rejected-edit buffer. rhuss (maintainer) asked whether
   it ever ran end to end and whether it could ship in 2 tiers; no reply
-  since. Compare: `openshift-eval`'s `decide()` keeps on the train score in
-  code, ties keep, validation never decides.
+  since.
 - EvalHub adapter: runs in-process in the job pod (`adapter.py:1-19`) with
   `runner.type` claude-code, codex or cli (Cursor refused); cases one after
   another with `workspace=case_dir`, the folder holding `input.yaml`
@@ -219,9 +200,7 @@ Constitution principle II names OpenCode as an intended runner.
 - Traces: `/eval-mlflow` builds one trace per case from
   `cases/<id>/stdout.log`, Claude Code stream-json only, plus Harbor's
   `trajectory.json` (`log_results.py:514-540`, `trace_builder.py:1`); Codex
-  output is not normalized (`codex.py:289-307`). `openshift-eval`'s
-  `opencode_steps`, `claude_code_steps`, `codex_steps` would fit as
-  per-format adapters in front of `build_trace`.
+  output is not normalized (`codex.py:289-307`).
 
 **Read again on `upstream/main` `175eed5` (V, 2026-10-14, phase 2).** Each
 fact was reproduced with a failing test on that commit; spec 01 phase 2
@@ -778,14 +757,6 @@ with `hidden/` and the answer keys, stays reachable by absolute path, as
 in a local run. SDK 1.0.6 has no MLflow artifact download. The harness
 reads no model endpoint from the job's `model.url`.
 
-**`openshift-eval`'s provider vs the harness adapter (V).** Only ours: it
-runs the five eval-run scripts (parallelism, workspace prep, our runners,
-`score_evalhub.py:352-357`); the whole run folder (reasons, `events.jsonl`)
-comes back through MLflow (`:394-405`, `:321-332`); the brain travels in the
-job parameters (`:218-225`); it exits on SIGTERM and the client cancels the
-job on a stop or a timeout (`:338-405`, `:429`). The survivor should be our
-execution model moved upstream plus the harness's extras.
-
 **SDK 1.0.6 (V).** Adds `MlflowFileArtifact` (streamed upload, sdk#194),
 OCI signing (#195), drops `oci_subject` (#196), CVE fixes; `callbacks.py`
 differs from 1.0.5 only in the artifact type. On the laptop it can replace
@@ -817,9 +788,9 @@ exits without a report (`local_runtime.go:414`, `_ = cmd.Wait()`). The
 operator's failure watcher deliberately ignores an adapter's non-zero exit
 (`controllers/evalhub/evaluation_job_failure_reconciler.go:113-114`,
 `terminatedAdapterNeedsOperatorReport` at `:950`). Operator #985 (`639411f`) adds the NetworkPolicy
-RBAC, but its policy forbids `delete`, while `openshift-eval` saw OpenShift
-needing `delete` for the ownerReference update that `main` still makes
-(`k8s_runtime.go:396-403`; its runs `eval-4zllw`, `eval-jqhra`).
+RBAC, but its policy forbids `delete`, while OpenShift needs `delete`
+for the ownerReference update that `main` still makes
+(`k8s_runtime.go:396-403`; runs `eval-4zllw`, `eval-jqhra`).
 
 **A benchmark's result can be replaced (V, eval-hub `3f7b173`,
 2026-10-15, found by C14's subagent, read again by the agent).** The 409
@@ -1010,7 +981,7 @@ Terminal-Bench as the motivation, and rejects cleanup in the tenant
 namespace for lack of deterministic cleanup (lines 199-201). No
 open-questions section; open items elsewhere: the egress profile (eval-hub
 #1069, operator #984 "Egress mode is unresolved"), the broker's caps, the
-resource handshake, the image allowlist. Data `openshift-eval` can give:
+resource handshake, the image allowlist. Data we can give:
 deterministic cleanup with an ownerReference to the Score Job's pod
 (`flywheel-ftrlq` left no pod; `eval-dgpdt`'s trial pods gone 36 s after
 the suspend); Harbor 0.24 on Podman left 3 of 4 trial containers stopped
@@ -1291,8 +1262,8 @@ paragraph.
   - The `responses-api` runner takes a `base_url`
     (`agent_eval/agent/responses_api.py:65-116`).
 
-**EnMaaS, Red Hat Engineering's AI gateway (V, read 2026-10-13 in the
-`openshift-eval` session `999d0b72`; reachability V 2026-10-14).**
+**EnMaaS, Red Hat Engineering's AI gateway (V, read 2026-10-13;
+reachability V 2026-10-14).**
 
 - **Source.** The guide is on source.redhat.com
   (`departments/products_and_global_engineering/workload_management/enmaas`).
@@ -1418,9 +1389,6 @@ gateway (200, 2.1 s, 19 in and 42 out tokens, 39 of them reasoning).
     apart from `completion_tokens` (687 against 343).
   - `rits/zai-org/glm-5-3` 76, but it reasons first: 1,742 of 2,048 output
     tokens, so a 300-word answer was cut at the limit after 26 s.
-  - For comparison, `openshift-eval` chose Cerebras for "500 to 800 tokens
-    per second", in its own words; that is the reason in its `PLAN.md`
-    decision row "Model hosting", not a measurement of this repo.
 - **The speed stage spent** about 0.56 USD at list price, plus
   `claude-opus-5-5`, `claude-sonnet-5-5`, `gemini-3.8-flash` and the four
   GPT-6 ids, which have no price in LiteLLM's table.
@@ -1797,40 +1765,9 @@ the gateway pod listed 23 ids on the Bearer header (`gpt-5-mini`,
 (Claude, GLM, DeepSeek), and `enmaas-gpt-5-mini` through the gateway
 answered 200 in 1.8 s (25 tokens).
 
-## 8. `openshift-eval` facts this work must know
+## 8. Removed
 
-- Its `CLUSTER.md` on `main` still says "Do not install Open Data Hub or
-  RHOAI" (Lukas, 2026-10-10). Lukas lifted that for this integration on
-  2026-10-13. On a cluster both use, remove its TrustyAI operator
-  (`deploy/evalhub/operator`, namespace `trustyai-operator`) and its
-  `EvalHub` resource before ODH goes in; its Score backend `evalhub` then
-  needs ODH's EvalHub.
-- Its `docs/my-specs/01-new-design.md` line 7 says "no release has
-  EvalHub": true for the upstream operator only. OpenShift AI ships EvalHub
-  from 3.4, GA in 3.5.
-- Its phase 7 found three things live on EvalHub on OpenShift: the provider
-  must be named in the `EvalHub` resource, the server lacks a Role for its
-  per-job NetworkPolicy, and the provider needs a SIGTERM handler
-  (`openshift-eval` `PLAN.md` section 0, `CLUSTER.md` Status).
-- Its stop-fix tests lived in a gitignored `tmp/tests/stopfix/` of a
-  removed worktree; they are not in the main checkout.
-- The cluster `cluster-vj7vb` (`api.cluster-vj7vb.dyn.redhatworkshops.io:6443`)
-  answered neither `oc` (502 Bad Gateway through the sandbox proxy) nor a
-  direct request (15 s timeout) on 2026-10-13.
-- Its blog posts at `https://www.kellerstein.org/blog/projects/agent-flywheel/`
-  carry two small inaccuracies (`docs/outreach.md`, section 5).
-- Its branch `generalization` (worktree `.worktrees/generalization`, on
-  `a601ae1`, not committed on 2026-10-14) holds
-  `docs/my-specs/03-generalization.md`: one flywheel for any use case
-  through a "task pack" `tasks/<name>/` (its "task" is our use case, its
-  "case" our task, spec 02 decision 12; `task.yaml` beside the harness's `eval.yaml`,
-  `cases/`, `splits.yaml`, `agent/` with the v0 brain and `resources/`,
-  `hidden/` for what only the judges see), decided by Lukas there on
-  2026-10-13 (its section 18). Its phase 1, the support agent as the first
-  pack with the same MLflow records, is built and checked on the laptop
-  (its `PLAN.md` row "Generalization, phase 1": 92 loader checks, 71 record
-  checks, a free live loop on Gemma); phases 2 to 7 are not built. The
-  support pack is 100 files, 404 KB on disk, 40 KB as a `tar.gz`.
+Removed 2026-11-07: it described a repo this one no longer names.
 
 ## 9. Sources
 

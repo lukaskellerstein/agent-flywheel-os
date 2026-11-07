@@ -26,7 +26,7 @@ spec:
       containers:
         - name: litellm
           # LiteLLM 1.99.1 (main-stable of 2026-09-02), pinned by the digest of
-          # its multi-arch index, as in openshift-eval: the build the hook was
+          # its multi-arch index: the build the hook was
           # measured against. Later builds refuse to start without a master key.
           image: ghcr.io/berriai/litellm@sha256:a53a7d3ffebede1925bd3ee8a21e4a7b9b63e2e68ec883af136edcccb6eeb82c
           imagePullPolicy: IfNotPresent

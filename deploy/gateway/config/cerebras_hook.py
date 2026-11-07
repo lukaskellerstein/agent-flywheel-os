@@ -7,7 +7,7 @@ written for Cerebras, which the gateway no longer routes (spec 01 section 2,
 decision 9); the name stays.
 
 Cerebras speaks chat completions only and validates strictly. Measured on
-2026-10-05 with one-token requests (PLAN.md section 2, "Model gateway"):
+2026-10-05 with one-token requests:
 
 - `reasoning_effort` must be none, low, medium or high. Codex sends the
   Responses API object `reasoning: {effort, summary}`, and LiteLLM's bridge
@@ -34,8 +34,8 @@ Cerebras speaks chat completions only and validates strictly. Measured on
   tokens on every turn and six tickets cost one cent (measured). The hook
   fills a 0 input count on the Responses route with the same kind of
   estimate from the request, so Codex and Claude Code are counted alike.
-  Both are estimates until LiteLLM reads Cerebras's chunk (section 7 of
-  PLAN.md has the measured gap: 63 against 54 tokens on a Czech prompt).
+  Both are estimates until LiteLLM reads Cerebras's chunk (the measured
+  gap: 63 against 54 tokens on a Czech prompt).
 
 The hook runs before the model call on every route, removes the first three,
 merges every system text into one system message at the top (on the

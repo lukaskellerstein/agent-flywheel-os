@@ -71,8 +71,8 @@ follow the rule and rewrite the memory in the same turn —
   and its §0 rules, its §2 decisions 1 to 9 and its reference sections hold
   where spec 02 does not change them. Decisions 10 on are in spec 02 §2.
   `docs/my-specs/03-standalone.md`, a proposal, describes every feature
-  `openshift-eval` has that this repo lacks, so nothing reads that repo
-  again. A fact in a spec that turns out wrong is fixed in the same turn.
+  this repo still lacks. A fact in a spec that turns out wrong is fixed in
+  the same turn.
 - **State**: spec 01's phases 0 and 1 are done (the cluster, the agent's
   identity, Open Data Hub with EvalHub, MLflow and the gateway on EnMaaS),
   and its C1 to C4, C6 to C9 and C30 to C34 are merged into `agent-eval-harness`'s
@@ -105,9 +105,8 @@ follow the rule and rewrite the memory in the same turn —
   with `claude --no-worktree` in this repo's main checkout: a `claude -w`
   session cannot run git in another folder (spec 01 §0). Inside a fork,
   upstream's own `CLAUDE.md`, `AGENTS.md` and contribution rules win
-  (spec 01 §5). The first version
-  `~/Projects/Github/lukaskellerstein/openshift-eval` (the inspiration) and
-  the reference checkouts `~/Projects/Github/redhat/agent-eval-harness` and
+  (spec 01 §5). The reference checkouts
+  `~/Projects/Github/redhat/agent-eval-harness` and
   `~/Projects/Github/eval-hub/eval-hub` stay read-only — never branch there.
   `rules/worktree.md` is about this repo's own checkout, not the fork
   clones. Table:
@@ -193,8 +192,7 @@ restate them here.
   time. The drafts in spec 01 §13 are posted by Lukas, in his own voice.
   Issues come with the PRs in spec 02 phase 7, not before the work
   (spec 02 decision 15).
-- Any edit in `openshift-eval` or the reference checkouts, and a commit on
-  a fork's `main`.
+- Any edit in the reference checkouts, and a commit on a fork's `main`.
 - A top-level folder beyond the layout Lukas agreed for spec 02 phase 3
   (spec 02 decision 16).
 - Creating or reading a model key Secret. `enmaas` is Lukas's (spec 01

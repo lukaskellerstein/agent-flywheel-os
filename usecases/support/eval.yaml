@@ -1,11 +1,10 @@
 # The support evaluation: Codex answers each ticket from the knowledge
-# base in resources/, and deterministic judges make the reward. Copied once
-# from openshift-eval `d0dd4e1` (tasks/support/eval.yaml, decision 22), with
-# its inline checks replaced by the harness's builtins (C22), its gate as
-# thresholds (C20), and its runner as smoke's: Codex on enmaas-glm-5-3
-# through the cluster's gateway, free.
+# base in resources/, and deterministic judges make the reward. Its checks
+# are the harness's builtins (C22), its gate is thresholds (C20), and its
+# runner is smoke's: Codex on enmaas-glm-5-3 through the cluster's gateway,
+# free.
 #
-# Version 1 leaves out openshift-eval's `quality`, an LLM judge: inside the
+# Version 1 has no LLM judge (`quality`, spec 03 section 3.2): inside the
 # EvalHub job pod a judge model has no route to the gateway yet. Its weight
 # (0.20) is spread over the others. `format` is now two judges, the
 # sections and the length, so each verdict names one rule.
@@ -123,7 +122,7 @@ reward:
     short: 0.10
   gate: false
 
-# openshift-eval's release gate: the mean score at least 0.90, every
+# The release gate: the mean score at least 0.90, every
 # ticket at least 0.70, and each judge at its threshold.
 thresholds:
   reward:

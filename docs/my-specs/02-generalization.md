@@ -23,10 +23,9 @@ again for that (decision 14).
 |:--|:--|
 | This spec, the active plan | `docs/my-specs/02-generalization.md` |
 | Spec 01, closed | [`01-initial-implementation.md`](01-initial-implementation.md): what is done (phases 0, 1 and 2), decisions 1 to 9, the rules for every agent (its section 0), the lineup, the target architecture, repos and branches, the contribution catalogue C1 to C18 and C30 to C34, sandboxing, costs, the opening comments. All of it still holds unless this spec changes it |
-| The evidence | [`../research.md`](../research.md). For this spec: section 4, "What the harness models for any use case"; section 5, "Use cases, data and gates in EvalHub"; section 7, the agent catalog's artifacts; section 8, the `openshift-eval` branch `generalization` |
+| The evidence | [`../research.md`](../research.md). For this spec: section 4, "What the harness models for any use case"; section 5, "Use cases, data and gates in EvalHub"; section 7, the agent catalog's artifacts |
 | PR texts | [`../pr-drafts.md`](../pr-drafts.md) |
-| The first version's generalization | `~/Projects/Github/lukaskellerstein/openshift-eval`, branch `generalization`, worktree `.worktrees/generalization`: its spec `docs/my-specs/03-generalization.md` and its phase 1 (`tasks/support/`, `flywheel/task.py`), built and checked on the laptop. Its "task" is our use case, its "case" our task. Committed 2026-11-07 as `d0dd4e1`, not pushed; history, copied from once (decision 22) |
-| What `openshift-eval` has that this repo lacks | [`03-standalone.md`](03-standalone.md), spec 03, a proposal: every such feature as behaviour, rules and numbers, so no step reads `openshift-eval` again; built in a session of its own (Lukas, 2026-11-07) |
+| What this repo still lacks | [`03-standalone.md`](03-standalone.md), spec 03, a proposal: every such feature as behaviour, rules and numbers, so no step depends on anything outside this repo; built in a session of its own (Lukas, 2026-11-07) |
 | Forks, clones, the cluster | Spec 01, sections 0 and 5 |
 
 **Done, in spec 01.** Phase 0, the agent's own identity, cluster-admin on
@@ -67,7 +66,6 @@ section 7).
    - a paid model run beyond one smoke call, with its cost (spec 01
      section 10);
    - creating or reading a Secret, the bucket's access key included;
-   - an edit in `openshift-eval` (decision 22: nothing here needs one);
    - a top-level folder beyond the layout of decision 16, or a sixth fork
      (spec 01 section 5);
    - every other step marked "waits for" below.
@@ -125,8 +123,7 @@ Not next:
 step 1, the new boards on the Design canvas for Lukas's review; phase 3
 in this repo, the flywheel API with the registry, the bucket and support
 as version 1; then phase 5's module in the odh-dashboard clone after
-C27, built on the cluster. Phase 3's port copies the loop once from
-`openshift-eval` `d0dd4e1` (decision 22). Where
+C27, built on the cluster. Where
 it stands (2026-10-16 18:35 CEST): our module runs in the dashboard on
 the cluster, Develop & train › Agent flywheel with five placeholder
 pages (phase 5's DoD item 1); the flywheel API runs on the cluster
@@ -151,8 +148,8 @@ parameter runs it, so Codex and Claude Code now run on the same version
 (phase 3 status). The module's AI hub pages followed on 2026-11-05 and
 2026-11-06 (phase 5).
 On 2026-11-07 phase 3's loop, runner image
-and support as version 1 landed, copied once from `openshift-eval`
-`d0dd4e1` (decision 22): the first free training run, `training-jhqlf`,
+and support as version 1 landed (decision 22): the first free training
+run, `training-jhqlf`,
 kept brain v1 (train 0.630 to 0.769), and the module's Training pages
 show it (phases 3 and 5 status). The same day a training run started
 from the module: the API creates the loop's Job as the caller
@@ -211,12 +208,11 @@ taken there on 2026-10-14 and moved here with this spec, word for word.
     given use case. We want to provide the platform for it so we have to be
     general." The support agent stays the first use case. The proof (phase
     6) includes a use case of another kind, after support runs end to end:
-    the coding use case `pyfix` of `openshift-eval`'s generalization spec
-    (section 0, "Where things are"), 12 small Python repositories with one
-    bug each and hidden tests. If time runs short before the cluster's end
-    (2026-11-12), that spec's text-only use case `copywriter` is the proof
-    instead (Lukas, `ok`, 2026-10-14). Where use cases live and how they
-    come in: decisions 11 and 13.
+    the coding use case `pyfix` (spec 03 section 3.10), 12 small Python
+    repositories with one bug each and hidden tests. If time runs short
+    before the cluster's end (2026-11-12), the text-only use case
+    `copywriter` is the proof instead (Lukas, `ok`, 2026-10-14). Where
+    use cases live and how they come in: decisions 11 and 13.
 11. **Our own registry, the files in S3, import first** (2026-10-14). The
     flywheel API keeps the registry of use cases: "I would have our own
     API: the task register." Not a Kubernetes resource per use case ("there
@@ -239,8 +235,7 @@ taken there on 2026-10-14 and moved here with this spec, word for word.
     one item of the dataset: one support ticket, one contract clause, one
     bug to fix. The harness calls a task a "case" and keeps its own names
     (`cases/`, `per_case`, `annotations.yaml`). In this plan "ticket" stays
-    for the tasks of the support use case. `openshift-eval`'s generalization spec says
-    "task" for our use case and "case" for our task.
+    for the tasks of the support use case.
 13. **One format for a task, and fixed versions** (2026-10-14, Lukas,
     `yes` and `A`). A use case is defined once: its judges, what its agent
     can read, its gate. Its tasks come in bulk: one YAML file per task, or
@@ -310,8 +305,7 @@ taken there on 2026-10-14 and moved here with this spec, word for word.
       API with the registry and support as version 1 in this repo; the
       module in the odh-dashboard clone after C27, built on the cluster;
       Evaluate and Train from the UI once C11 and the runner image land;
-    - Lukas commits `openshift-eval`'s branch `generalization` himself
-      (risk 2); the agent only reads it (replaced by decision 22);
+    - replaced by decision 22 (risk 2);
     - the agent creates the ObjectBucketClaim `flywheel-usecases` in
       `agent-flywheel`; the API pod reads its access key Secret as env,
       and the key is never printed and never enters a file;
@@ -338,9 +332,8 @@ taken there on 2026-10-14 and moved here with this spec, word for word.
 19. **The first evaluation, before support** (2026-10-16 evening, Lukas,
     `ok`): the first EvalHub job runs on a small smoke use case,
     `usecases/smoke/` (the API's test fixture with a `reward:` block and
-    deterministic judges only), not on support, which then waited for
-    Lukas's commit of `openshift-eval`'s `generalization` (support is
-    version 1 since 2026-11-07, decision 22). The agent is Codex on
+    deterministic judges only), not on support (support is version 1
+    since 2026-11-07, decision 22). The agent is Codex on
     `enmaas-gpt-5-mini`, decision 9's agent model, about 0.04 USD for its
     three tasks; Lukas asked for "some cheap openai model" rather than
     GLM 5.3, which is free but slow. Changed the same night (Lukas, `ok`,
@@ -380,33 +373,25 @@ taken there on 2026-10-14 and moved here with this spec, word for word.
     a password that never leaves it (the command is in that file). The
     jobs lost before stay lost; their MLflow runs stay. MLflow as the
     record of a finished evaluation is the fallback, not built.
-22. **This repo stands alone** (2026-11-07, Lukas: "This is the
-    evolution of that project so we should not rely on that project
-    anymore in any way ... we should not be blocked because of that
-    project."). `openshift-eval` is history, not a dependency. Lukas let
-    the agent commit its branch `generalization` (`d0dd4e1`, 2026-11-07,
-    not pushed), so that work is kept. Phase 3 copies what it still
-    needs from that commit once, made to fit this repo: the loop, the
-    runner image, support's task pack, and in phase 6 the description of
-    `pyfix` or `copywriter`. From then on this repo is the source, and
-    nothing here reads or waits for `openshift-eval`. Its measured facts
-    stay as evidence in `docs/research.md`. This replaces decision 17's
-    second point.
+22. **This repo stands alone** (2026-11-07, Lukas: this repo must not
+    rely on another project in any way, nor be blocked by one). Nothing
+    here reads or waits for a repo beyond this one and the fork clones
+    (spec 01 section 5). The loop, the runner image and support's tasks
+    were written into this repo on 2026-11-07, and this repo is their
+    source from then on; phase 6 writes `pyfix` or `copywriter` from
+    spec 03 section 3.10. This replaces decision 17's second point.
 
 ## 3. What changes, and why
 
 What spec 01 planned around the support agent, and the facts that shape
-the change (`docs/research.md`, sections 4, 5 and 8):
+the change (`docs/research.md`, sections 4 and 5):
 
-- Spec 01 phase 4 ported `datasets/support/` from `openshift-eval` `main`,
-  where the use case is hard-coded in every layer: the judges' weights in
-  `run_eval.py`, the failure report in `adjust.py`, the adjuster's prompt,
-  three backends, the release gate, the console's labels, the image's
-  `COPY eval` (the table in section 2 of `openshift-eval`'s generalization
-  spec). Its branch `generalization` moved most of it into a pack its code
-  reads, but in its own code.
-- Spec 01 planned C11 as `openshift-eval`'s provider: one EvalHub
-  benchmark, `support`, with the dataset baked into the image. Every new use
+- Spec 01 phase 4 planned `datasets/support/` with the use case
+  hard-coded in every layer: the judges' weights, the failure report, the
+  adjuster's prompt, three backends, the release gate, the console's
+  labels, the image's `COPY eval`.
+- Spec 01 planned C11 as a provider of one EvalHub benchmark, `support`,
+  with the dataset baked into the image. Every new use
   case would need a new image.
 - Spec 01 phase 5's Dataset and One ticket boards show tickets, a knowledge
   base and policies.
@@ -476,8 +461,7 @@ s3://<bucket>/usecases/<name>/
   written.
 - **Versions** (decision 13): a new version only when the content hash
   changes; never deleted in the first build. Runs carry the MLflow tags
-  `usecase`, `usecase_version`, `usecase_hash` (proposal; `openshift-eval`
-  tags `task`, `task_version`, `task_hash` the same way). Benchmark reuse
+  `usecase`, `usecase_version`, `usecase_hash` (proposal). Benchmark reuse
   counts a run only for the same hash.
 - **Projections**: one EvalHub collection per use case (proposal): per
   split one entry of the harness provider, each with a benchmark id of
@@ -937,25 +921,22 @@ and C12 are merged (section 5.1). On the cluster (`deploy/builds/`,
 ### Phase 3: the registry and the glue
 
 Spec 01 phase 4, on the registry of decision 11. The layout of this repo is
-agreed (decision 16, question 6). The port copies once from
-`openshift-eval`'s branch `generalization` at `d0dd4e1`, and this repo
-owns the copy from then on (decision 22).
+agreed (decision 16, question 6). Steps 3 to 5 were written into this
+repo on 2026-11-07, and this repo is their source from then on
+(decision 22).
 
 1. The S3 bucket: verify first (section 8); its access key Secret is asked
    for before it is created.
-2. The flywheel API (`services/flywheel-api/`, ported from `openshift-eval`
-   `ui/server/`): the registry, import by upload and from git, versions,
-   the EvalHub collection; then the API the dashboard module forwards to
-   (spec 01 decision 6).
-3. The loop (`flywheel/`), ported from `openshift-eval`: the controller,
-   the Adjust backends, keep or revert in code; the generic parts from its
-   branch `generalization` (the failure report, the adjuster's slots, the
-   brain's limits); one Score backend, EvalHub with C11.
+2. The flywheel API (`services/flywheel-api/`): the registry, import by
+   upload and from git, versions, the EvalHub collection; then the API
+   the dashboard module forwards to (spec 01 decision 6).
+3. The loop (`flywheel/`): the controller, the Adjust backends, keep or
+   revert in code; the generic parts (the failure report, the adjuster's
+   slots, the brain's limits); one Score backend, EvalHub with C11.
 4. The runner image (`images/runner/`), the harness from the fork's
    `flywheel-integration` branch.
-5. Support as the first use case: `openshift-eval`'s `tasks/support/` in
-   the task format, imported (2026-11-07: by upload through the
-   dashboard).
+5. Support as the first use case, in the task format, imported
+   (2026-11-07: by upload through the dashboard).
 
 DoD:
 
@@ -1135,15 +1116,14 @@ commits `847f6c3`, `9305114` and `33c9d9c` on this repo's `main`):
 Steps 3 to 5, offline (decision 22, Lukas's `ok`, 2026-11-07; committed
 the same day as `f971f6e`, `4db7e31`, `75a437d` and `2c32ec0`):
 
-- Step 5: `usecases/support/`, support's 30 tickets in the task format
-  (each task's input and expected equal to `openshift-eval`'s case
-  folders, checked one by one), its 32 articles in `resources/`, the two
-  policies in `hidden/`, and `usecase.yaml` with the adjuster's slots.
-  `eval.yaml` takes C22's builtins for openshift-eval's inline checks
-  (`cites`, `contains` and `forbidden` with `separator: "|"`, `sections`,
-  `length`), its gate as C20's thresholds, and smoke's runner, Codex on
-  GLM 5.3. Left out of version 1: the LLM judge `quality`, since a judge
-  model in the EvalHub pod has no route to the gateway yet. The harness's
+- Step 5: `usecases/support/`, support's 30 tickets in the task format,
+  its 32 articles in `resources/`, the two policies in `hidden/`, and
+  `usecase.yaml` with the adjuster's slots. `eval.yaml` takes C22's
+  builtins (`cites`, `contains` and `forbidden` with `separator: "|"`,
+  `sections`, `length`), its gate as C20's thresholds, and smoke's
+  runner, Codex on GLM 5.3. Left out of version 1: the LLM judge
+  `quality`, since a judge model in the EvalHub pod has no route to the
+  gateway yet. The harness's
   `validate_eval.py` and `workspace.py` take it (20 train workspaces, the
   articles in each, no answer key), and so does the API's import check.
 - Step 2 again: a start takes `brain` (C11's `runs:/<run>/<path>`) and
@@ -1160,7 +1140,7 @@ the same day as `f971f6e`, `4db7e31`, `75a437d` and `2c32ec0`):
   base image) and `deploy/flywheel/` (its build, the ServiceAccount
   `flywheel-loop`, one training Job), on the cluster the same day
   (below).
-- Not ported: GEPA and `/eval-optimize` as Adjust backends; an MLflow
+- Not built: GEPA and `/eval-optimize` as Adjust backends; an MLflow
   trace per ticket (the adapter logs each ticket's run folder, not a
   trace).
 
@@ -1233,9 +1213,8 @@ Task (input, expected, results across runs) are on the Design canvas,
 version 23, in the Dataset row, with a note beside Dataset and Ticket
 that they replace them once Lukas agrees; the menu item reads "Use
 cases" on the new boards only. Support's tickets, judges, gate,
-articles and policies are measured from `openshift-eval`'s
-`tasks/support`; versions, hashes, the diff and the pyfix and
-copywriter rows are illustrative. They wait for Lukas's review.
+articles and policies are the real ones; versions, hashes, the diff and
+the pyfix and copywriter rows are illustrative. They wait for Lukas's review.
 Steps 2 to 6, the plumbing, started 2026-10-16 in the odh-dashboard clone
 on `feat/agent-flywheel-module`, from upstream commit `37dc648`, the one
 ODH 3.6.0-ea.2's host and dashboard-operator run (`docs/research.md`
@@ -1422,8 +1401,8 @@ branch is not merged into `flywheel-integration`, which is on
   file renders with the host's renderer, as agent-ops uses it, with a
   Formatted/Raw toggle; any other file stays text. One component holds
   it, so a later view changes one place. Why: support's format judge
-  checks the sections Summary, Steps, Next (`openshift-eval`
-  `eval/support/eval.yaml:129`); smoke's answers are one paragraph. The
+  checks the sections Summary, Steps, Next; smoke's answers are one
+  paragraph. The
   answer is model text, so a test proves that raw HTML and
   `javascript:` links in it cannot run.
   Built with the two layout fixes: five commits, `ddeb2e174` to
@@ -1485,8 +1464,7 @@ Spec 01 phase 6, on the `flywheel-integration` branches of every fork:
    `usecases/`, and imports it.
 
 Step 1's tests are written here, from spec 03's rules and numbers
-(sections 3.1 to 3.3 and 5); nothing is read from `openshift-eval`
-(decision 22).
+(sections 3.1 to 3.3 and 5).
 
 DoD:
 
@@ -1515,9 +1493,8 @@ Spec 01 phase 8, unchanged.
    run a shell) and how it is judged (hidden tests, a diff), and the
    cluster is deleted on 2026-11-12. `copywriter` is the smaller fallback
    (decision 10).
-2. **The port's source was not committed.** Closed 2026-11-07: the
-   branch `generalization` is committed (`d0dd4e1`), and phase 3 copies
-   from it once (decision 22).
+2. **Phase 3's code was not in this repo.** Closed 2026-11-07
+   (decision 22).
 3. **The bucket dies with the cluster.** The git sources survive; a
    re-import rebuilds every version but its number. A lasting setup points
    the API at an S3 outside the cluster.
@@ -1598,11 +1575,8 @@ stay here as the text he said `ok` to.
 
 ## 10. Sources
 
-- `docs/research.md` sections 4, 5, 7 and 8, with file and line, read on
+- `docs/research.md` sections 4, 5 and 7, with file and line, read on
   2026-10-14 at agent-eval-harness `upstream/main` `175eed5`, eval-hub
   `540676f`, odh-dashboard `7140a4f`, trustyai-service-operator `4fa5c74`.
-- `openshift-eval` branch `generalization`: `docs/my-specs/03-generalization.md`,
-  `tasks/support/task.yaml`, `flywheel/task.py`, its `PLAN.md` row
-  "Generalization, phase 1".
 - The session of 2026-10-14 in this repo, where Lukas took decisions 10 to
   14.

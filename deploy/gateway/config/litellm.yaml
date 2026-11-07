@@ -1,7 +1,5 @@
-# The model gateway of the project: LiteLLM in front of every model route
-# (PLAN.md section 2, "Model gateway"). One file serves the cluster
-# (deploy/gateway, ConfigMap gateway-config) and the laptop (infra/compose.yaml,
-# service gateway, http://127.0.0.1:24200).
+# The model gateway of the project: LiteLLM in front of every model route.
+# It reaches the cluster as the ConfigMap gateway-config (deploy/gateway).
 #
 # Why a gateway: Claude Code calls /v1/messages, Codex /v1/responses and
 # OpenCode /v1/chat/completions, and EnMaaS serves each model on some of
@@ -103,10 +101,10 @@ model_list:
 
   # ── The local engine, the laptop only ───────────────────────────────
   # Unsloth Studio on the host, port 8888, reached from a container as
-  # host.containers.internal (infra/compose.yaml); the cluster cannot reach
+  # host.containers.internal; the cluster cannot reach
   # it, so these aliases fail there when called. Three fast MoE models of one
   # size, each with thinking off on both fields the engine obeys (Lukas's
-  # decision of 2026-10-06, PLAN.md section 2, "Local model"). The thinking
+  # decision of 2026-10-06). The thinking
   # twin and the E4B were too slow or too weak; LM Studio is not used.
   # Unsloth needs a key and holds one model at a time: a call for another
   # model loads it in place of the current one only when "Switch model by

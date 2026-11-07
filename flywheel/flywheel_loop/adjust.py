@@ -6,8 +6,6 @@ config, brain/ (the best brain), failures.md and history.md. The step keeps
 only the brain files the adjuster created or changed, repairs a skill's
 frontmatter, and drops a new skill beyond the use case's max_skills. A
 session that changes no brain file gets one retry in the same workspace.
-Ported from openshift-eval `d0dd4e1` (`flywheel/adjust.py`,
-`backends/adjust_adjuster.py`).
 """
 
 from __future__ import annotations

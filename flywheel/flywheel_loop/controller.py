@@ -2,8 +2,8 @@
 new one, and keep it or revert, until the iterations run out or too many
 steps in a row brought no better brain.
 
-Keep or revert is on the train score only (openshift-eval `controller.py`
-`decide()`): keep when it is at least the best one's. The validation split
+Keep or revert is on the train score only: keep when it is at least the
+best one's. The validation split
 never decides; it shows whether a gain carries over.
 
 MLflow, in the use case's experiment (the one its evaluations log to): one
