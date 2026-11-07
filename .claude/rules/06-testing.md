@@ -20,18 +20,18 @@ can see what you intend to verify. Example:
 
 ## 4b. Test
 
-**Glue, manifests and scripts** — this repo has no code and no test suite yet
-(spec 02 §0). Until spec 02 phase 3 lands one:
+**Glue, manifests and scripts**:
 
-- The current phase's Definition of Done in the active spec (spec 02 §6) is
-  the test. Check every item, and write the result into that phase's status.
+- When the work is a step of the plan (`docs/my-specs/`), its Definition of
+  Done is the test. Check every item, and write the result into the plan's
+  status.
 - A script is run, not read.
 - A manifest reaches the cluster at least as
   `oc apply --dry-run=server -k <dir>`, after `oc whoami --show-server` shows
   the agent's own identity. The agent then applies it for real itself
   (cluster-admin, `CLAUDE.md` § Pre-approved mutations).
 
-**The flywheel API** (`services/flywheel-api/`, spec 02 phase 3) has its
+**The flywheel API** (`services/flywheel-api/`) has its
 own pytest suite, offline (S3 through `moto`, git against a local
 repository):
 
@@ -43,7 +43,7 @@ UV_PROJECT_ENVIRONMENT="$TMPDIR/flywheel-api-venv" uv sync --frozen
 
 An agent keeps that venv outside the repo: the sandbox refuses to delete
 or replace any `*.pem` in this repo, and botocore ships one, so an upgrade
-in `services/flywheel-api/.venv` breaks halfway (2026-10-16). Run it twice
+in `services/flywheel-api/.venv` breaks halfway. Run it twice
 before a report. `uv lock --check` shows the lock still matches
 `pyproject.toml`.
 
@@ -57,21 +57,20 @@ UV_PROJECT_ENVIRONMENT="$TMPDIR/flywheel-loop-venv" uv sync --frozen
 ```
 
 **UI changes** — drive the dashboard with Playwright: the federated dev server
-on `http://localhost:4010` (spec 01 phase 5 step 6), or the dashboard's route
-on the cluster once phase 1 has installed it.
+on `http://localhost:4010`, or the dashboard's route on the cluster.
 
 **The dashboard sits behind a login — read this before you open the browser.**
-On the cluster it opens through ODH's Gateway login (spec 01 phase 1 step 4).
-You have your own identity — the `claude-agent` ServiceAccount of spec 01
-phase 0 step 4 — and nothing else. **Never fill in the sign-in form, never ask
+On the cluster it opens through ODH's Gateway login.
+You have your own identity — the `claude-agent` ServiceAccount — and
+nothing else. **Never fill in the sign-in form, never ask
 the user for a password, and never read one out of SOPS.** A login page on your
 screen means you took the human's path; back out. The Gateway is a reverse
 proxy (kube-auth-proxy), and it accepts that ServiceAccount's Bearer token:
-the dashboard's `/api/config`, `/api/status` and `/api/components` answered
-200 with it on 2026-10-13, at `https://rh-ai.apps.cluster-nm8mw.dyn.redhatworkshops.io`.
+the dashboard's `/api/config`, `/api/status` and `/api/components` answer
+200 with it, at `https://rh-ai.apps.cluster-nm8mw.dyn.redhatworkshops.io`.
 So the first row of the table below applies, and the whole page renders
-with the header alone: our module's pages did on 2026-10-16, with the user
-menu showing `system:serviceaccount:agent-flywheel:claude-agent`. Never put
+with the header alone, with the user menu showing
+`system:serviceaccount:agent-flywheel:claude-agent`. Never put
 the token in a tool call's arguments, where the transcript keeps it. Write
 it with `(umask 077; oc whoami -t > <scratchpad>/sa-token)`; in
 `browser_run_code_unsafe` (it has no `fs` and no `import`) open that file
@@ -96,8 +95,7 @@ only once the app's auth probe has been served.
 
 1. Confirm the dashboard is up (`curl -sI <url>` answers). If it is not, do not
    start it from here: the dev servers run in the `odh-dashboard` clone, and
-   the federated one needs a cluster-admin login, so Lukas runs it (spec 01
-   phase 5 step 6). Ask him.
+   the federated one needs a cluster-admin login, so Lukas runs it. Ask him.
 2. Open a browser with the configured Playwright MCP `browser_navigate` tool, go to the
    relevant page, and verify the change is visible **and** functional — take a
    snapshot, don't just assert the page loaded.

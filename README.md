@@ -15,6 +15,8 @@ section 0.
 | [`docs/my-specs/01-initial-implementation.md`](docs/my-specs/01-initial-implementation.md) | Spec 01, closed 2026-10-14 (it was `PLAN.md`): decisions 1 to 9, architecture, phases with their Definition of Done and what is done, contributions C1 to C19 and C30 to C34, risks |
 | [`docs/my-specs/02-generalization.md`](docs/my-specs/02-generalization.md) | Spec 02, the active plan: one flywheel for any use case, decisions 10 on, the registry of use cases, contributions C19 to C29 and C35 to C39, every open step of spec 01 |
 | [`docs/my-specs/03-standalone.md`](docs/my-specs/03-standalone.md) | Spec 03, a proposal: every feature this repo still lacks (the training run's record and Stop, an LLM judge, traces, GEPA and `/eval-optimize`, benchmarks, brains, online evaluation, OpenCode under test, `pyfix` and `copywriter`), as behaviour and numbers, so no step needs that repo |
+| [`specs/`](specs/) | Spex specs, one folder per step. Roadmap `standalone` (13 steps) cuts spec 03 into steps that each ship alone; `spex roadmap standalone` shows where each stands |
+| [`.spex/config.yaml`](.spex/config.yaml) | The spex configuration: test drivers, source folders, scopes, limits |
 | [`docs/research.md`](docs/research.md) | The evidence: what each upstream project does today, with file and line |
 | [`docs/outreach.md`](docs/outreach.md) | The Slack post to Red Hat colleagues, its fact-check, the blog fixes |
 | [`docs/pr-drafts.md`](docs/pr-drafts.md) | The PR texts for the fork branches, not posted, and the order they must land in |
