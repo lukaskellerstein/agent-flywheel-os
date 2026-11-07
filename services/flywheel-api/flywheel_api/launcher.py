@@ -97,7 +97,7 @@ def row_of(job: Mapping[str, Any]) -> dict:
         "error": error,
         "mlflow_run_id": None,
         "mlflow_experiment_id": None,
-        "created": job["metadata"].get("creationTimestamp"),
+        "created": job["metadata"].get("creationTimestamp"),  # when it was started, before MLflow knows it
     }
 
 

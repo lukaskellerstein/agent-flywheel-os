@@ -151,6 +151,7 @@ def test_the_list_is_every_training_run_newest_first(make_client):
         "error": None,
         "mlflow_run_id": "p-training-old",
         "mlflow_experiment_id": "12",
+        "created": "2025-11-06T03:33:20Z",
     }
 
 
@@ -308,6 +309,7 @@ def test_a_start_creates_the_loops_job_as_the_caller(trainer, kube):
         "started": None, "ended": None, "iterations": 2, "brains_scored": 0, "best": None,
         "agent": "codex", "model": "enmaas-glm-5-3", "adjuster_model": "enmaas-glm-5-3",
         "stop_reason": None, "error": None, "mlflow_run_id": None, "mlflow_experiment_id": None,
+        "created": "2026-11-07T16:00:00Z",
     }
 
 

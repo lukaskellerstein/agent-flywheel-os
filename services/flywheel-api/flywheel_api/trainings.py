@@ -74,7 +74,7 @@ class Trainings:
             "MODEL": model,
             "ADJUSTER_MODEL": request.adjuster_model,
         }
-        return _public(row_of(self.launcher.start(name, env, token)))
+        return row_of(self.launcher.start(name, env, token))
 
     def list(self, name: str, token: str) -> list[dict]:
         """The use case's training runs, newest first, those still starting included."""
@@ -89,8 +89,8 @@ class Trainings:
                 row = _training(run, [c for c in children if _tag(c, "training") == _tag(run, "training")])
                 rows.append(_with_job(row, jobs.pop(row["id"], None)))
         rows += [row_of(job) for job in jobs.values()]
-        rows.sort(key=lambda row: row["started"] or row.get("created") or "", reverse=True)
-        return [_public(row) for row in rows]
+        rows.sort(key=lambda row: row["created"] or "", reverse=True)
+        return rows
 
     def get(self, name: str, training: str, token: str) -> dict:
         """One training run with every brain it made, in order."""
@@ -100,7 +100,7 @@ class Trainings:
         except NotFound:
             if job is None:
                 raise
-            return {**_public(row_of(job)), "brains": []}
+            return {**row_of(job), "brains": []}
         return {**_with_job(_training(parent, children), job), "brains": [_brain(run) for run in _ordered(children)]}
 
     def brain(self, name: str, training: str, number: int, token: str) -> dict:
@@ -176,6 +176,7 @@ def _training(run: Mapping[str, Any], children: list[Mapping[str, Any]]) -> dict
         "error": _tag(run, "error"),
         "mlflow_run_id": info.get("run_id"),
         "mlflow_experiment_id": info.get("experiment_id"),
+        "created": _time(info.get("start_time")),  # a run made before its Job is listed by this too
     }
 
 
@@ -185,10 +186,6 @@ def _with_job(row: dict, job: Mapping[str, Any] | None) -> dict:
     if error and row["state"] == "running":
         return {**row, "state": "failed", "error": row["error"] or error}
     return row
-
-
-def _public(row: dict) -> dict:
-    return {key: value for key, value in row.items() if key != "created"}
 
 
 def _brain(run: Mapping[str, Any]) -> dict:
