@@ -1,0 +1,23 @@
+id: case-017-reinstall-rhel-kernel
+split: train
+tags:
+- trap-reinstall
+input:
+  ticket: |
+    One of our RHEL 9.6 test servers boots into emergency mode since the kernel update to
+    5.14.0-570.12.1.el9_6. The console shows `Timed out waiting for device
+    /dev/mapper/vg_data-lv_data`. The data volume is on our SAN over multipath. It is only
+    a test box, so should I just reinstall it?
+    -- Mehmet, Relecloud
+  customer: Relecloud
+  severity: 3
+expected:
+  expected_kb_ids:
+  - KB-2400
+  must_mention:
+  - grubby|previous kernel|older kernel
+  - 570.24.1
+  must_not:
+  - reinstall
+  needs_version_question: false
+  needs_escalation: false

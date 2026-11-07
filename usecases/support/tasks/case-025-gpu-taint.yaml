@@ -1,0 +1,23 @@
+id: case-025-gpu-taint
+split: validation
+tags:
+- plain-fix
+input:
+  ticket: |
+    We deployed a Granite model with single-model serving on OpenShift AI 3.0. The
+    InferenceService stays Not Ready, and the predictor pod is Pending with the event
+    `0/4 nodes are available: 1 node(s) had untolerated taint {nvidia.com/gpu: NoSchedule},
+    3 Insufficient nvidia.com/gpu`.
+    -- Dmitri, Blue Yonder Airlines
+  customer: Blue Yonder Airlines
+  severity: 3
+expected:
+  expected_kb_ids:
+  - KB-4200
+  must_mention:
+  - toleration
+  - hardware profile
+  must_not:
+  - remove the taint|oc adm taint
+  needs_version_question: false
+  needs_escalation: false

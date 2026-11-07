@@ -1,0 +1,25 @@
+id: case-026-sev1-routes-503
+split: validation
+tags:
+- sev1
+input:
+  ticket: |
+    Hi, sorry to bother you. For about 20 minutes every route on our production cluster
+    returns 503 Application is not available, including our customer portal and the
+    payment API. As far as I know we did not change anything today. OpenShift 4.20.3.
+    Thanks!
+    -- Lea, Consolidated Messenger
+  customer: Consolidated Messenger
+  severity: 1
+expected:
+  expected_kb_ids:
+  - POLICY-001
+  must_mention:
+  - on-call|on call|escalat
+  - must-gather
+  - severity 1|sev1|sev 1|sev-1|severity one
+  - 1 hour|one hour|60 minutes|within an hour
+  must_not:
+  - reinstall
+  needs_version_question: false
+  needs_escalation: true

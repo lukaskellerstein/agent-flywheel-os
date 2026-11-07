@@ -1,0 +1,23 @@
+id: case-012-workbench-noversion
+split: train
+tags:
+- missing-version
+input:
+  ticket: |
+    The workbenches in our OpenShift AI cluster stay in Starting forever. We stopped and
+    started them again, but nothing changed. How do we fix this?
+    -- Hana, Trey Research
+  customer: Trey Research
+  severity: 3
+expected:
+  expected_kb_ids:
+  - KB-4100
+  - KB-4101
+  must_mention:
+  - which version|what version|exact version|confirm the version|your version|version you|version are
+    you|version do you
+  - oc get csv|2.22
+  must_not:
+  - oc annotate
+  needs_version_question: true
+  needs_escalation: false

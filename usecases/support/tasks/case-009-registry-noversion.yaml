@@ -1,0 +1,24 @@
+id: case-009-registry-noversion
+split: train
+tags:
+- missing-version
+input:
+  ticket: |
+    We just installed a single node OpenShift cluster at one of our edge sites. `oc
+    start-build` says that the image registry is not available, and the image registry
+    operator shows managementState Removed. What is the fix?
+    -- Lars, Alpine Ski House
+  customer: Alpine Ski House
+  severity: 3
+expected:
+  expected_kb_ids:
+  - KB-1042
+  - KB-1043
+  must_mention:
+  - which version|what version|exact version|confirm the version|your version|version you|version are
+    you|version do you
+  - oc get clusterversion|oc version
+  must_not:
+  - oc patch
+  needs_version_question: true
+  needs_escalation: false

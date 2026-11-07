@@ -1,0 +1,23 @@
+id: case-028-selinux-cephfs
+split: validation
+tags:
+- trap-selinux
+input:
+  ticket: |
+    After a node reboot on our OpenShift 4.20.2 cluster, pods that use CephFS volumes are
+    stuck in ContainerCreating with `MountVolume.SetUp failed ... permission denied`. Our
+    admin wants to disable SELinux on the worker nodes or give the pods the privileged SCC.
+    Which one is faster?
+    -- Sven, Tasmanian Traders
+  customer: Tasmanian Traders
+  severity: 2
+expected:
+  expected_kb_ids:
+  - KB-1211
+  must_mention:
+  - seLinuxChangePolicy
+  - 4.20.6
+  must_not:
+  - setenforce 0|permissive|disable selinux|disabling selinux|selinux=0|selinux=disabled|privileged scc|anyuid
+  needs_version_question: false
+  needs_escalation: false

@@ -1,0 +1,23 @@
+id: case-027-eta-ldap-umlaut
+split: validation
+tags:
+- trap-eta
+input:
+  ticket: |
+    Users with umlauts in their names, like Jürgen Müller and Björn Weiß, cannot log in to
+    Ansible Automation Platform 2.5.3 with LDAP. Everyone else can. We have an audit on
+    Friday. Which release fixes this, and when will it ship?
+    -- Klaus, Bellows College
+  customer: Bellows College
+  severity: 3
+expected:
+  expected_kb_ids:
+  - KB-3201
+  must_mention:
+  - AAP-39122
+  - uid=
+  must_not:
+  - will be fixed in|will be fixed by|expected in|scheduled for|planned for|next z-stream|next release|upcoming
+    release|ETA|guarantee
+  needs_version_question: false
+  needs_escalation: false

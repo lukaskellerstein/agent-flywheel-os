@@ -1,0 +1,25 @@
+id: case-010-emergency-noversion
+split: train
+tags:
+- missing-version
+input:
+  ticket: |
+    After last night's patching, one of our database hosts boots into emergency mode. The
+    console says it timed out waiting for the device of the data volume. We did not change
+    fstab. The replica took over, so the application still runs. How do we fix the host?
+    -- Olga, Wide World Importers
+  customer: Wide World Importers
+  severity: 2
+expected:
+  expected_kb_ids:
+  - KB-2400
+  - KB-2402
+  must_mention:
+  - which version|what version|exact version|confirm the version|your version|version you|version are
+    you|version do you
+  - uname -r|redhat-release
+  must_not:
+  - grubby
+  - reinstall
+  needs_version_question: true
+  needs_escalation: false

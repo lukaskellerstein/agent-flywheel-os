@@ -1,0 +1,23 @@
+id: case-023-reencrypt-503
+split: validation
+tags:
+- plain-fix
+input:
+  ticket: |
+    Since our update to OpenShift 4.20.3, three internal apps return 503 Application is
+    not available. All three use reencrypt routes with our internal CA chain in
+    destinationCACertificate. Edge routes and the rest of the cluster work fine.
+    -- Omar, Southridge Video
+  customer: Southridge Video
+  severity: 2
+expected:
+  expected_kb_ids:
+  - KB-1401
+  must_mention:
+  - 4.20.5
+  - root ca|serving-cert
+  must_not:
+  - reinstall
+  - will be fixed by|guarantee|ETA
+  needs_version_question: false
+  needs_escalation: false

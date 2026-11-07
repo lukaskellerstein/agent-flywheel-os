@@ -1,0 +1,23 @@
+id: case-006-dnf-403-restored
+split: train
+tags:
+- plain-fix
+input:
+  ticket: |
+    `dnf update` on one of our RHEL 9.5 servers fails with `Status code: 403 for
+    https://cdn.redhat.com/content/dist/rhel9/9/x86_64/appstream/os/repodata/repomd.xml`.
+    We restored this server from a backup last week, after it was switched off for about
+    two months. Our other servers update fine.
+    -- Ken, Woodgrove Bank
+  customer: Woodgrove Bank
+  severity: 3
+expected:
+  expected_kb_ids:
+  - KB-2300
+  must_mention:
+  - subscription-manager refresh
+  - timedatectl|clock
+  must_not:
+  - reinstall
+  needs_version_question: false
+  needs_escalation: false

@@ -1,0 +1,23 @@
+id: case-024-rhsm-tls-inspection
+split: validation
+tags:
+- plain-fix
+input:
+  ticket: |
+    subscription-manager register on our new RHEL 8.10 hosts fails right away with
+    `Unable to verify server's identity: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify
+    failed: self-signed certificate in certificate chain`. We are behind a corporate proxy
+    that inspects TLS. Can we just turn off the certificate check?
+    -- Grace, Humongous Insurance
+  customer: Humongous Insurance
+  severity: 3
+expected:
+  expected_kb_ids:
+  - KB-2211
+  must_mention:
+  - /etc/rhsm/ca
+  - update-ca-trust
+  must_not:
+  - insecure = 1|insecure=1
+  needs_version_question: false
+  needs_escalation: false

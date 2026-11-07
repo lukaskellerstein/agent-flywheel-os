@@ -1,0 +1,29 @@
+# The support use case (spec 02 phase 3 step 5), the first one the
+# flywheel trains on. Copied once from openshift-eval `d0dd4e1`
+# (tasks/support/task.yaml, decision 22); this folder is its source now.
+title: Red Hat customer support
+description: >-
+  Answers customer tickets over a local knowledge base, under a support policy
+  the agent never reads: it learns the rules from the judges.
+
+task:
+  label: ticket
+  prompt: ticket
+  show: [severity, customer]
+
+brain:
+  # AGENTS.md and up to this many skills; the adjuster is told the same.
+  max_skills: 3
+
+adjuster:
+  role: a customer support agent
+  causes:
+    - missing citation
+    - missing fact
+    - policy break
+    - wrong format
+    - missed escalation
+    - missed version question
+  hidden: >-
+    The support policy is not in the workspace. The expectations and the judge
+    rationales in `failures.md` are the only source of its rules.

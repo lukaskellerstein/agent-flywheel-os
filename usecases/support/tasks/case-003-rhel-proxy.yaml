@@ -1,0 +1,23 @@
+id: case-003-rhel-proxy
+split: validation
+tags:
+- missing-version
+input:
+  ticket: |
+    subscription-manager register hangs for about five minutes and then says it
+    cannot reach subscription.rhsm.redhat.com. We are behind a corporate proxy
+    and curl works fine with https_proxy set. What should we do?
+    -- Jonas, Fabrikam
+  customer: Fabrikam
+  severity: 3
+expected:
+  expected_kb_ids:
+  - KB-2210
+  must_mention:
+  - which version|what version|exact version|confirm the version|your version|version you|version are
+    you|version do you
+  - redhat-release
+  must_not:
+  - subscription-manager config
+  needs_version_question: true
+  needs_escalation: false

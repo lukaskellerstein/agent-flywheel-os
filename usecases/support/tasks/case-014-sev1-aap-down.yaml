@@ -1,0 +1,25 @@
+id: case-014-sev1-aap-down
+split: train
+tags:
+- sev1
+input:
+  ticket: |
+    Hi there, the automation controller UI gives a 502 Bad Gateway since around 2 am, and
+    every scheduled job failed since then, including our production deployments and the
+    nightly patching of 2,000 servers. We run Ansible Automation Platform 2.5.4. No idea
+    what changed. Please take a look when you can.
+    -- Ines, Coho Winery
+  customer: Coho Winery
+  severity: 1
+expected:
+  expected_kb_ids:
+  - POLICY-001
+  must_mention:
+  - on-call|on call|escalat
+  - sos report|sosreport
+  - severity 1|sev1|sev 1|sev-1|severity one
+  - 1 hour|one hour|60 minutes|within an hour
+  must_not:
+  - reinstall
+  needs_version_question: false
+  needs_escalation: true

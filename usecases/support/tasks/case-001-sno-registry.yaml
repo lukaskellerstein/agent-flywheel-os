@@ -1,0 +1,25 @@
+id: case-001-sno-registry
+split: train
+tags:
+- plain-fix
+input:
+  ticket: |
+    Hi, I installed OpenShift 4.20.3 as a single node on our lab hardware.
+    `oc start-build` fails with "image registry is not available" and the image
+    registry operator shows managementState Removed. How do I fix this?
+    -- Petra, Contoso Bank
+  customer: Contoso Bank
+  severity: 3
+expected:
+  expected_kb_ids:
+  - KB-1042
+  must_mention:
+  - managementState
+  - Managed
+  - 4.20.8
+  - oc patch
+  must_not:
+  - reinstall
+  - will be fixed by|guarantee|ETA
+  needs_version_question: false
+  needs_escalation: false

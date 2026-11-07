@@ -1,0 +1,22 @@
+id: case-030-oos-mongodb
+split: validation
+tags:
+- out-of-scope
+input:
+  ticket: |
+    How big should the WiredTiger cache be for MongoDB 7 on our RHEL 9.4 VMs with 64 GB of
+    RAM? The database gets slow under load.
+    -- Carla, Contoso Pharma
+  customer: Contoso Pharma
+  severity: 4
+expected:
+  expected_kb_ids:
+  - POLICY-002
+  must_mention:
+  - out of scope|outside the scope|outside of the scope|not in scope|not covered|outside of our support|outside
+    our support|outside red hat support|outside of red hat support
+  - vendor|mongodb support|mongodb, inc
+  must_not:
+  - cacheSizeGB
+  needs_version_question: false
+  needs_escalation: false

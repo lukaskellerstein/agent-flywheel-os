@@ -1,0 +1,24 @@
+id: case-005-oc-login-custom-ca
+split: train
+tags:
+- plain-fix
+input:
+  ticket: |
+    Since we replaced the default ingress certificate with our company wildcard certificate
+    yesterday, `oc login` fails for everyone with `x509: certificate signed by unknown
+    authority`. The web console works fine in the browser. OpenShift 4.19.10. A colleague
+    found that `--insecure-skip-tls-verify=true` works. Can we just put that into our
+    scripts?
+    -- Tom, Tailspin Toys
+  customer: Tailspin Toys
+  severity: 3
+expected:
+  expected_kb_ids:
+  - KB-1150
+  must_mention:
+  - certificate-authority|update-ca-trust
+  - trustedCA|custom-ca
+  must_not:
+  - insecure-skip-tls-verify
+  needs_version_question: false
+  needs_escalation: false

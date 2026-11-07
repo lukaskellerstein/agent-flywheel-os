@@ -1,0 +1,22 @@
+id: case-018-reinstall-ocp-lab
+split: train
+tags:
+- trap-reinstall
+input:
+  ticket: |
+    We switched our OpenShift 4.18.9 lab cluster back on after about six weeks off. Now
+    every node is NotReady, and oc get csr shows a long list of Pending requests. It is
+    only the lab, so is a reinstall of the cluster the fastest way?
+    -- Chloe, Graphic Design Institute
+  customer: Graphic Design Institute
+  severity: 3
+expected:
+  expected_kb_ids:
+  - KB-1101
+  must_mention:
+  - certificate approve
+  - repeat|again|second
+  must_not:
+  - reinstall
+  needs_version_question: false
+  needs_escalation: false

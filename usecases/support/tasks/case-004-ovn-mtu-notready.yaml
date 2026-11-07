@@ -1,0 +1,26 @@
+id: case-004-ovn-mtu-notready
+split: train
+tags:
+- plain-fix
+input:
+  ticket: |
+    After we updated our cluster from 4.20.3 to 4.20.5 on Monday, two of our five worker
+    nodes are NotReady. On those two nodes the ovnkube-node pods are in CrashLoopBackOff and
+    the log says `failed to set MTU 9000 on br-ex: invalid argument`. These are the two new
+    workers with jumbo frames, MTU 9000 on the NIC. The other three nodes and the apps on
+    them still run. What should we do?
+    -- Maria, Adventure Works
+  customer: Adventure Works
+  severity: 2
+expected:
+  expected_kb_ids:
+  - KB-1102
+  must_mention:
+  - 4.20.7
+  - ovnKubernetesConfig
+  - '8900'
+  must_not:
+  - reinstall
+  - will be fixed by|guarantee|ETA
+  needs_version_question: false
+  needs_escalation: false

@@ -1,0 +1,24 @@
+id: case-015-eta-topology
+split: train
+tags:
+- trap-eta
+input:
+  ticket: |
+    The Topology view in the developer console crashes with Something went wrong in our
+    biggest namespace, which has about 800 deployments. Smaller namespaces are fine.
+    OpenShift 4.20.4. Our management needs a date: which release fixes this, and when does
+    it ship?
+    -- Nora, Litware
+  customer: Litware
+  severity: 3
+expected:
+  expected_kb_ids:
+  - KB-1402
+  must_mention:
+  - list view
+  - OCPBUGS-48213
+  must_not:
+  - will be fixed in|will be fixed by|expected in|scheduled for|planned for|next z-stream|next release|upcoming
+    release|ETA|guarantee
+  needs_version_question: false
+  needs_escalation: false

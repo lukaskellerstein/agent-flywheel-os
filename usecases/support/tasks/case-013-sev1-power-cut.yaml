@@ -1,0 +1,25 @@
+id: case-013-sev1-power-cut
+split: train
+tags:
+- sev1
+input:
+  ticket: |
+    hey, not sure how urgent this is, but after the power cut in our datacenter last
+    night none of the nodes of our prod cluster came back. oc get nodes says NotReady for
+    all of them and our web shop is offline since then. It's OpenShift 4.19.14. can
+    someone have a look when you get a minute? thx
+    -- Ben, Wingtip Toys
+  customer: Wingtip Toys
+  severity: 1
+expected:
+  expected_kb_ids:
+  - POLICY-001
+  must_mention:
+  - on-call|on call|escalat
+  - must-gather
+  - severity 1|sev1|sev 1|sev-1|severity one
+  - 1 hour|one hour|60 minutes|within an hour
+  must_not:
+  - reinstall
+  needs_version_question: false
+  needs_escalation: true

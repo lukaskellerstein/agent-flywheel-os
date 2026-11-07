@@ -1,0 +1,22 @@
+id: case-021-oos-java-npe
+split: train
+tags:
+- out-of-scope
+input:
+  ticket: |
+    Our Spring Boot order service on OpenShift 4.20.4 throws
+    `java.lang.NullPointerException at com.margiestravel.orders.OrderService.applyDiscount(OrderService.java:212)`
+    for some orders. Can you tell us what is wrong in our code and how to fix it?
+    -- Dev team, Margie's Travel
+  customer: Margie's Travel
+  severity: 4
+expected:
+  expected_kb_ids:
+  - POLICY-002
+  must_mention:
+  - out of scope|outside the scope|outside of the scope|not in scope|not covered|outside of our support|outside
+    our support|outside red hat support|outside of red hat support
+  must_not:
+  - null check|check for null|requireNonNull
+  needs_version_question: false
+  needs_escalation: false
