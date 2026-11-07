@@ -64,6 +64,10 @@ class StartRequest(BaseModel):
     agent: str | None = Field(default=None, min_length=1)
     # eval.yaml's models.skill when the agent may use it, else the agent's default.
     model: str | None = Field(default=None, min_length=1)
+    # A brain as C11 takes it, an MLflow artifact folder; none runs the agent bare.
+    brain: str | None = Field(default=None, pattern=r"^runs:/[^/]+/\S+$")
+    # The training run (flywheel/) this evaluation scores a brain for.
+    training: str | None = Field(default=None, pattern=r"^[a-z0-9]([-a-z0-9]{0,38}[a-z0-9])?$")
 
 
 class _Cache:
@@ -105,6 +109,11 @@ class Evaluations:
         agent = self._agent(request.agent, config)
         model = self._model(agent, request.model, config)
         body = self._job(name, number, split, agent, model, config)
+        if request.brain:
+            body["benchmarks"][0]["parameters"]["brain"] = request.brain
+        if request.training:
+            body["tags"].append(f"training:{request.training}")
+            body["experiment"]["tags"].append({"key": "training", "value": request.training})
         job = self.evalhub.json("POST", JOBS, token, body=body)
         log.info(
             "use case %s: version %d, split %s, agent %s, model %s, job %s",
@@ -239,6 +248,7 @@ class Evaluations:
         config = self._eval_config(name, row["version"]) if row["version"] else {}
         # The job's agent; a job from before AI hub › Agents ran eval.yaml's runner.
         row["agent"] = results.tag_value(job.get("tags") or [], "agent") or (config.get("runner") or {}).get("type")
+        row["training"] = results.tag_value(job.get("tags") or [], "training")
         row["task_count"] = self._task_count(name, row["version"], row["split"]) if row["version"] else None
         summary_yaml, row["tasks_detail"] = self._summary_yaml(row, token)
         row["thresholds"] = results.thresholds_of(summary_yaml) if summary_yaml else None

@@ -260,6 +260,25 @@ def test_a_start_sends_the_job_as_the_caller(client, evalhub):
     assert started["task_count"] == 1
 
 
+def test_a_training_run_scores_its_brain_and_tags_the_job(client, evalhub):
+    brain = "runs:/abc123/brain"
+    response = client.post(
+        "/api/usecases/sample/evaluations", json={"split": "train", "brain": brain, "training": "tr-1"}, headers=AUTH
+    )
+    assert response.status_code == 201, response.text
+    body = evalhub.calls[0][4]
+    assert body["benchmarks"][0]["parameters"] == {"split": "train", "runner": CODEX_RUNNER, "brain": brain}
+    assert "training:tr-1" in body["tags"]
+    assert {"key": "training", "value": "tr-1"} in body["experiment"]["tags"]
+    assert response.json()["training"] == "tr-1"
+
+
+def test_an_evaluation_without_a_brain_runs_the_agent_bare(client, evalhub):
+    response = client.post("/api/usecases/sample/evaluations", headers=AUTH)
+    assert "brain" not in evalhub.calls[0][4]["benchmarks"][0]["parameters"]
+    assert response.json()["training"] is None
+
+
 def test_a_version_says_what_eval_yaml_sets_for_a_run(client):
     version = client.get("/api/usecases/sample/versions/2").json()
     assert (version["agent"], version["model"]) == ("codex", "enmaas-glm-5-3")
@@ -335,7 +354,9 @@ def test_a_model_the_gateway_dropped_does_not_run(client, evalhub, monkeypatch):
         ({"split": "holdout"}, 422, "has no split 'holdout'; its splits: train, validation"),
         ({"version": 9}, 404, "no version 9 of use case 'sample'"),
         ({"version": 0}, 422, "greater than or equal to 1"),
-        ({"brain": "runs:/x/y"}, 422, "Extra inputs are not permitted"),
+        ({"brain": "s3://x/y"}, 422, "String should match pattern"),
+        ({"training": "Has Spaces"}, 422, "String should match pattern"),
+        ({"runner": {"type": "codex"}}, 422, "Extra inputs are not permitted"),
     ],
 )
 def test_a_start_that_cannot_run_reaches_no_evalhub(client, evalhub, request_body, status, detail):
