@@ -1389,12 +1389,12 @@ threshold gets a summary with the failed check and `enforced: false`);
 `ci.md` and `thresholds.md` combine both texts. The subagent's runs of the
 merge: 2903 passed twice.
 
-## Phase 5 — odh-dashboard `feat/agent-flywheel-module` (`e58fd2889`)
+## Phase 5 — odh-dashboard `feat/agent-flywheel-module` (`5b1aa3e5f`)
 
-Not a PR yet: Benchmarks, Training and Brains are still placeholders
-(spec 02 phase 5). From upstream `37dc648`, the commit ODH 3.6.0-ea.2's
+Not a PR yet: Benchmarks and Brains are still placeholders (spec 02
+phase 5). From upstream `37dc648`, the commit ODH 3.6.0-ea.2's
 host runs, not from `upstream/main`, and never merged into
-`flywheel-integration`. Fifty-one commits: `2ca7b5593` (the module tests lose
+`flywheel-integration`. Fifty-seven commits: `2ca7b5593` (the module tests lose
 `dataRegistry`, which #9850 commented out; four tests failed on the base),
 `146f2539a` (the `agentFlywheel` flag), `b428634c2` (the package),
 `89c1ee360` (`modules.go` and the manifests), `e98380b86` (fork-only:
@@ -1431,7 +1431,11 @@ board "Evaluation · one ticket", and the links into it) and `2998bf6f7`
 imports them), `352cb69bc` (a `.md` answer renders as Markdown, with a
 Raw view), `c2e5456c3` (a spec waits for its radio), `de6658a52` (a
 variable name never breaks) and `e58fd2889` (pick cards of one width
-in a wrapping grid). The PR text is written when every page is real, on
+in a wrapping grid), then on 2026-11-07 `5baa7bf06` (the BFF forwards
+and mocks training runs and their brains), `0582292a0` (the frontend
+reads them), `384233782`, `638726040` and `33f96b8b5` (the Training
+list, one training run and one brain, from the Train boards) and
+`5b1aa3e5f` (the README). The PR text is written when every page is real, on
 a branch rebased onto the `upstream/main` of that day, without
 `e98380b86`.
 

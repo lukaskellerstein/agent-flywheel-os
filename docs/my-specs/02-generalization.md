@@ -150,10 +150,13 @@ task's results from MLflow; and AI hub's Agents and Models became ours
 an evaluation picks an agent and one of its models, and C11's `runner`
 parameter runs it, so Codex and Claude Code now run on the same version
 (phase 3 status). The module's AI hub pages are being built (phase 5).
-Next on this path: phase 3's loop, runner
-image and support as version 1, copied once from `openshift-eval`
-`d0dd4e1` and owned by this repo from then on, with no wait for that
-project (decision 22); then "Start training".
+On 2026-11-07 phase 3's loop, runner image
+and support as version 1 landed, copied once from `openshift-eval`
+`d0dd4e1` (decision 22): the first free training run, `training-jhqlf`,
+kept brain v1 (train 0.630 to 0.769), and the module's Training pages
+show it (phases 3 and 5 status). Next on this path: "Start training"
+from the module (the API creates the loop's Job); then phase 3's DoD
+item 4's MLflow traces, and phase 6.
 
 **The cluster.** `cluster-nm8mw` auto-destroys on 2026-11-12. RHDP also
 auto-stops it; the auto-stop read last was Thu 2026-10-15 02:23 CEST, and
@@ -934,8 +937,9 @@ owns the copy from then on (decision 22).
 
 DoD:
 
-- [ ] support imported as version 1; the same import again makes no
-      version 2
+- [x] support imported as version 1; the same import again makes no
+      version 2 (2026-11-07: 201 created, hash `7250c9109170`, 20 train
+      and 10 validation; the same upload 200 unchanged)
 - [x] a changed import makes version 2, and version 1 stays readable
       (on `smoke`, decision 19, 2026-10-16; support checks it again)
 - [x] on the cluster, an EvalHub job with our adapter runs the harness on
@@ -943,7 +947,9 @@ DoD:
       `smoke` version 2, decision 19, 2026-10-16 22:55 CEST)
 - [ ] a free smoke loop on the cluster through EvalHub on version 1; its
       MLflow records have the shape spec 01 phase 4 asked for, plus the
-      version tags
+      version tags (2026-11-07: the loop ran, `training-jhqlf`, with runs,
+      params, metrics and the version tags; open: a trace per ticket and
+      the adjuster's trace as MLflow traces, which are artifacts now)
 
 Status: started 2026-10-16 (decision 17). Step 1: the bucket claim
 `flywheel-usecases` (`deploy/bucket/`) is Bound on NooBaa, bucket
@@ -1135,6 +1141,29 @@ committed):
 - Not ported: GEPA and `/eval-optimize` as Adjust backends; an MLflow
   trace per ticket (the adapter logs each ticket's run folder, not a
   trace).
+
+On the cluster (2026-11-07, Lukas's `oc login`, then the agent's token
+until 2026-11-08 15:16 CET; commits `f971f6e` to `4905f7c` on `main`,
+not pushed):
+
+- `deploy/flywheel/` applied; build `flywheel-runner-1` of `d913e96`
+  (62 s, OpenCode 1.18.30); build `flywheel-api-13`, then `-14` of
+  `4905f7c`.
+- `support` imported as version 1 through the dashboard: 201 created,
+  hash `7250c9109170`; the same upload 200 unchanged (DoD item 1).
+- Job `training-jhqlf` (one adjust step, Codex and OpenCode on GLM 5.3,
+  0 USD), 14:20:47 to 14:32:43 UTC. EvalHub ran its four evaluations
+  with `flywheel-loop` as their owner, so the loop's own rights hold.
+  Brain v0, the agent bare: train 0.630, validation 0.680; `format` 0.00
+  on train, since no answer had the sections Summary, Steps and Next.
+  The adjuster (167K tokens in, 645 out, 9 steps, 11 tool calls) wrote
+  `AGENTS.md` with that structure. Brain v1: train 0.769, validation
+  0.783, `format` 0.98; kept. `must_mention` fell from 0.825 to 0.738 and
+  `short` from 0.60 to 0.55, so the next step has a cause to work on.
+- The training routes (`GET …/trainings`, `…/trainings/{id}`,
+  `…/trainings/{id}/brains/{n}`) read the run back from MLflow: 213
+  tests pass twice, and on the cluster they answered the run, both
+  brains and brain v1's `AGENTS.md` and four reports.
 
 ### Phase 4: Hugging Face import
 
@@ -1387,6 +1416,22 @@ branch is not merged into `flywheel-integration`, which is on
   after PostgreSQL's pod was deleted; its one-task route answered with
   7 steps and `output/answer.md`. Claude Code's free run `e8432358…`
   (1.0, passes) followed. The module's pages have these two now.
+- 2026-11-07, the Training pages (Lukas's `ok`), built by a subagent in
+  the clone while the agent built the API's training routes: six
+  commits, `5baa7bf06` to `5b1aa3e5f`, from the Train boards. The BFF
+  forwards and mocks the three training routes; the Training list (every
+  use case's runs, Start training disabled), one run (its numbers, the
+  training curve, one band per brain, the scorecard) and one brain (its
+  lineage, scores, the adjuster's reports and the brain's files as
+  Markdown). The subagent's runs, twice: type check and lint clean, 276
+  unit tests, the BFF's `go vet`, Go tests under `-race` and
+  golangci-lint 0, the production bundle; the agent's run of the type
+  check, the unit tests and the Go tests once more. Build
+  `agent-flywheel-ui-14` of `5b1aa3e5f`. As `claude-agent` at 1440 px, 0
+  console errors: the list, `training-jhqlf` and its brain v1 with the
+  numbers of MLflow. Left: Agent · model reads the loop's words "eval.yaml's
+  runner" (the API should name the agent and model), the nav marks Use
+  cases on a run's page, and the list has no sparkline or counts.
 
 ### Phase 6: the proof
 

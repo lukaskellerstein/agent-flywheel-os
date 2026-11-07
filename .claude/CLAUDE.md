@@ -82,11 +82,11 @@ follow the rule and rewrite the memory in the same turn —
   the cluster (`deploy/builds/`). The flywheel API (registry, imports,
   evaluations as EvalHub jobs) and our dashboard module (Use cases, Use
   case, Task, Evaluations) run there too: an evaluation starts from the
-  dashboard (2026-11-05). Nothing of the flywheel loop is built yet.
-- **Next step**: spec 02 §0 — phase 3's loop, runner image and support
-  as version 1, copied once from `openshift-eval` `generalization`
-  `d0dd4e1`, with no wait for that project (decision 22); then "Start
-  training" in the module.
+  dashboard (2026-11-05). The loop (`flywheel/`), its runner image and
+  support as version 1 run there too: the first free training run kept
+  brain v1, and the module's Training pages show it (2026-11-07).
+- **Next step**: spec 02 §0 — "Start training" in the module (the API
+  creates the loop's Job); then phase 3's MLflow traces, and phase 6.
   C13 is skipped; C5 waits for Lukas to post the PR #90 comment (spec 01
   §13). Status per contribution: spec 02 §5.1.
 - **Evidence**: `docs/research.md` holds every upstream fact behind the specs,
