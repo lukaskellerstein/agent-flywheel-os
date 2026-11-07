@@ -115,8 +115,32 @@ Write clean code from the start. Follow these rules during implementation:
   A use case reaches the cluster only through the flywheel API's import,
   which makes it a fixed version in the bucket. Check one offline first
   with the harness's `validate_eval.py config` and `workspace.py`.
+- `support/` (phase 3 step 5): 30 tickets, the knowledge base in
+  `resources/`, the policy in `hidden/`, deterministic judges and the
+  adjuster's slots in `usecase.yaml`; copied once from `openshift-eval`
+  `d0dd4e1` (decision 22), its source from then on.
 - Not here: the API's test fixtures (`services/flywheel-api/tests/`), and
   any key: a model key never enters `eval.yaml`.
+
+## `flywheel/` — the training loop
+
+- One Python project, as `services/flywheel-api/`: `pyproject.toml`,
+  `uv.lock`, the code in `flywheel_loop/` (HTTP, the API client, MLflow,
+  the brain, the adjuster's reports, the adjuster, the controller), the
+  adjuster's agent prompt `flywheel_loop/adjuster.md`, the offline tests
+  in `tests/` with the API, MLflow and OpenCode faked. Ported once from
+  `openshift-eval` `d0dd4e1` (decision 22).
+- It scores nothing itself: every score is an evaluation of the flywheel
+  API with the brain as C11's `parameters.brain`. Keep or revert stays in
+  code, on the train score only.
+- Not here: a judge, a Score backend of its own, any key. The adjuster
+  reaches its model through the gateway.
+
+## `images/` — our own images
+
+- `runner/`: the loop and OpenCode on our harness base image, built from
+  this repo's root by `deploy/flywheel/build.yaml`.
+- Not here: the images of the forks (`deploy/builds/`).
 
 ## `deploy/` — kustomize for the cluster
 
@@ -172,7 +196,12 @@ Write clean code from the start. Follow these rules during implementation:
   apply them); an agent is never changed, so a new wiring is a new
   name. A value for a variable that names a key is the gateway's
   placeholder, never a key.
-- Not here yet: the flywheel Jobs. They land with spec 02 phase 3.
+- `flywheel/` — the training loop on the cluster: the runner image's
+  binary BuildConfig (context: this repo's root), the ServiceAccount
+  `flywheel-loop` with only the rights EvalHub and MLflow check, and
+  `training-job.yaml`, one training run, made with `oc create -f`
+  (kustomize does not apply it). A training run beyond the free one is
+  asked for first, with its cost.
 
 ## Repository structure
 
@@ -187,6 +216,7 @@ agent-flywheel-os/
 │   ├── builds/       our images of the forks, built on the cluster
 │   ├── bucket/       the registry's S3 bucket claim
 │   ├── flywheel-api/ the API's build, Deployment and Service
+│   ├── flywheel/     the runner image's build, the loop's identity, a training Job
 │   └── gateway/      LiteLLM, every model alias and price
 ├── docs/
 │   ├── my-specs/     the plan: 01 closed, 02 active — read its section 0 first
@@ -194,6 +224,12 @@ agent-flywheel-os/
 │   ├── outreach.md   the Slack post drafts
 │   ├── pr-drafts.md  the PR texts for the fork branches
 │   └── archive/      the first spec, as history
+├── flywheel/         the training loop
+├── images/
+│   └── runner/       the loop and OpenCode on our harness image
+├── usecases/
+│   ├── smoke/        three questions, the first evaluation's data
+│   └── support/      30 support tickets, the first use case trained
 ├── services/
 │   └── flywheel-api/ the registry of use cases and its API (FastAPI, S3)
 └── scripts/

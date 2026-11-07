@@ -47,6 +47,15 @@ in `services/flywheel-api/.venv` breaks halfway (2026-10-16). Run it twice
 before a report. `uv lock --check` shows the lock still matches
 `pyproject.toml`.
 
+**The training loop** (`flywheel/`) has its own offline suite the same
+way, the API, MLflow and OpenCode faked (OpenCode as a script):
+
+```bash
+cd flywheel
+UV_PROJECT_ENVIRONMENT="$TMPDIR/flywheel-loop-venv" uv sync --frozen
+"$TMPDIR/flywheel-loop-venv/bin/python" -m pytest -q
+```
+
 **UI changes** — drive the dashboard with Playwright: the federated dev server
 on `http://localhost:4010` (spec 01 phase 5 step 6), or the dashboard's route
 on the cluster once phase 1 has installed it.

@@ -25,7 +25,7 @@ again for that (decision 14).
 | Spec 01, closed | [`01-initial-implementation.md`](01-initial-implementation.md): what is done (phases 0, 1 and 2), decisions 1 to 9, the rules for every agent (its section 0), the lineup, the target architecture, repos and branches, the contribution catalogue C1 to C18 and C30 to C34, sandboxing, costs, the opening comments. All of it still holds unless this spec changes it |
 | The evidence | [`../research.md`](../research.md). For this spec: section 4, "What the harness models for any use case"; section 5, "Use cases, data and gates in EvalHub"; section 7, the agent catalog's artifacts; section 8, the `openshift-eval` branch `generalization` |
 | PR texts | [`../pr-drafts.md`](../pr-drafts.md) |
-| The first version's generalization | `~/Projects/Github/lukaskellerstein/openshift-eval`, branch `generalization`, worktree `.worktrees/generalization`: its spec `docs/my-specs/03-generalization.md` and its phase 1 (`tasks/support/`, `flywheel/task.py`), built and checked on the laptop. Its "task" is our use case, its "case" our task. Not committed on 2026-10-14 |
+| The first version's generalization | `~/Projects/Github/lukaskellerstein/openshift-eval`, branch `generalization`, worktree `.worktrees/generalization`: its spec `docs/my-specs/03-generalization.md` and its phase 1 (`tasks/support/`, `flywheel/task.py`), built and checked on the laptop. Its "task" is our use case, its "case" our task. Committed 2026-11-07 as `d0dd4e1`, not pushed; history, copied from once (decision 22) |
 | Forks, clones, the cluster | Spec 01, sections 0 and 5 |
 
 **Done, in spec 01.** Phase 0, the agent's own identity, cluster-admin on
@@ -68,7 +68,7 @@ section 7).
    - a paid model run beyond one smoke call, with its cost (spec 01
      section 10);
    - creating or reading a Secret, the bucket's access key included;
-   - an edit in `openshift-eval` (risk 2);
+   - an edit in `openshift-eval` (decision 22: nothing here needs one);
    - a top-level folder beyond the layout of decision 16, or a sixth fork
      (spec 01 section 5);
    - every other step marked "waits for" below.
@@ -126,8 +126,8 @@ Not next:
 step 1, the new boards on the Design canvas for Lukas's review; phase 3
 in this repo, the flywheel API with the registry, the bucket and support
 as version 1; then phase 5's module in the odh-dashboard clone after
-C27, built on the cluster. Phase 3's port of the loop reads
-`openshift-eval`'s `generalization` once Lukas has committed it. Where
+C27, built on the cluster. Phase 3's port copies the loop once from
+`openshift-eval` `d0dd4e1` (decision 22). Where
 it stands (2026-10-16 18:35 CEST): our module runs in the dashboard on
 the cluster, Develop & train › Agent flywheel with five placeholder
 pages (phase 5's DoD item 1); the flywheel API runs on the cluster
@@ -151,8 +151,9 @@ an evaluation picks an agent and one of its models, and C11's `runner`
 parameter runs it, so Codex and Claude Code now run on the same version
 (phase 3 status). The module's AI hub pages are being built (phase 5).
 Next on this path: phase 3's loop, runner
-image and support as version 1, which wait for Lukas's commit of
-`openshift-eval`'s `generalization` (decision 17); then "Start training".
+image and support as version 1, copied once from `openshift-eval`
+`d0dd4e1` and owned by this repo from then on, with no wait for that
+project (decision 22); then "Start training".
 
 **The cluster.** `cluster-nm8mw` auto-destroys on 2026-11-12. RHDP also
 auto-stops it; the auto-stop read last was Thu 2026-10-15 02:23 CEST, and
@@ -162,9 +163,10 @@ was renewed at 15:15 CEST, until 2026-10-17 15:15 CEST. It stopped again
 on 2026-10-16 about 21:15 CEST and ran again by 22:38 CEST, then
 stopped until Lukas started it on 2026-11-05 (node Ready 11:13 CET); the
 agent's token was renewed at 11:16 CET, until 2026-11-06 11:16 CET, after
-Lukas's `oc login`. The new auto-stop time is not read. A stop erases
-EvalHub's jobs (SQLite in the pod); C11's provider is mounted from a
-ConfigMap since 2026-11-05 and stays. After a long stop, pods with our
+Lukas's `oc login`. The new auto-stop time is not read. Until
+2026-11-07 a stop erased EvalHub's jobs (in-memory SQLite in the pod);
+since then they are in PostgreSQL and survive it (decision 21). C11's
+provider is mounted from a ConfigMap since 2026-11-05 and stays. After a long stop, pods with our
 images wait about 7 minutes for their pull secrets (`docs/research.md`). Before cluster work that
 takes hours, ask him whether the auto-stop is far enough. If the API times
 out, ask him whether the cluster stopped before you debug anything.
@@ -365,6 +367,18 @@ taken there on 2026-10-14 and moved here with this spec, word for word.
     a password that never leaves it (the command is in that file). The
     jobs lost before stay lost; their MLflow runs stay. MLflow as the
     record of a finished evaluation is the fallback, not built.
+22. **This repo stands alone** (2026-11-07, Lukas: "This is the
+    evolution of that project so we should not rely on that project
+    anymore in any way ... we should not be blocked because of that
+    project."). `openshift-eval` is history, not a dependency. Lukas let
+    the agent commit its branch `generalization` (`d0dd4e1`, 2026-11-07,
+    not pushed), so that work is kept. Phase 3 copies what it still
+    needs from that commit once, made to fit this repo: the loop, the
+    runner image, support's task pack, and in phase 6 the description of
+    `pyfix` or `copywriter`. From then on this repo is the source, and
+    nothing here reads or waits for `openshift-eval`. Its measured facts
+    stay as evidence in `docs/research.md`. This replaces decision 17's
+    second point.
 
 ## 3. What changes, and why
 
@@ -701,7 +715,8 @@ section 7.
 | C25 | agent-eval-harness | `feat/sealed-workspace-diff` | `06e5815` (4 commits on C38's `fix/evalhub-pod` `a44eb8b`); `flywheel-integration` `23f7690` (merge after `1fcae5a`) | ✅ 2026-10-16: 3347 passed twice, `mkdocs build --strict` exit 0, skillsaw 0 warnings (agent's run of the merge); 2349 on the branch, 2341 on its base (subagent's runs); on `flywheel-integration` a sealed workspace and the pod already gave the local diff, but all three paths counted more than the agent's change: the harness's own `output/stdout.log` when no output is declared, files a `before_each` or `after_each` hook writes, and nothing at all for an agent that commits. Now the snapshot is the ref `refs/agent-eval/snapshot`, taken again after `before_each`, and `execute.py` records `_modified/` when the agent is done, where the pod already did. Stacked on C38, which creates `workspace_changes.py`; its PR opens after C38's. Not changed: the pod runs no lifecycle hooks, and files the agent's tools create (`__pycache__/`) count unless the case ships a `.gitignore`, so `pyfix` needs one | — |
 | C27 | odh-dashboard | `feat/eval-hub-test-data-sources` | `2676e771e` (2 commits on `b4e406cb5`); `flywheel-integration` `7983bd799` (new, from `upstream/main` `b4e406cb5`) | ✅ 2026-10-16, narrowed to what upstream's open draft #10012 leaves out (decision 17): `packages/eval-hub` frontend 1475 tests in 88 suites, lint and type check clean, the BFF's Go tests green (agent's run of the merge; 1435 on `b4e406cb5`, subagent's run); git, PVC and Hugging Face sources, `resolved_sha` shown, a collection entry's `test_data_ref` kept, a source picker | — |
 | C28 | eval-hub | `feat/evalcard-test-data-ref` | `69fe00d`; `flywheel-integration` `4315523` | ✅ 2026-10-16: 1503 Go tests twice in the sandbox (agent's run; 1484 on `upstream/main` `eec7581`), the same 23 `/tmp`-bound failures; each result on the card names its test data and `resolved_sha`, never a `secret_ref`; on the cluster since 15:52 CEST (build `eval-hub-2`) | — |
-| C15 to C18 | odh-dashboard | — | — | ⬜ | phase 5; C16 to C18 as spec 01 phase 5 step 2 places them |
+| C15 | odh-dashboard | `feat/agent-flywheel-module` | `e58fd2889` | ▶️ the `agent-flywheel` module, phase 5 status; not merged into `flywheel-integration`, on purpose (it runs on the commit ODH's host was built from) | phase 5 |
+| C16 to C18 | odh-dashboard | — | — | replaced by decision 20: AI hub's Agents and Models are our module's tabs, their data in the flywheel API, not ODH's agent catalog or MaaS (2026-11-07, Lukas left the call to the agent) | — |
 
 ## 6. Phases
 
@@ -898,10 +913,9 @@ and C12 are merged (section 5.1). On the cluster (`deploy/builds/`,
 ### Phase 3: the registry and the glue
 
 Spec 01 phase 4, on the registry of decision 11. The layout of this repo is
-agreed (decision 16, question 6). The port reads `openshift-eval`'s
-branch `generalization`, which is not committed (risk 2): ask Lukas to
-commit it there before the port starts; an edit in `openshift-eval` is
-his.
+agreed (decision 16, question 6). The port copies once from
+`openshift-eval`'s branch `generalization` at `d0dd4e1`, and this repo
+owns the copy from then on (decision 22).
 
 1. The S3 bucket: verify first (section 8); its access key Secret is asked
    for before it is created.
@@ -962,8 +976,8 @@ changed outside the tasks, so a judge-only change shows. Open: decision
 13's "else the import picks one, balanced by tags" is not built (stored
 files stay as imported, so the hash matches the source); a task without
 a split counts in no split. `version.json` sits in the version's folder,
-so EvalHub copies it into `/test_data` too. Step 5 waits for Lukas's
-commit of `openshift-eval`'s `generalization`.
+so EvalHub copies it into `/test_data` too. Steps 3 to 5 wait for
+nothing since decision 22 (2026-11-07).
 
 The first evaluation (decision 19, 2026-10-16 19:35 to 19:47 CEST):
 `usecases/smoke/` imported as `smoke` version 1 (hash `3c1a68745e78`, 3
@@ -1089,6 +1103,38 @@ commits `847f6c3`, `9305114` and `33c9d9c` on this repo's `main`):
   `export-data` in `175ce635…` (0.65, six steps, `find . -type f`,
   three reads, the write) and Codex's in `400914b6…` (1.0, four shell
   calls and five messages), each with its answer and 0.00 USD.
+
+Steps 3 to 5, offline (decision 22, Lukas's `ok`, 2026-11-07; not
+committed):
+
+- Step 5: `usecases/support/`, support's 30 tickets in the task format
+  (each task's input and expected equal to `openshift-eval`'s case
+  folders, checked one by one), its 33 articles in `resources/`, the two
+  policies in `hidden/`, and `usecase.yaml` with the adjuster's slots.
+  `eval.yaml` takes C22's builtins for openshift-eval's inline checks
+  (`cites`, `contains` and `forbidden` with `separator: "|"`, `sections`,
+  `length`), its gate as C20's thresholds, and smoke's runner, Codex on
+  GLM 5.3. Left out of version 1: the LLM judge `quality`, since a judge
+  model in the EvalHub pod has no route to the gateway yet. The harness's
+  `validate_eval.py` and `workspace.py` take it (20 train workspaces, the
+  articles in each, no answer key), and so does the API's import check.
+- Step 2 again: a start takes `brain` (C11's `runs:/<run>/<path>`) and
+  `training` (a tag on the job and its MLflow run). 203 tests pass twice.
+- Step 3: `flywheel/`, the loop. Brain v0 is empty, the agent bare. Each
+  brain is scored on train and validation through the API, with the brain
+  as an MLflow artifact folder of its own run; the OpenCode adjuster
+  changes the best brain from its train failures and the history; keep
+  when the train score is at least the best one's. MLflow: a parent run
+  per training run, a child run per brain with its scores per split and
+  judge, the evaluations' ids, the decision, the brain and the adjuster's
+  reports and transcript. 22 offline tests pass twice.
+- Step 4: `images/runner/` (the loop and OpenCode 1.18.30 on our harness
+  base image) and `deploy/flywheel/` (its build, the ServiceAccount
+  `flywheel-loop`, one training Job). Not on the cluster yet: the agent's
+  token and Lukas's own login had both expired.
+- Not ported: GEPA and `/eval-optimize` as Adjust backends; an MLflow
+  trace per ticket (the adapter logs each ticket's run folder, not a
+  trace).
 
 ### Phase 4: Hugging Face import
 
@@ -1392,9 +1438,9 @@ Spec 01 phase 8, unchanged.
    run a shell) and how it is judged (hidden tests, a diff), and the
    cluster is deleted on 2026-11-12. `copywriter` is the smaller fallback
    (decision 10).
-2. **The port's source is not committed.** `openshift-eval`'s branch
-   `generalization` exists only in its worktree. Commit it there before
-   phase 3 ports from it.
+2. **The port's source was not committed.** Closed 2026-11-07: the
+   branch `generalization` is committed (`d0dd4e1`), and phase 3 copies
+   from it once (decision 22).
 3. **The bucket dies with the cluster.** The git sources survive; a
    re-import rebuilds every version but its number. A lasting setup points
    the API at an S3 outside the cluster.

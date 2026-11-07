@@ -23,8 +23,15 @@ real versions here when it lands, and drop the word "planned".
   with `uv.lock`; `exclude-newer` keeps every locked release at least two
   weeks old. The image is UBI 9 Python 3.12, pinned by digest. API only,
   no static app; `openshift-eval`'s `ui/server/` was its reference
-- **Language** (planned): Python for the loop and the Adjust backends,
-  ported from `openshift-eval` (spec 01 §4, §9; spec 02 phase 3)
+- **The training loop** (`flywheel/`, spec 02 phase 3, 2026-11-07):
+  Python 3.12, PyYAML 6.0.3 and the standard library (HTTP with
+  `urllib`); tests with pytest 9.1.1. uv with `uv.lock` and the API's
+  `exclude-newer`. The adjuster is OpenCode 1.18.30 on the gateway. Its
+  image (`images/runner/`) is our harness base image plus OpenCode; in
+  it, the base image's unpinned PyYAML is the one that runs. Ported once
+  from `openshift-eval`
+  (decision 22); GEPA and `/eval-optimize` as Adjust backends are not
+  ported yet
 - **Eval**: agent-eval-harness from the fork's `flywheel-integration` branch,
   pip-installed inside the runner image (§4); one Score backend, EvalHub with
   the contrib adapter (C11). EvalHub server 1.0.2, SDK `eval-hub-sdk` 1.0.6 (§3)

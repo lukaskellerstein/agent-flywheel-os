@@ -9,7 +9,9 @@ sent upstream as PRs; this repo holds the glue.
 Start with the active spec,
 [`docs/my-specs/02-generalization.md`](docs/my-specs/02-generalization.md),
 section 0. The first version, which this one
-is built from, is `~/Projects/Github/lukaskellerstein/openshift-eval`.
+was built from, is `~/Projects/Github/lukaskellerstein/openshift-eval`;
+what this repo took from it was copied once, and it waits for nothing
+there (spec 02 decision 22).
 
 | File | What it holds |
 |:--|:--|
@@ -29,6 +31,10 @@ is built from, is `~/Projects/Github/lukaskellerstein/openshift-eval`.
 | [`deploy/builds/`](deploy/builds/) | Our images of the fork clones, built on the cluster with binary BuildConfigs: the TrustyAI operator, the EvalHub server, the harness's base image, the EvalHub adapter (C11), our dashboard module and dashboard-operator; and the rights our newer operator and EvalHub builds need, which ODH's own roles lack |
 | [`services/flywheel-api/`](services/flywheel-api/) | The flywheel API: the registry of use cases in S3, import by upload or from git, fixed versions with their diff, and evaluations as EvalHub jobs with each task's verdicts from MLflow (spec 02 phase 3) |
 | [`deploy/flywheel-api/`](deploy/flywheel-api/) | The API on the cluster: its BuildConfig, Deployment and Service, no Route; the service CA and its way into EvalHub |
+| [`flywheel/`](flywheel/) | The training loop: score brain v0, let the OpenCode adjuster change the best brain from its train failures, score it, keep or revert; every score an evaluation of the flywheel API, every record in MLflow (spec 02 phase 3) |
+| [`images/runner/`](images/runner/) | The runner image: the loop and OpenCode on our harness base image |
+| [`deploy/flywheel/`](deploy/flywheel/) | The loop on the cluster: the runner image's build, its ServiceAccount `flywheel-loop`, and the Job of one training run |
 | [`usecases/smoke/`](usecases/smoke/) | The smoke use case: three product questions, one deterministic judge, Codex through the gateway; the first EvalHub job's test data (spec 02 decision 19) |
+| [`usecases/support/`](usecases/support/) | The support use case, the first one trained: 30 Red Hat support tickets over a 33-article knowledge base, a hidden policy, deterministic judges; copied once from `openshift-eval` |
 | [`deploy/bucket/`](deploy/bucket/) | The registry's S3 bucket: one ObjectBucketClaim on the cluster's NooBaa, `flywheel-usecases` (spec 02 phase 3) |
 | [`deploy/gateway/`](deploy/gateway/) | The LiteLLM model gateway, ported from `openshift-eval`, with every model alias and price; every route on EnMaaS since 2026-10-14 |

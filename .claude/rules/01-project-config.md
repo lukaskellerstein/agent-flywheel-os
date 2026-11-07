@@ -55,7 +55,7 @@ them from here.
 
 | Repo | Path | Role |
 |:--|:--|:--|
-| openshift-eval | `~/Projects/Github/lukaskellerstein/openshift-eval`, branch `main` | The first version and the inspiration; keeps working as it is (decision 7). Its `PLAN.md`, `CLUSTER.md` and `flywheel/README.md` are the measured facts behind the specs; spec 01 §9 maps what is ported from it, and its branch `generalization` is read for spec 02 (spec 02 §0) |
+| openshift-eval | `~/Projects/Github/lukaskellerstein/openshift-eval`, branch `main` | The first version and the inspiration; keeps working as it is (decision 7). Its `PLAN.md`, `CLUSTER.md` and `flywheel/README.md` are the measured facts behind the specs; spec 01 §9 maps what is ported from it. History, not a dependency, since spec 02 decision 22 (2026-11-07): phase 3 copies once from its branch `generalization` at `d0dd4e1`, and nothing here waits for it |
 | Fork clones, where all work happens | `~/Projects/Github/lukaskellerstein/forks/` `agent-eval-harness`, `eval-hub`, `eval-hub-contrib`, `trustyai-service-operator`, `odh-dashboard` | `origin` = Lukas's fork, `upstream` = the original; upstream code is read from `upstream/main` there. Contributions (spec 01 §7, spec 02 §5) are built there, one branch each from `upstream/main` plus `flywheel-integration` (spec 01 §5). Upstream's contribution rules win there (spec 01 §5) |
 | Reference checkouts | `~/Projects/Github/redhat/agent-eval-harness`, `~/Projects/Github/eval-hub/eval-hub` | Read-only, never branch there; the first is `openshift-eval`'s editable dependency |
 
